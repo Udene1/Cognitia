@@ -1,5 +1,5 @@
 from cognitia.balancing import BalancingEngine, BalancingStrategy
-from cognitia.benchmark import BenchmarkResult, BuildComparison, CaseResult, BenchmarkOutcome
+from cognitia.benchmark import BuildComparison
 from cognitia.regression import RegressionFinding
 
 
