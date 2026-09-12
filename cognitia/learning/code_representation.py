@@ -1,9 +1,9 @@
 """Extract language-independent computational structure from source code.
 
 The extractor deliberately reasons from executable structure (AST nodes, data
-data flow, control flow, and collection/reduction relationships), not from
-comments or commit messages. The representation is a hypothesis about
-computation, not proof of semantic equivalence.
+flow, control flow, and collection/reduction relationships), not from comments
+or commit messages. The representation is a hypothesis about computation, not
+proof of semantic equivalence.
 """
 from __future__ import annotations
 
@@ -41,6 +41,7 @@ class PythonCodeInterpreter:
         has_loop = False
         has_dict_accumulator = False
         has_get_default = False
+        has_conditional_key_initialization = False
         has_filter = False
         has_return = False
         has_comparison = False
@@ -70,6 +71,8 @@ class PythonCodeInterpreter:
             elif isinstance(node, ast.If):
                 control_flow.append("conditional")
                 has_filter = True
+                if any(isinstance(item, ast.Subscript) for item in ast.walk(node.body)):
+                    has_conditional_key_initialization = True
             elif isinstance(node, ast.Return):
                 has_return = True
             elif isinstance(node, ast.Compare):
@@ -99,7 +102,7 @@ class PythonCodeInterpreter:
             operations.append("iterate records")
         if has_dict_accumulator:
             operations.append("maintain keyed accumulator")
-        if has_get_default:
+        if has_get_default or has_conditional_key_initialization:
             operations.append("initialize missing key")
         if has_reduction:
             operations.append("reduce values")
@@ -120,6 +123,7 @@ class PythonCodeInterpreter:
             has_loop=has_loop,
             has_dict_accumulator=has_dict_accumulator,
             has_get_default=has_get_default,
+            has_conditional_key_initialization=has_conditional_key_initialization,
             has_dict_comprehension=has_dict_comprehension,
             has_reduction=has_reduction,
             has_key_dependency=has_key_dependency,
@@ -158,12 +162,15 @@ class PythonCodeInterpreter:
         has_loop: bool,
         has_dict_accumulator: bool,
         has_get_default: bool,
+        has_conditional_key_initialization: bool,
         has_dict_comprehension: bool,
         has_reduction: bool,
         has_key_dependency: bool,
     ) -> bool:
         """Recognize reduction from structural relationships, not field names."""
-        imperative = has_loop and has_dict_accumulator and (has_get_default or has_reduction)
+        imperative = has_loop and has_dict_accumulator and (
+            has_get_default or has_conditional_key_initialization
+        )
         declarative = has_dict_comprehension and has_reduction and has_key_dependency
         return imperative or declarative
 
