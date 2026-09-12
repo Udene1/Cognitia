@@ -1,32 +1,19 @@
-"""Goal-directed capability discovery and candidate construction.
-
-The engine turns an observed capability gap into a concrete acquisition decision.
-It does not deploy code. It searches the capabilities Cognitia already has,
-looks for repeated successful procedures, and only falls back to construction
-when composition/generalization cannot satisfy the gap.
-"""
-
+"""Goal-directed capability discovery and candidate construction."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, Mapping, Sequence
 
 from .capability_acquisition import (
-    AcquisitionMode,
-    CapabilityCandidate,
-    Operation,
-    ReasoningTrace,
-    compose_capability,
-    construct_capability,
-    learn_procedure,
+    AcquisitionMode, CapabilityCandidate, Operation, ReasoningTrace,
+    compose_capability, construct_capability, learn_procedure,
 )
-from .failure_analysis import CapabilityGapDiagnosis
+from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureObservation
 
 
 @dataclass(frozen=True)
 class CapabilityGapSignal:
     """A concrete observation that a required capability is missing or weak."""
-
     required_capability: str
     candidate_name: str
     representation: str
@@ -42,36 +29,43 @@ class CapabilityGapSignal:
 
     @classmethod
     def from_diagnosis(
-        cls,
-        diagnosis: CapabilityGapDiagnosis,
-        *,
-        candidate_name: str | None = None,
-        representation: str | None = None,
-        traces: Sequence[ReasoningTrace] = (),
-        operation_sequence: Sequence[str] = (),
-        allow_construction: bool = False,
+        cls, diagnosis: CapabilityGapDiagnosis, *, candidate_name: str | None = None,
+        representation: str | None = None, traces: Sequence[ReasoningTrace] = (),
+        operation_sequence: Sequence[str] = (), allow_construction: bool = False,
     ) -> "CapabilityGapSignal":
-        """Promote a diagnosed failure into an actionable acquisition signal.
-
-        The diagnosis identifies *what* machinery appears missing; this signal
-        adds the representation and evidence needed to decide *how* to acquire
-        it. Construction remains explicitly opt-in.
-        """
-        capability = candidate_name or diagnosis.capability
+        """Turn a diagnosed failure into the canonical acquisition signal."""
         return cls(
             required_capability=diagnosis.capability,
-            candidate_name=capability,
+            candidate_name=candidate_name or diagnosis.capability,
             representation=representation or diagnosis.capability,
             operation_sequence=tuple(operation_sequence),
             traces=tuple(traces),
             allow_construction=allow_construction,
         )
 
+    @classmethod
+    def from_failure(
+        cls, failure: FailureObservation, *, analyzer: FailureAnalyzer | None = None,
+        available_capabilities: Sequence[str] = (),
+        capability_relations: Mapping[str, Sequence[str]] | None = None,
+        candidate_name: str | None = None, representation: str | None = None,
+        traces: Sequence[ReasoningTrace] = (), operation_sequence: Sequence[str] = (),
+        allow_construction: bool = False,
+    ) -> "CapabilityGapSignal":
+        """Use the existing failure taxonomy; do not invent a second one."""
+        diagnosis = (analyzer or FailureAnalyzer()).diagnose(
+            failure, available_capabilities=available_capabilities,
+            capability_relations=capability_relations,
+        )
+        return cls.from_diagnosis(
+            diagnosis, candidate_name=candidate_name, representation=representation,
+            traces=traces, operation_sequence=operation_sequence,
+            allow_construction=allow_construction,
+        )
+
 
 @dataclass(frozen=True)
 class AcquisitionDecision:
-    """Why the engine chose an acquisition mode."""
-
     mode: AcquisitionMode
     reason: str
     confidence: float
@@ -96,70 +90,60 @@ CodeConstructor = Callable[[CapabilityGapSignal], tuple[Callable[[object], objec
 
 class CapabilityAcquisitionEngine:
     """Discover the least-complex viable path to a missing capability."""
-
     def __init__(self, operations: Mapping[str, Operation], *, min_repetitions: int = 2) -> None:
         if min_repetitions < 2:
             raise ValueError("min_repetitions must be at least 2")
         self._operations = dict(operations)
         self._min_repetitions = min_repetitions
 
+    def signal_from_failure(
+        self, failure: FailureObservation, *, analyzer: FailureAnalyzer | None = None,
+        available_capabilities: Sequence[str] = (),
+        capability_relations: Mapping[str, Sequence[str]] | None = None,
+        candidate_name: str | None = None, representation: str | None = None,
+        traces: Sequence[ReasoningTrace] = (), operation_sequence: Sequence[str] = (),
+        allow_construction: bool = False,
+    ) -> CapabilityGapSignal:
+        """Convert an unsuccessful reasoning attempt into a gap signal."""
+        return CapabilityGapSignal.from_failure(
+            failure, analyzer=analyzer, available_capabilities=available_capabilities,
+            capability_relations=capability_relations, candidate_name=candidate_name,
+            representation=representation, traces=traces,
+            operation_sequence=operation_sequence, allow_construction=allow_construction,
+        )
+
     def plan(self, signal: CapabilityGapSignal, *, constructor: CodeConstructor | None = None) -> AcquisitionPlan:
         sequence = signal.operation_sequence or self._repeated_sequence(signal.traces)
         traces = tuple(signal.traces)
-
         if sequence and all(step in self._operations for step in sequence):
             if len(traces) >= self._min_repetitions and all(trace.operations == sequence for trace in traces):
-                candidate = learn_procedure(
-                    signal.candidate_name,
-                    traces,
-                    self._operations,
-                    representation=signal.representation,
-                )
-                return AcquisitionPlan(
-                    signal,
-                    AcquisitionDecision(
-                        AcquisitionMode.LEARN_PROCEDURE,
-                        "The same successful operation sequence repeated enough times to justify a reusable procedure.",
-                        min(1.0, 0.5 + 0.1 * len(traces)),
-                        tuple(trace.id for trace in traces),
-                    ),
-                    candidate,
-                )
-
+                candidate = learn_procedure(signal.candidate_name, traces, self._operations, representation=signal.representation)
+                return AcquisitionPlan(signal, AcquisitionDecision(
+                    AcquisitionMode.LEARN_PROCEDURE,
+                    "The same successful operation sequence repeated enough times to justify a reusable procedure.",
+                    min(1.0, 0.5 + 0.1 * len(traces)), tuple(trace.id for trace in traces),
+                ), candidate)
             candidate = compose_capability(
-                signal.candidate_name,
-                [self._operations[step] for step in sequence],
+                signal.candidate_name, [self._operations[step] for step in sequence],
                 representation=signal.representation,
             )
-            return AcquisitionPlan(
-                signal,
-                AcquisitionDecision(
-                    AcquisitionMode.COMPOSE,
-                    "Existing verified operations can solve the gap without inventing a new primitive.",
-                    0.85,
-                ),
-                candidate,
-            )
-
+            return AcquisitionPlan(signal, AcquisitionDecision(
+                AcquisitionMode.COMPOSE,
+                "Existing verified operations can solve the gap without inventing a new primitive.",
+                0.85,
+            ), candidate)
         if signal.allow_construction and constructor is not None:
             implementation, artifact = constructor(signal)
             candidate = construct_capability(
-                signal.candidate_name,
-                implementation,
+                signal.candidate_name, implementation,
                 operations=signal.operation_sequence or (signal.required_capability,),
-                representation=signal.representation,
-                code_artifact=artifact,
+                representation=signal.representation, code_artifact=artifact,
             )
-            return AcquisitionPlan(
-                signal,
-                AcquisitionDecision(
-                    AcquisitionMode.CONSTRUCT,
-                    "Composition and repeated-procedure learning could not satisfy the gap; controlled construction was explicitly allowed.",
-                    0.55,
-                ),
-                candidate,
-            )
-
+            return AcquisitionPlan(signal, AcquisitionDecision(
+                AcquisitionMode.CONSTRUCT,
+                "Composition and repeated-procedure learning could not satisfy the gap; controlled construction was explicitly allowed.",
+                0.55,
+            ), candidate)
         raise ValueError("no viable acquisition path: composition is unavailable and construction is not authorized")
 
     def _repeated_sequence(self, traces: Sequence[ReasoningTrace]) -> tuple[str, ...]:
