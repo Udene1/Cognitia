@@ -43,3 +43,10 @@ jobs:
       - name: Solve using persisted Git-derived knowledge in a new process
         run: |
           COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/apply_git_learned_solution.py
+      - name: Learn engineering balancing from Git source
+        run: |
+          mkdir -p .ci
+          COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/learn_engine_balance_from_git.py
+      - name: Apply engineering abstraction to economics in a new process
+        run: |
+          COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/apply_cross_domain_learning.py
