@@ -15,6 +15,15 @@ from .benchmark import (
     CaseResult,
     compare_builds,
 )
+from .capability_acquisition import (
+    AcquisitionMode,
+    CapabilityCandidate,
+    Operation,
+    ReasoningTrace,
+    compose_capability,
+    construct_capability,
+    learn_procedure,
+)
 from .regression import (
     PromotionDecision,
     RegressionFinding,
@@ -29,6 +38,13 @@ __all__ = [
     "AcquisitionStage",
     "CapabilityRequirement",
     "propose_capability_acquisition",
+    "AcquisitionMode",
+    "CapabilityCandidate",
+    "Operation",
+    "ReasoningTrace",
+    "compose_capability",
+    "construct_capability",
+    "learn_procedure",
     "BenchmarkCase",
     "BenchmarkOutcome",
     "BenchmarkResult",
