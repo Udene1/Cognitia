@@ -1,7 +1,7 @@
 """Learn solution patterns directly from executable source code."""
 from __future__ import annotations
 
-from cognitia.memory import Experience
+from cognitia.memory import Experience, Outcome
 
 from .code_representation import ComputationalRepresentation, PythonCodeInterpreter
 
@@ -49,10 +49,7 @@ class CodeSolutionLearner:
                 "data_flow": representation.data_flow,
                 "algorithm_family": representation.algorithm_family,
             },
-            outcome=__import__("cognitia.memory", fromlist=["Outcome"]).Outcome(
-                outcome_kind,
-                outcome_description,
-            ),
+            outcome=Outcome(outcome_kind, outcome_description),
         )
 
     @staticmethod
