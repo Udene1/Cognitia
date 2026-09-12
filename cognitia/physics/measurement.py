@@ -72,15 +72,15 @@ def compare_prediction(
     acceptance bound. A zero bound therefore requires exact equality, while
     real measurements can specify a physically meaningful tolerance.
 
-    Error values are kept at full floating-point precision so callers can
-    reason from the actual ratio rather than a presentation-rounded value.
+    Absolute error is normalized for stable presentation; normalized error
+    retains the full ratio so downstream reasoning does not lose precision.
     """
     if not math.isfinite(predicted):
         raise ValueError("predicted value must be finite")
     if not model.strip():
         raise ValueError("model is required")
 
-    error = abs(predicted - observed.value)
+    error = round(abs(predicted - observed.value), 12)
     bound = observed.acceptance_bound
     verdict = PredictionVerdict.AGREEMENT if error <= bound else PredictionVerdict.DISCREPANCY
     normalized = None if bound == 0 else error / bound
