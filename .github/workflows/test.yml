@@ -36,3 +36,10 @@ jobs:
           COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/apply_learned_solution.py
       - name: Compare independently written implementations
         run: python tests/ci/compare_implementations.py
+      - name: Learn from Git-discovered repository source
+        run: |
+          mkdir -p .ci
+          COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/learn_from_git.py
+      - name: Solve using persisted Git-derived knowledge in a new process
+        run: |
+          COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/apply_git_learned_solution.py
