@@ -50,3 +50,11 @@ jobs:
       - name: Apply engineering abstraction to economics in a new process
         run: |
           COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/apply_cross_domain_learning.py
+      - name: Write durable cognitive state
+        run: |
+          rm -rf .ci/persistence
+          mkdir -p .ci/persistence
+          COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_writer.py
+      - name: Recover durable cognitive state in a fresh process
+        run: |
+          COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_reader.py
