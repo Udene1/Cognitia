@@ -12,6 +12,7 @@ from .cognitive_history import CognitiveHistory, EvaluationRecord, PromotionEven
 from .engineering import EngineeringEvent, EngineeringExperienceRecorder, engineering_memory
 from .durable import DurableEvent, SQLiteCognitiveJournal
 from .durable_cognition import DurableCognitiveLedger
+from .discovery import DiscoveryWorkspace, ExplanationAssessment, ExplanationStatus, ExplanatoryGap, HypothesisCandidate, Observation, unresolved_observations
 from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureClass, FailureObservation
 from .git_environment import GitCommitObservation, GitEnvironmentError, GitHistoryIngestor, GitRepositoryObserver
 from .learning import PersistentPatternLearner
@@ -35,6 +36,7 @@ __all__ = [
     "CognitiveHistory", "EvaluationRecord", "PromotionEvent", "evaluation_from_comparison",
     "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory",
     "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger",
+    "DiscoveryWorkspace", "ExplanationAssessment", "ExplanationStatus", "ExplanatoryGap", "HypothesisCandidate", "Observation", "unresolved_observations",
     "CognitiveStateReplayer", "RecoveredCognitiveState",
     "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver",
     "GitKnowledgeIngestor", "PersistentPatternLearner",
