@@ -13,6 +13,9 @@ from .engineering import EngineeringEvent, EngineeringExperienceRecorder, engine
 from .durable import DurableEvent, SQLiteCognitiveJournal
 from .durable_cognition import DurableCognitiveLedger
 from .discovery import DiscoveryWorkspace, ExplanationAssessment, ExplanationStatus, ExplanatoryGap, HypothesisCandidate, Observation, unresolved_observations
+from .discovery_experiments import DiscriminatingExperimentSelector, Experiment
+from .discovery_hypotheses import ExplanatoryModel, HypothesisAlternative, HypothesisSpaceBuilder, HypothesisTransform
+from .discovery_prediction import Prediction, PredictionDeriver
 from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureClass, FailureObservation
 from .git_environment import GitCommitObservation, GitEnvironmentError, GitHistoryIngestor, GitRepositoryObserver
 from .learning import PersistentPatternLearner
@@ -37,6 +40,8 @@ __all__ = [
     "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory",
     "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger",
     "DiscoveryWorkspace", "ExplanationAssessment", "ExplanationStatus", "ExplanatoryGap", "HypothesisCandidate", "Observation", "unresolved_observations",
+    "ExplanatoryModel", "HypothesisAlternative", "HypothesisSpaceBuilder", "HypothesisTransform",
+    "Prediction", "PredictionDeriver", "DiscriminatingExperimentSelector", "Experiment",
     "CognitiveStateReplayer", "RecoveredCognitiveState",
     "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver",
     "GitKnowledgeIngestor", "PersistentPatternLearner",
