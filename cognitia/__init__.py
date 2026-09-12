@@ -6,6 +6,12 @@ from .acquisition import (
     CapabilityRequirement,
     propose_capability_acquisition,
 )
+from .acquisition_engine import (
+    AcquisitionDecision,
+    AcquisitionPlan,
+    CapabilityAcquisitionEngine,
+    CapabilityGapSignal,
+)
 from .benchmark import (
     BenchmarkCase,
     BenchmarkOutcome,
@@ -15,6 +21,7 @@ from .benchmark import (
     CaseResult,
     compare_builds,
 )
+from .build import CapabilityRecord, CognitiveBuild, create_build
 from .capability_acquisition import (
     AcquisitionMode,
     CapabilityCandidate,
@@ -38,6 +45,10 @@ __all__ = [
     "AcquisitionStage",
     "CapabilityRequirement",
     "propose_capability_acquisition",
+    "AcquisitionDecision",
+    "AcquisitionPlan",
+    "CapabilityAcquisitionEngine",
+    "CapabilityGapSignal",
     "AcquisitionMode",
     "CapabilityCandidate",
     "Operation",
@@ -52,6 +63,9 @@ __all__ = [
     "BuildComparison",
     "CaseResult",
     "compare_builds",
+    "CapabilityRecord",
+    "CognitiveBuild",
+    "create_build",
     "PromotionDecision",
     "RegressionFinding",
     "RegressionPolicy",
