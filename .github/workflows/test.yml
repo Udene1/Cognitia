@@ -66,3 +66,5 @@ jobs:
           COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/apply_recovered_cognition.py
       - name: Identify an explanatory gap
         run: python tests/ci/discovery_gap.py
+      - name: Construct and discriminate hypothesis space
+        run: python tests/ci/hypothesis_space_search.py
