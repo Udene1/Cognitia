@@ -58,3 +58,11 @@ jobs:
       - name: Recover durable cognitive state in a fresh process
         run: |
           COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_reader.py
+      - name: Replay durable cognitive state into active cognition
+        run: |
+          rm -rf .ci/replay
+          mkdir -p .ci/replay
+          COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_writer.py
+      - name: Use recovered cognitive state in a new process
+        run: |
+          COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_reader.py
