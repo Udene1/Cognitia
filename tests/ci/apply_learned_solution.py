@@ -1,15 +1,15 @@
-"""CI stage 2: start a fresh process and solve a new problem from persisted knowledge."""
+"""CI stage 2: recover a solution in a fresh process and transfer it."""
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
 from cognitia.knowledge import PersistentKnowledgeStore
-from cognitia.learning import PersistentSolutionPatternLearner
+from cognitia.learning.code_solutions import CodeSolutionLearner
+from cognitia.learning.persistent_solutions import PersistentSolutionPatternLearner
 
 
 KNOWLEDGE_PATH = Path(os.environ.get("COGNITIA_CI_KNOWLEDGE", ".ci/cognitia-knowledge.json"))
-
 
 PROBLEM = "Calculate total spending for each customer from a new set of purchases."
 PURCHASES = [
@@ -21,7 +21,7 @@ PURCHASES = [
 ]
 
 
-def execute_partition_then_reduce(records: list[dict[str, object]]) -> dict[str, int]:
+def execute_group_by_reduce(records: list[dict[str, object]]) -> dict[str, int]:
     totals: dict[str, int] = {}
     for record in records:
         key = str(record["customer"])
@@ -29,18 +29,22 @@ def execute_partition_then_reduce(records: list[dict[str, object]]) -> dict[str,
     return totals
 
 
+EXECUTORS = {"group_by_reduce": execute_group_by_reduce}
+
+
 def main() -> None:
     # Deliberately construct a fresh knowledge store in a new process. No stage-1
     # ExperienceStore is reused here.
     store = PersistentKnowledgeStore(KNOWLEDGE_PATH)
     learner = PersistentSolutionPatternLearner(store)
+    problem_interpreter = CodeSolutionLearner()
     candidates = learner.candidates()
 
     assert candidates, "stage 2 must recover knowledge persisted by stage 1"
 
-    # The training problem and target problem are different. Their shared
-    # structured signature is the bridge; the implementation is not supplied.
-    target_signature = ("group_by_key", "sum_values")
+    # Cognitia interprets the new problem itself. No structured signature is
+    # supplied by the experiment author.
+    target_signature = problem_interpreter.infer_problem_signature(PROBLEM)
     matching = [
         item
         for item in candidates
@@ -52,21 +56,15 @@ def main() -> None:
     selected = max(matching, key=lambda item: item.value["observations"])
     logic = tuple(selected.value["logic"])
     implementation = selected.value["implementation"]
+    executor = EXECUTORS.get(implementation)
+    assert executor is not None, f"no executor registered for learned capability: {implementation}"
 
-    assert logic == (
-        "partition records by key",
-        "combine values within each partition",
-        "return one result per key",
-    )
-    assert implementation == "partition_then_reduce"
-
-    # Execute the recovered computational pattern against a genuinely different
-    # problem statement and dataset.
-    result = execute_partition_then_reduce(PURCHASES)
+    result = executor(PURCHASES)
     expected = {"Ada": 20, "Bola": 10, "Chidi": 10}
     assert result == expected
 
     print(f"PROBLEM: {PROBLEM}")
+    print(f"INFERRED_SIGNATURE: {target_signature}")
     print(f"RECOVERED_LOGIC: {' -> '.join(logic)}")
     print(f"RECOVERED_IMPLEMENTATION: {implementation}")
     print(f"RESULT: {result}")
