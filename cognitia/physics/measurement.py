@@ -77,10 +77,10 @@ def compare_prediction(
     if not model.strip():
         raise ValueError("model is required")
 
-    error = abs(predicted - observed.value)
+    error = round(abs(predicted - observed.value), 12)
     bound = observed.acceptance_bound
     verdict = PredictionVerdict.AGREEMENT if error <= bound else PredictionVerdict.DISCREPANCY
-    normalized = None if bound == 0 else error / bound
+    normalized = None if bound == 0 else round(error / bound, 12)
     return PredictionError(
         predicted=predicted,
         observed=observed,
