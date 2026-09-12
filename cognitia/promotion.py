@@ -4,9 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Iterable
 
-from .benchmark import BenchmarkResult
+from .benchmark import BenchmarkResult, compare_builds
 from .build import CapabilityRecord, CognitiveBuild, create_build
 from .candidate_registry import CandidateRegistry, CandidateState
+from .cognitive_history import CognitiveHistory, EvaluationRecord, PromotionEvent, evaluation_from_comparison
 from .regression import PromotionDecision, RegressionPolicy, evaluate_promotion
 from .verification import VerificationPlan, VerificationResult, execute_plan
 
@@ -17,13 +18,19 @@ class PromotionEvaluation:
     verification: VerificationResult
     decision: PromotionDecision | None
     build: CognitiveBuild | None
+    history: tuple[EvaluationRecord, ...] = ()
 
 
 class CognitivePromotionOrchestrator:
-    """Move a capability candidate through the gates without mutating the live build."""
+    """Move a candidate through gates without mutating the live build.
 
-    def __init__(self, registry: CandidateRegistry) -> None:
+    Every evaluation is also written to append-only cognitive history. A hold
+    therefore becomes evidence for future balancing rather than a dead end.
+    """
+
+    def __init__(self, registry: CandidateRegistry, history: CognitiveHistory | None = None) -> None:
         self.registry = registry
+        self.history = history or CognitiveHistory()
 
     def evaluate(
         self,
@@ -46,12 +53,30 @@ class CognitivePromotionOrchestrator:
         if record.state not in {CandidateState.BENCHMARKED, CandidateState.HELD}:
             raise ValueError("candidate must be benchmarked or held before promotion evaluation")
 
+        comparison = compare_builds(baseline_primary, candidate_primary)
+        self.history.record(evaluation_from_comparison(candidate_id, comparison))
+
         verification = execute_plan(verification_plan, verifier)
         if verification.outcome.value != "verified":
             held = self.registry.hold(candidate_id, "verification did not establish the candidate")
-            return PromotionEvaluation(held.candidate_id, verification, None, None)
+            self.history.record(
+                EvaluationRecord(
+                    candidate_id=candidate_id,
+                    event=PromotionEvent.HELD,
+                    verification=verification.outcome,
+                    reason=held.reason,
+                )
+            )
+            return PromotionEvaluation(held.candidate_id, verification, None, None, self.history.for_candidate(candidate_id))
 
         self.registry.verify(candidate_id)
+        self.history.record(
+            EvaluationRecord(
+                candidate_id=candidate_id,
+                event=PromotionEvent.VERIFIED,
+                verification=verification.outcome,
+            )
+        )
         decision = evaluate_promotion(
             baseline_primary,
             candidate_primary,
@@ -61,7 +86,16 @@ class CognitivePromotionOrchestrator:
         )
         if not decision.eligible:
             held = self.registry.hold(candidate_id, decision.reason)
-            return PromotionEvaluation(held.candidate_id, verification, decision, None)
+            self.history.record(
+                EvaluationRecord(
+                    candidate_id=candidate_id,
+                    event=PromotionEvent.HELD,
+                    verification=verification.outcome,
+                    regression=max((finding.regression for finding in decision.findings), default=0.0),
+                    reason=decision.reason,
+                )
+            )
+            return PromotionEvaluation(held.candidate_id, verification, decision, None, self.history.for_candidate(candidate_id))
 
         promoted = self.registry.promote(candidate_id)
         capabilities = list(parent_build.capabilities)
@@ -86,4 +120,12 @@ class CognitivePromotionOrchestrator:
             parent_build=parent_build.build_id,
             notes=f"Promoted candidate {candidate_id} after verification, benchmark, and regression evaluation.",
         )
-        return PromotionEvaluation(promoted.candidate_id, verification, decision, build)
+        self.history.record(
+            EvaluationRecord(
+                candidate_id=candidate_id,
+                event=PromotionEvent.PROMOTED,
+                build_id=build.build_id,
+                verification=verification.outcome,
+            )
+        )
+        return PromotionEvaluation(promoted.candidate_id, verification, decision, build, self.history.for_candidate(candidate_id))
