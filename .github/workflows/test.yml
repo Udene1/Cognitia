@@ -60,10 +60,12 @@ jobs:
           COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_reader.py
       - name: Replay durable cognitive state into active cognition
         run: |
-          COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_replay.py
+          rm -rf .ci/replay
+          mkdir -p .ci/replay
+          COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_writer.py
       - name: Use recovered cognitive state in a new process
         run: |
-          COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/apply_recovered_cognition.py
+          COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_reader.py
       - name: Identify an explanatory gap
         run: python tests/ci/discovery_gap.py
       - name: Construct and discriminate hypothesis space
