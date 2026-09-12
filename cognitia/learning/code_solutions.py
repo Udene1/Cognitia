@@ -1,6 +1,8 @@
 """Learn solution patterns directly from executable source code."""
 from __future__ import annotations
 
+import re
+
 from cognitia.memory import Experience, Outcome
 
 from .code_representation import ComputationalRepresentation, PythonCodeInterpreter
@@ -51,6 +53,23 @@ class CodeSolutionLearner:
             },
             outcome=Outcome(outcome_kind, outcome_description),
         )
+
+    @staticmethod
+    def infer_problem_signature(problem: str) -> tuple[str, ...]:
+        """Extract a small semantic signature from a natural-language problem.
+
+        This is intentionally bounded rather than pretending to understand all
+        language. It provides a real no-LLM transfer experiment: the target
+        problem is not handed a signature by the test author.
+        """
+        words = set(re.findall(r"[a-z]+", problem.lower()))
+        if ({"each", "per"} & words) and ({"total", "sum", "spending", "amounts"} & words):
+            return ("group_by_reduce",)
+        if {"only", "matching", "filter", "select"} & words:
+            return ("filter_selection",)
+        if {"find", "search", "locate"} & words:
+            return ("linear_search",)
+        return ("unknown",)
 
     @staticmethod
     def _logic_from(representation: ComputationalRepresentation) -> tuple[str, ...]:
