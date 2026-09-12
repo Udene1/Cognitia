@@ -3,7 +3,7 @@ from cognitia.build import CapabilityRecord, create_build
 from cognitia.capability_acquisition import AcquisitionMode, CapabilityCandidate
 from cognitia.candidate_registry import CandidateRecord, CandidateRegistry
 from cognitia.promotion import CognitivePromotionOrchestrator
-from cognitia.verification import VerificationPlan, VerificationStep
+from cognitia.verification import VerificationOutcome, VerificationPlan, VerificationStep
 
 
 def _result(benchmark: str, capability: str, build: str, score: float) -> BenchmarkResult:
@@ -23,8 +23,9 @@ def _candidate() -> CapabilityCandidate:
 
 def _plan() -> VerificationPlan:
     return VerificationPlan(
-        candidate_id="candidate-1",
-        steps=(VerificationStep("s1", "candidate executes safely"),),
+        claim="candidate executes safely",
+        steps=(VerificationStep("s1", "candidate executes safely", expected=True),),
+        expected_value=1.0,
     )
 
 
@@ -36,7 +37,7 @@ def test_successful_gated_promotion_creates_child_build():
     result = CognitivePromotionOrchestrator(registry).evaluate(
         "candidate-1",
         verification_plan=_plan(),
-        verifier=lambda step: True,
+        verifier=lambda step: VerificationOutcome.VERIFIED,
         baseline_primary=_result("primary", "new_reasoner", "build-1", 0.5),
         candidate_primary=_result("primary", "new_reasoner", "candidate", 0.9),
         parent_build=parent,
@@ -59,7 +60,7 @@ def test_regression_holds_candidate_without_mutating_parent_build():
     result = CognitivePromotionOrchestrator(registry).evaluate(
         "candidate-1",
         verification_plan=_plan(),
-        verifier=lambda step: True,
+        verifier=lambda step: VerificationOutcome.VERIFIED,
         baseline_primary=_result("primary", "new_reasoner", "build-1", 0.5),
         candidate_primary=_result("primary", "new_reasoner", "candidate", 0.9),
         protected_baseline=(_result("protected", "base", "build-1", 1.0),),
