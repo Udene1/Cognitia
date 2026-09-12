@@ -112,11 +112,61 @@ Can Cognitia learn from a failed hypothesis without simply memorizing that the e
 
 Can an independently implemented verifier reproduce a Cognitia-generated result without relying on Cognitia's internal reasoning trace as proof?
 
+## Completed foundation milestones
+
+### Discovery gap representation
+
+Cognitia now has an explicit workspace for observations, explanation assessments, explanatory gaps, and hypothesis candidates. Contradicted or unexplained observations become investigation targets without automatically generating an answer. This preserves the distinction between an anomaly and a solution.
+
+### Bounded hypothesis-space construction
+
+Cognitia can now construct a traceable alternative space from an explicit explanatory model. The initial transformations are:
+
+- relax an assumption;
+- reverse an assumption;
+- partition by an existing context variable;
+- introduce an explicitly identified missing variable.
+
+Each alternative retains its source model, transformation, changed element, epistemic status, and unassessed novelty status. This is deliberately a **search primitive**, not a claim of autonomous scientific creativity.
+
+### Falsifiable prediction contracts
+
+A hypothesis can now be paired with a condition, expected outcome, and explicit falsifier. Cognitia does not infer that a prose proposition is scientifically testable merely because it sounds plausible.
+
+### Discriminating experiment selection
+
+Cognitia can select a test when competing hypotheses make different predictions under the same condition. A test is therefore selected for its discriminatory value, not merely because a test exists.
+
+### CI research experiment
+
+The discovery CI experiment constructs multiple alternatives from a baseline model, creates two competing hypotheses, derives conflicting predictions, and selects a discriminating experiment. The experiment explicitly reports that it has made **no novelty claim**.
+
 ## Current architectural consequence
 
-The existing knowledge, memory, hypothesis, verification, capability, failure-analysis, candidate, and durable-state systems are foundations for discovery. The next discovery-specific layers should be built on top of them rather than as a separate idea-generation subsystem.
+The existing knowledge, memory, hypothesis, verification, capability, failure-analysis, candidate, and durable-state systems are foundations for discovery. The discovery layers must remain connected to those systems rather than becoming a separate idea-generation subsystem.
 
 In particular, durable cognitive state must be replayable into active cognition. A remembered hypothesis or capability outcome is useful only when a fresh process can reconstruct the state and use it in a subsequent decision.
+
+## Next research attack
+
+The next difficult step is not adding more hand-written transformations. We need to investigate whether Cognitia can learn **which transformations are useful** from failed and successful investigations, while preserving provenance and avoiding a growing list of domain-specific rules.
+
+That means moving toward a representation in which assumptions, variables, dependencies, constraints, predictions, and outcomes are first-class objects. The search mechanism should then operate over that representation and be evaluated by transfer and held-out evidence.
+
+The progression is:
+
+```text
+explicit model
+→ explanatory gap
+→ alternative hypothesis space
+→ prediction
+→ discriminating experiment
+→ observed result
+→ hypothesis revision
+→ learned search strategy
+```
+
+The key research question is whether the final arrow can become learned cognition rather than a collection of manually encoded heuristics.
 
 ## Non-goals
 
