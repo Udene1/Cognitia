@@ -72,8 +72,9 @@ def compare_prediction(
     acceptance bound. A zero bound therefore requires exact equality, while
     real measurements can specify a physically meaningful tolerance.
 
-    Absolute error is normalized for stable presentation; normalized error
-    retains the full ratio so downstream reasoning does not lose precision.
+    Absolute error is rounded for stable presentation. Normalized error uses
+    the same stable error and a normalized acceptance bound, preserving the
+    mathematically expected ratio for downstream reasoning.
     """
     if not math.isfinite(predicted):
         raise ValueError("predicted value must be finite")
@@ -82,8 +83,9 @@ def compare_prediction(
 
     error = round(abs(predicted - observed.value), 12)
     bound = observed.acceptance_bound
+    stable_bound = round(bound, 12)
     verdict = PredictionVerdict.AGREEMENT if error <= bound else PredictionVerdict.DISCREPANCY
-    normalized = None if bound == 0 else error / bound
+    normalized = None if bound == 0 else error / stable_bound
     return PredictionError(
         predicted=predicted,
         observed=observed,
