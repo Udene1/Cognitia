@@ -27,10 +27,10 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: python -m pip install --upgrade pip && pip install -e . pytest
-      - name: Learn and persist solution knowledge
+      - name: Learn from executable source
         run: |
           mkdir -p .ci
           COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/learn_solution.py
-      - name: New-process transfer test
+      - name: New-process code-to-problem transfer
         run: |
           COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/apply_learned_solution.py
