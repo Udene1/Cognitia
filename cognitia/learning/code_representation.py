@@ -1,12 +1,9 @@
 """Extract language-independent computational structure from source code.
 
-This is the first controlled step toward letting Cognitia learn from code without
-being handed the intended solution logic. The extractor deliberately reasons
-from executable structure (AST nodes, data flow, control flow, and aggregation
-operations), not from comments or commit messages.
-
-The result is a candidate representation, not proof that the abstraction is
-correct. It must earn confidence through execution and transfer tests.
+The extractor deliberately reasons from executable structure (AST nodes, data
+flow, control flow, and collection/reduction relationships), not from comments
+or commit messages. The representation is a hypothesis about computation, not
+proof of semantic equivalence.
 """
 from __future__ import annotations
 
@@ -48,11 +45,25 @@ class PythonCodeInterpreter:
         has_return = False
         has_comparison = False
         has_index_lookup = False
+        has_dict_comprehension = False
+        has_reduction = False
+        has_nested_iteration = False
+        has_key_dependency = False
+
+        parents = self._parent_map(tree)
 
         for node in ast.walk(tree):
             if isinstance(node, (ast.For, ast.While)):
                 has_loop = True
                 control_flow.append("iteration")
+                if any(isinstance(parents.get(id(node)), (ast.For, ast.While)) for _ in (0,)):
+                    has_nested_iteration = True
+            elif isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+                control_flow.append("comprehension")
+                if isinstance(node, ast.DictComp):
+                    has_dict_comprehension = True
+                if len(node.generators) > 1:
+                    has_nested_iteration = True
             elif isinstance(node, ast.If):
                 control_flow.append("conditional")
                 has_filter = True
@@ -62,9 +73,11 @@ class PythonCodeInterpreter:
                 has_comparison = True
             elif isinstance(node, ast.Subscript):
                 has_index_lookup = True
-            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-                if node.func.attr == "get" and len(node.args) >= 1:
+            elif isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Attribute) and node.func.attr == "get" and len(node.args) >= 1:
                     has_get_default = True
+                if isinstance(node.func, ast.Name) and node.func.id in {"sum", "reduce"}:
+                    has_reduction = True
             elif isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Subscript):
@@ -76,29 +89,47 @@ class PythonCodeInterpreter:
                 has_dict_accumulator = True
                 data_flow.append("combine value into keyed state")
 
-        if has_loop:
+        if has_comparison and has_nested_iteration:
+            has_key_dependency = self._has_cross_scope_key_dependency(tree)
+
+        if has_loop or has_nested_iteration:
             operations.append("iterate records")
         if has_dict_accumulator:
             operations.append("maintain keyed accumulator")
         if has_get_default:
             operations.append("initialize missing key")
+        if has_reduction:
+            operations.append("reduce values")
         if has_comparison:
             operations.append("compare values")
         if has_index_lookup:
             operations.append("read keyed field")
         if has_filter:
             operations.append("filter by condition")
+        if has_dict_comprehension:
+            operations.append("construct keyed result")
+        if has_key_dependency:
+            data_flow.append("derive grouping key dependency")
         if has_return:
             operations.append("return result")
 
-        if has_loop and has_dict_accumulator and has_get_default:
+        if self._is_group_by_reduce(
+            has_loop=has_loop,
+            has_dict_accumulator=has_dict_accumulator,
+            has_get_default=has_get_default,
+            has_dict_comprehension=has_dict_comprehension,
+            has_reduction=has_reduction,
+            has_key_dependency=has_key_dependency,
+        ):
             algorithm_family = "group_by_reduce"
-            confidence = 0.92
-            data_flow.extend((
-                "partition records by key",
-                "combine values within each key",
-                "emit one result per key",
-            ))
+            confidence = 0.92 if has_dict_accumulator else 0.88
+            data_flow.extend(
+                (
+                    "partition records by key",
+                    "combine values within each key",
+                    "emit one result per key",
+                )
+            )
         elif has_loop and has_filter and has_return:
             algorithm_family = "filter_selection"
             confidence = 0.82
@@ -117,3 +148,48 @@ class PythonCodeInterpreter:
             algorithm_family=algorithm_family,
             confidence=confidence,
         )
+
+    @staticmethod
+    def _is_group_by_reduce(
+        *,
+        has_loop: bool,
+        has_dict_accumulator: bool,
+        has_get_default: bool,
+        has_dict_comprehension: bool,
+        has_reduction: bool,
+        has_key_dependency: bool,
+    ) -> bool:
+        """Recognize reduction from structural relationships, not field names."""
+        imperative = has_loop and has_dict_accumulator and (has_get_default or has_reduction)
+        declarative = has_dict_comprehension and has_reduction and has_key_dependency
+        return imperative or declarative
+
+    @staticmethod
+    def _parent_map(root: ast.AST) -> dict[int, ast.AST]:
+        parents: dict[int, ast.AST] = {}
+        for parent in ast.walk(root):
+            for child in ast.iter_child_nodes(parent):
+                parents[id(child)] = parent
+        return parents
+
+    @staticmethod
+    def _has_cross_scope_key_dependency(tree: ast.AST) -> bool:
+        """Detect an outer-key dependency inside a nested reduction predicate.
+
+        This uses AST structure rather than domain-specific field names: a
+        dictionary-comprehension key is related to a nested generator predicate
+        when that predicate references the comprehension's key expression.
+        """
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.DictComp) or not isinstance(node.key, ast.Name):
+                continue
+            key_name = node.key.id
+            for generator in node.generators:
+                if any(isinstance(item, ast.Name) and item.id == key_name for item in ast.walk(generator.iter)):
+                    return True
+                for condition in generator.ifs:
+                    if any(isinstance(item, ast.Name) and item.id == key_name for item in ast.walk(condition)):
+                        return True
+            if any(isinstance(item, ast.Name) and item.id == key_name for item in ast.walk(node.value)):
+                return True
+        return False
