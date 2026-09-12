@@ -186,7 +186,7 @@ A fresh process is then given an economics problem involving a policy that impro
 
 The test also includes held-out cases so agreement is not established from only one scenario.
 
-The intended CI evidence is:
+The observed CI evidence was:
 
 ```text
 SOURCE_DISCOVERY_PATH: GitRepositoryObserver.python_sources
@@ -202,6 +202,45 @@ This is a more meaningful test than asking Cognitia to repeat the same arithmeti
 
 It is still a controlled experiment, not proof of general reasoning. The target-domain interpreter and decision executor remain bounded and explicitly engineered. The next challenge is to make those abstractions increasingly discoverable and verifiable rather than adding domain-specific mappings.
 
+### Stage 5 — durable cognitive state across process destruction
+
+The persistence bar has now been raised from “a file was written” to an actual process boundary.
+
+Cognitia has dedicated SQLite persistence for structured knowledge and episodic action/consequence memory, plus an append-only cognitive journal for state that does not yet have a specialized relational model. The journal preserves payload, provenance, identity, and timestamp without pretending that persistence makes an assertion true.
+
+The CI experiment deliberately uses separate Python processes:
+
+```text
+PROCESS A
+  -> write knowledge
+  -> write experience
+  -> write cognitive event
+  -> exit
+
+PROCESS B
+  -> open the same SQLite files
+  -> recover knowledge
+  -> recover experience
+  -> recover event
+  -> verify identity + provenance + state
+```
+
+The expected evidence is:
+
+```text
+PERSISTENCE_WRITE_SUCCESS
+RECOVERED_KNOWLEDGE: group_by_reduce
+RECOVERED_EXPERIENCE: persist_learning -> positive
+RECOVERED_EVENT: learning_commit
+PROCESS_RESTART_PERSISTENCE_SUCCESS
+```
+
+This is important because a cognitive system that loses learned state when its process dies does not yet have durable long-term memory. Persistence must be demonstrated by destruction and recovery, not inferred from a successful write call.
+
+The persistence architecture also separates **memory semantics from storage technology**: learned solution and contextual-pattern learners now depend on a small persistence contract and can use SQLite or another compatible backend without changing their learning logic.
+
+The remaining work is to move every long-lived cognitive structure onto this durability boundary: hypotheses and revision history, candidate capabilities and their lifecycle metadata, cognitive history, and promoted-build state. Executable callables themselves cannot simply be serialized; capability identity and executable artifacts must be persisted separately and revalidated before reuse.
+
 ## Principle
 
 > **Do not give Cognitia the abstraction if Cognitia is supposed to learn the abstraction. Give it evidence from which the abstraction can be earned.**
@@ -209,3 +248,7 @@ It is still a controlled experiment, not proof of general reasoning. The target-
 And the stronger version now guiding the next phase:
 
 > **Do not test whether Cognitia remembers the answer. Test whether it can recover the underlying structure and transfer that structure where the surface changes.**
+
+A further engineering rule now joins those principles:
+
+> **If a learned state cannot survive process destruction and be recovered with its identity and provenance intact, it is not yet durable cognitive memory.**
