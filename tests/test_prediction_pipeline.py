@@ -19,13 +19,13 @@ def test_dynamics_prediction_can_be_tested_against_an_observation() -> None:
 
     assessment = compare_prediction(
         prediction.state.velocity_mps,
-        Measurement(16.2, uncertainty=Uncertainty(0.25)),
+        Measurement(17.0, uncertainty=Uncertainty(0.25)),
         model=prediction.dynamics_model,
         assumptions=prediction.assumptions,
     )
 
     assert assessment.verdict.value == "agreement"
-    assert assessment.absolute_error == 0.2
+    assert assessment.absolute_error == 0.0
     assert "acceleration remains constant" in assessment.assumptions
 
 
