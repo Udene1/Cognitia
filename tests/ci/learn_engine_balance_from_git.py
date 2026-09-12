@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from cognitia.git_environment import GitRepositoryObserver
-from cognitia.knowledge import PersistentKnowledgeStore
+from cognitia.knowledge import KnowledgeItem, KnowledgeSource, PersistentKnowledgeStore
 from cognitia.learning.concept_transfer import TradeoffBalanceInterpreter
 
 KNOWLEDGE_PATH = Path(os.environ.get("COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE", ".ci/cross-domain-knowledge.json"))
@@ -23,7 +23,7 @@ def main() -> None:
     assert representation.family == "tradeoff_balance"
 
     store = PersistentKnowledgeStore(KNOWLEDGE_PATH)
-    store.teach(
+    store.add(KnowledgeItem(
         subject="engineering capability regression balancing",
         predicate="has_solution_pattern",
         value={
@@ -33,8 +33,13 @@ def main() -> None:
             "source_path": matches[0].path,
             "source_discovery": "GitRepositoryObserver.python_sources",
         },
+        source=KnowledgeSource(
+            kind="git_source",
+            reference=f"{observer.head()}:{matches[0].path}",
+            reliability=1.0,
+        ),
         scope="cross_domain_transfer",
-    )
+    ))
 
     print(f"SOURCE_DISCOVERED: {matches[0].path}")
     print("SOURCE_DISCOVERY_PATH: GitRepositoryObserver.python_sources")
