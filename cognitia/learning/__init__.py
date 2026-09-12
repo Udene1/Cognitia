@@ -1,6 +1,7 @@
 """Learning mechanisms built from Cognitia's accumulated experience."""
 
 from .conditional import ConditionalPattern, ConditionalPatternLearner
+from .hypothesis_search import HypothesisSearchLearner, SearchStrategy
 from .model_revision import RevisionAction, RevisionDecision, revise_hypothesis
 from .persistent_patterns import PersistentPatternLearner
 from .persistent_solutions import PersistentSolutionPatternLearner
@@ -11,6 +12,8 @@ from .solution_patterns import SolutionPattern, SolutionPatternLearner
 __all__ = [
     "ConditionalPattern",
     "ConditionalPatternLearner",
+    "HypothesisSearchLearner",
+    "SearchStrategy",
     "PersistentPatternLearner",
     "PersistentSolutionPatternLearner",
     "ReasoningPattern",
