@@ -2,6 +2,7 @@
 
 from .dynamics import DynamicsPrediction, NewtonianDynamics
 from .mechanics import KinematicState, KinematicsModel, Prediction
+from .measurement import Measurement, PredictionError, PredictionVerdict, Uncertainty, compare_prediction
 from .newton import NewtonPrediction, NewtonianModel
 from .quantities import (
     ACCELERATION,
@@ -19,4 +20,5 @@ __all__ = [
     "ACCELERATION", "DIMENSIONLESS", "FORCE", "LENGTH", "MASS", "TIME", "VELOCITY",
     "Dimension", "Quantity", "KinematicState", "KinematicsModel", "Prediction",
     "NewtonPrediction", "NewtonianModel", "DynamicsPrediction", "NewtonianDynamics",
+    "Measurement", "Uncertainty", "PredictionError", "PredictionVerdict", "compare_prediction",
 ]
