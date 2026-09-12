@@ -239,7 +239,59 @@ This is important because a cognitive system that loses learned state when its p
 
 The persistence architecture also separates **memory semantics from storage technology**: learned solution and contextual-pattern learners now depend on a small persistence contract and can use SQLite or another compatible backend without changing their learning logic.
 
-The remaining work is to move every long-lived cognitive structure onto this durability boundary: hypotheses and revision history, candidate capabilities and their lifecycle metadata, cognitive history, and promoted-build state. Executable callables themselves cannot simply be serialized; capability identity and executable artifacts must be persisted separately and revalidated before reuse.
+### Stage 6 — durable cognitive lifecycle, not just durable memory
+
+The next persistence boundary now covers the higher-order state that determines how Cognitia evolves.
+
+A durable cognitive ledger records:
+
+- candidate capability identity and lifecycle state;
+- benchmark and regression evidence;
+- verification and hold reasons;
+- candidate representation, source traces, and code artifacts;
+- cognitive-build identity and capability manifest;
+- promotion/evaluation history.
+
+The ledger deliberately does **not** serialize Python callables. An executable candidate is treated as an artifact that must be explicitly rehydrated and revalidated. This prevents a dangerous category error:
+
+> **Persisting an implementation is not the same thing as proving that the implementation is safe or valid to execute.**
+
+The resulting architecture is:
+
+```text
+candidate discovered
+      |
+      v
+benchmark / verification
+      |
+      v
+regression analysis
+      |
+      +----> HOLD / investigate / balance
+      |
+      v
+promotion decision
+      |
+      v
+cognitive build
+      |
+      v
+DURABLE LEDGER
+      |
+      | process destruction
+      v
+recover identity + provenance + lifecycle
+      |
+      v
+rehydrate executable artifact
+      |
+      v
+re-verify before execution
+```
+
+This closes an important gap between “Cognitia remembers knowledge” and “Cognitia remembers how its own capabilities evolved.”
+
+The next persistence work is to make hypothesis/revision state and self-model outcomes durable under the same contract, then verify recovery across a fresh process before those structures are allowed to influence promotion.
 
 ## Principle
 
@@ -252,3 +304,7 @@ And the stronger version now guiding the next phase:
 A further engineering rule now joins those principles:
 
 > **If a learned state cannot survive process destruction and be recovered with its identity and provenance intact, it is not yet durable cognitive memory.**
+
+And now:
+
+> **A persisted capability is not trusted merely because it was persisted. Executable artifacts must be revalidated before they can influence cognition.**
