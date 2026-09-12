@@ -1,10 +1,11 @@
 """Cross-domain transfer from computational structure to abstract decisions."""
 from __future__ import annotations
 
+import ast
 import re
 from dataclasses import dataclass
 
-from .code_representation import ComputationalRepresentation, PythonCodeInterpreter
+from .code_representation import PythonCodeInterpreter
 
 
 @dataclass(frozen=True)
@@ -23,10 +24,11 @@ class TradeoffBalanceInterpreter:
 
     def interpret(self, source: str) -> ConceptualRepresentation:
         base = self._interpreter.interpret(source)
-        conditional_count = base.control_flow.count("conditional")
-        comparison = "compare values" in base.operations
+        tree = ast.parse(source)
+        conditional_count = sum(isinstance(node, ast.If) for node in ast.walk(tree))
+        comparison_count = sum(isinstance(node, ast.Compare) for node in ast.walk(tree))
         has_return = "return result" in base.operations
-        if conditional_count >= 2 and comparison and has_return:
+        if conditional_count >= 2 and comparison_count >= 2 and has_return:
             return ConceptualRepresentation(
                 family="tradeoff_balance",
                 logic=(
