@@ -54,11 +54,9 @@ def main() -> None:
         print(f"{name}: family_match={match.equivalent_family} confidence={match.confidence}")
 
     assert dict(matches)["explicit_initialization"].equivalent_family
+    assert dict(matches)["comprehension"].equivalent_family
     assert not dict(matches)["search"].equivalent_family
-    # The comprehension is deliberately a harder case. We do not claim it is
-    # equivalent until the representation extractor can see its aggregation.
-    assert not dict(matches)["comprehension"].equivalent_family
-    print("INVARIANT_STRUCTURE_CHALLENGE_PARTIAL_SUCCESS")
+    print("INVARIANT_STRUCTURE_CHALLENGE_SUCCESS")
 
 
 if __name__ == "__main__":
