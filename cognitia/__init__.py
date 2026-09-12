@@ -12,9 +12,8 @@ from .cognitive_history import CognitiveHistory, EvaluationRecord, PromotionEven
 from .engineering import EngineeringEvent, EngineeringExperienceRecorder, engineering_memory
 from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureClass, FailureObservation
 from .git_environment import GitCommitObservation, GitEnvironmentError, GitHistoryIngestor, GitRepositoryObserver
+from .learning import PersistentPatternLearner
 from .git_knowledge import GitKnowledgeIngestor
-from .knowledge.model import KnowledgeItem, KnowledgeSource
-from .knowledge.persistent import KnowledgePersistenceError, PersistentKnowledgeStore
 from .learning.transfer import TransferAssessment, assess_transfer
 from .promotion import CognitivePromotionOrchestrator, PromotionEvaluation
 from .regression import CandidateDisposition, PromotionDecision, RegressionFinding, RegressionPolicy, evaluate_promotion
@@ -32,8 +31,8 @@ __all__ = [
     "CapabilityRecord", "CognitiveBuild", "create_build",
     "CognitiveHistory", "EvaluationRecord", "PromotionEvent", "evaluation_from_comparison",
     "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory",
-    "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor",
-    "KnowledgeItem", "KnowledgeSource", "KnowledgePersistenceError", "PersistentKnowledgeStore",
+    "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver",
+    "GitKnowledgeIngestor", "PersistentPatternLearner",
     "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis",
     "TransferAssessment", "assess_transfer",
     "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan",
