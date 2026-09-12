@@ -7,6 +7,7 @@ from .build import CapabilityRecord, CognitiveBuild, create_build
 from .candidate_pipeline import CandidateEvaluation, benchmark_candidate, evaluate_candidate
 from .candidate_registry import CandidateRecord, CandidateRegistry, CandidateState
 from .capability_acquisition import AcquisitionMode, CapabilityCandidate, Operation, ReasoningTrace, compose_capability, construct_capability, learn_procedure
+from .cognitive_history import CognitiveHistory, EvaluationRecord, PromotionEvent, evaluation_from_comparison
 from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureClass, FailureObservation
 from .learning.transfer import TransferAssessment, assess_transfer
 from .promotion import CognitivePromotionOrchestrator, PromotionEvaluation
@@ -22,6 +23,7 @@ __all__ = [
     "CandidateEvaluation", "benchmark_candidate", "evaluate_candidate", "CandidateRecord", "CandidateRegistry", "CandidateState",
     "BenchmarkCase", "BenchmarkOutcome", "BenchmarkResult", "BenchmarkSuite", "BuildComparison", "CaseResult", "compare_builds",
     "CapabilityRecord", "CognitiveBuild", "create_build",
+    "CognitiveHistory", "EvaluationRecord", "PromotionEvent", "evaluation_from_comparison",
     "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis",
     "TransferAssessment", "assess_transfer",
     "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan",
