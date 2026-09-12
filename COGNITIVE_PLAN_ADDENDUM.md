@@ -189,28 +189,96 @@ Expected value of verification
 
 This is preferable to either false certainty or refusing to reason whenever certainty is unavailable.
 
-## 10. New implementation roadmap
+## 10. Capability acquisition
+
+Capability acquisition is a first-class cognitive process, not synonymous with generating source code.
+
+```text
+Capability gap
+    ↓
+Inspect existing operations
+    ↓
+Can existing operations solve it?
+    ├─ yes → compose
+    └─ no
+         ↓
+   Did Cognitia repeatedly solve it through the same procedure?
+    ├─ yes → learn reusable procedure
+    └─ no
+         ↓
+   Is controlled construction authorized?
+    ├─ yes → construct candidate implementation
+    └─ no → retain unresolved capability gap
+```
+
+A capability candidate consists of more than code. It carries its representation, procedure/operations, provenance, and (when constructed) a code artifact. Candidates are immutable research artifacts until evaluation succeeds.
+
+Capability acquisition must not silently modify the active cognitive build. Construction is candidate generation; benchmark evidence determines whether the candidate is useful; cross-capability regression determines whether it can be promoted.
+
+## 11. Candidate evaluation and cognitive builds
+
+Cognitia must distinguish **software version** from **cognitive build**.
+
+A cognitive build is an immutable manifest of capabilities, maturity, status, parent build, and notes. Candidate capabilities may exist in a candidate/held build without becoming active.
+
+```text
+Gap
+ ↓
+Acquisition plan
+ ↓
+Candidate capability
+ ↓
+Deterministic benchmark
+ ↓
+Compare against baseline
+ ↓
+Check protected capabilities
+ ↓
+ ┌───────────────┐
+ │ no regression │ → eligible for promotion
+ └───────────────┘
+        │
+        └→ regression → HOLD_FOR_BALANCING
+                         ↓
+                   repair / compose / selective integration
+                         ↓
+                      benchmark again
+```
+
+**Regression is a promotion blocker, not a capability deletion command.** A useful new capability must be retained even when its first integration is harmful. Cognitia should attempt to balance capabilities, alter their interaction, or selectively integrate them before giving up on the candidate.
+
+## 12. New implementation roadmap
 
 The following work is now a priority in the architecture:
 
 ### Epistemic foundations
 
-- [ ] First-class claims/propositions
-- [ ] Explicit assumptions
-- [ ] Capability representation
-- [ ] Capability profile / self-model
-- [ ] Capability-gap representation
-- [ ] Epistemic result classes
-- [ ] Transparent capability substitution
-- [ ] Verification-plan representation
+- [x] Capability representation
+- [x] Capability profile / self-model
+- [x] Capability-gap representation
+- [x] Epistemic result classes
+- [x] Transparent capability substitution
+- [x] Verification-plan representation
 
 ### Meta-reasoning
 
-- [ ] Capability-aware reasoning routing
+- [x] Capability-aware reasoning routing
 - [ ] Problem-to-reasoning-method mapping
-- [ ] Self-performance history
-- [ ] Failure-mode learning
+- [x] Self-performance history
+- [x] Failure-mode learning
 - [ ] Value-of-information for verification
+
+### Capability acquisition
+
+- [x] Executable composition of existing operations
+- [x] Reusable procedure learning from repeated traces
+- [x] Controlled candidate construction
+- [x] Automatic acquisition-mode selection
+- [x] Candidate benchmark pipeline
+- [x] Immutable cognitive build manifest
+- [ ] Persistent candidate registry
+- [ ] Automated capability synthesis/repair loop
+- [ ] Formal verification and sandbox execution for constructed code
 
 ### Long-term
 
@@ -218,8 +286,9 @@ The following work is now a priority in the architecture:
 - [ ] Detect architecture-level capability failures
 - [ ] Propose new cognitive capabilities when repeated failures reveal missing machinery
 - [ ] Benchmark successive cognitive builds against identical tasks
+- [ ] Maintain reproducible historical cognitive builds
 
-## 11. Permanent design laws added by this addendum
+## 13. Permanent design laws added by this addendum
 
 1. **Do not pretend to possess a capability that Cognitia does not possess.**
 2. **Do not stop merely because a capability is incomplete if a useful, explicitly qualified attempt is possible.**
@@ -227,4 +296,8 @@ The following work is now a priority in the architecture:
 4. **Every important conclusion should carry enough epistemic metadata to understand how it was produced and how it could be wrong.**
 5. **Uncertainty should trigger investigation, not automatic paralysis.**
 6. **Cognitia must learn about its own failures, not only failures in the external world.**
-7. **When user observations expose an important capability gap or architectural insight, record it in the durable plan before continuing so future work does not silently forget it.**
+7. **Capability acquisition is broader than code generation: knowledge, representation, composition, procedures, algorithms, tools, and code can all create capability.**
+8. **Regression blocks promotion before it deletes capability.**
+9. **Cognitive builds are immutable capability configurations, distinct from ordinary software versions.**
+10. **A constructed capability must remain a candidate until it survives tests, benchmarks, and protected-capability regression checks.**
+11. **When user observations expose an important capability gap or architectural insight, record it in the durable plan before continuing so future work does not silently forget it.**
