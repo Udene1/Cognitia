@@ -38,12 +38,13 @@ def main() -> None:
 
     assert candidates, "stage 2 must recover knowledge persisted by stage 1"
 
-    # The target problem is phrased differently from the training problem.
-    # Cognitia is given the problem class, not the implementation.
+    # The training problem and target problem are different. Their shared
+    # structured signature is the bridge; the implementation is not supplied.
+    target_signature = ("group_by_key", "sum_values")
     matching = [
         item
         for item in candidates
-        if item.subject == "aggregate records by key"
+        if tuple(item.value["context"]["problem_signature"]) == target_signature
         and item.value["success_rate"] >= 1.0
     ]
     assert matching, "Cognitia must retrieve a successful transferable pattern"
@@ -59,7 +60,8 @@ def main() -> None:
     )
     assert implementation == "partition_then_reduce"
 
-    # Execute the computational pattern against a genuinely different dataset.
+    # Execute the recovered computational pattern against a genuinely different
+    # problem statement and dataset.
     result = execute_partition_then_reduce(PURCHASES)
     expected = {"Ada": 20, "Bola": 10, "Chidi": 10}
     assert result == expected
