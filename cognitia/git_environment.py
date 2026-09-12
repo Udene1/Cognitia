@@ -1,8 +1,8 @@
 """Local Git repositories as an environment Cognitia can observe.
 
 Git is treated as an evidence source, not as a reasoning engine. The observer
-extracts repository history into structured engineering events; Cognitia's
-existing experience memory remains responsible for retaining those observations.
+extracts repository history and source artifacts into structured engineering events;
+Cognitia's existing experience memory remains responsible for retaining those observations.
 """
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ class GitEnvironmentError(RuntimeError):
 @dataclass(frozen=True)
 class GitCommitObservation:
     """Structured observation of one commit in a local Git repository."""
-
     commit_id: str
     parent_ids: tuple[str, ...]
     author: str
@@ -33,6 +32,14 @@ class GitCommitObservation:
     files_changed: int
     insertions: int
     deletions: int
+
+
+@dataclass(frozen=True)
+class GitSourceObservation:
+    """A source artifact discovered from the repository environment."""
+    path: str
+    language: str
+    source: str
 
 
 class GitRepositoryObserver:
@@ -44,11 +51,8 @@ class GitRepositoryObserver:
     def _run(self, args: Sequence[str]) -> str:
         try:
             result = subprocess.run(
-                ["git", *args],
-                cwd=self.repository,
-                check=True,
-                capture_output=True,
-                text=True,
+                ["git", *args], cwd=self.repository, check=True,
+                capture_output=True, text=True,
             )
         except FileNotFoundError as exc:
             raise GitEnvironmentError("git executable is not available") from exc
@@ -65,12 +69,9 @@ class GitRepositoryObserver:
         """Observe commit history without modifying the repository."""
         if limit is not None and limit < 1:
             raise ValueError("limit must be positive")
-
         args = [
-            "log",
-            "--date=iso-strict",
-            "--format=%x1e%H%x1f%P%x1f%an%x1f%aI%x1f%s",
-            "--shortstat",
+            "log", "--date=iso-strict",
+            "--format=%x1e%H%x1f%P%x1f%an%x1f%aI%x1f%s", "--shortstat",
         ]
         if limit is not None:
             args.append(f"-n{limit}")
@@ -88,18 +89,31 @@ class GitRepositoryObserver:
                 authored_at = datetime.fromisoformat(fields[3])
             except ValueError as exc:
                 raise GitEnvironmentError("invalid git commit timestamp") from exc
-            observations.append(
-                GitCommitObservation(
-                    commit_id=fields[0],
-                    parent_ids=tuple(fields[1].split()) if fields[1] else (),
-                    author=fields[2],
-                    authored_at=authored_at,
-                    subject=fields[4],
-                    files_changed=_stat_value(stats, r"file(?:s)? changed"),
-                    insertions=_stat_value(stats, r"insertion(?:s)?"),
-                    deletions=_stat_value(stats, r"deletion(?:s)?"),
-                )
-            )
+            observations.append(GitCommitObservation(
+                commit_id=fields[0], parent_ids=tuple(fields[1].split()) if fields[1] else (),
+                author=fields[2], authored_at=authored_at, subject=fields[4],
+                files_changed=_stat_value(stats, r"file(?:s)? changed"),
+                insertions=_stat_value(stats, r"insertion(?:s)?"),
+                deletions=_stat_value(stats, r"deletion(?:s)?"),
+            ))
+        return tuple(observations)
+
+    def python_sources(self, *, tracked_only: bool = True) -> tuple[GitSourceObservation, ...]:
+        """Discover Python source artifacts from the repository without executing them."""
+        if tracked_only:
+            paths = self._run(["ls-files", "--", "*.py"]).splitlines()
+        else:
+            paths = [str(p.relative_to(self.repository)) for p in self.repository.rglob("*.py")]
+        observations: list[GitSourceObservation] = []
+        for relative in sorted(p for p in paths if p and not p.startswith(".git/")):
+            path = self.repository / relative
+            if not path.is_file():
+                continue
+            try:
+                source = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError as exc:
+                raise GitEnvironmentError(f"cannot decode Python source: {relative}") from exc
+            observations.append(GitSourceObservation(relative, "python", source))
         return tuple(observations)
 
 
@@ -115,41 +129,20 @@ class GitHistoryIngestor:
         self._recorder = recorder
         self._ingested: set[str] = set()
 
-    def ingest(
-        self,
-        observer: GitRepositoryObserver,
-        *,
-        limit: int | None = None,
-    ) -> tuple[Experience, ...]:
-        """Record previously unseen commits as neutral observations.
-
-        A commit is not assumed to be good merely because it exists. Its initial
-        epistemic outcome is neutral; later test, benchmark, regression, or repair
-        observations can establish what the change actually accomplished.
-        """
+    def ingest(self, observer: GitRepositoryObserver, *, limit: int | None = None) -> tuple[Experience, ...]:
+        """Record previously unseen commits as neutral observations."""
         experiences: list[Experience] = []
         for commit in observer.commits(limit):
             if commit.commit_id in self._ingested:
                 continue
             event = EngineeringEvent(
                 kind="git_commit",
-                context={
-                    "repository": str(observer.repository),
-                    "commit_id": commit.commit_id,
-                    "parents": commit.parent_ids,
-                    "author": commit.author,
-                },
+                context={"repository": str(observer.repository), "commit_id": commit.commit_id,
+                         "parents": commit.parent_ids, "author": commit.author},
                 action=f"commit: {commit.subject}",
-                observation={
-                    "subject": commit.subject,
-                    "files_changed": commit.files_changed,
-                    "insertions": commit.insertions,
-                    "deletions": commit.deletions,
-                },
-                outcome=Outcome(
-                    "neutral",
-                    "commit observed; effectiveness requires subsequent evidence",
-                ),
+                observation={"subject": commit.subject, "files_changed": commit.files_changed,
+                             "insertions": commit.insertions, "deletions": commit.deletions},
+                outcome=Outcome("neutral", "commit observed; effectiveness requires subsequent evidence"),
                 occurred_at=commit.authored_at,
             )
             experiences.append(self._recorder.record(event))
@@ -157,5 +150,4 @@ class GitHistoryIngestor:
         return tuple(experiences)
 
     def ingested_commit_ids(self) -> frozenset[str]:
-        """Return commit IDs already converted into experiences by this ingestor."""
         return frozenset(self._ingested)
