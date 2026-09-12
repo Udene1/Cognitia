@@ -1,9 +1,9 @@
 """Extract language-independent computational structure from source code.
 
 The extractor deliberately reasons from executable structure (AST nodes, data
-flow, control flow, and collection/reduction relationships), not from comments
-or commit messages. The representation is a hypothesis about computation, not
-proof of semantic equivalence.
+data flow, control flow, and collection/reduction relationships), not from
+comments or commit messages. The representation is a hypothesis about
+computation, not proof of semantic equivalence.
 """
 from __future__ import annotations
 
@@ -56,12 +56,15 @@ class PythonCodeInterpreter:
             if isinstance(node, (ast.For, ast.While)):
                 has_loop = True
                 control_flow.append("iteration")
-                if any(isinstance(parents.get(id(node)), (ast.For, ast.While)) for _ in (0,)):
+                parent = parents.get(id(node))
+                if isinstance(parent, (ast.For, ast.While)):
                     has_nested_iteration = True
             elif isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
                 control_flow.append("comprehension")
                 if isinstance(node, ast.DictComp):
                     has_dict_comprehension = True
+                    if any(isinstance(item, ast.GeneratorExp) for item in ast.walk(node.value)):
+                        has_nested_iteration = True
                 if len(node.generators) > 1:
                     has_nested_iteration = True
             elif isinstance(node, ast.If):
@@ -174,22 +177,23 @@ class PythonCodeInterpreter:
 
     @staticmethod
     def _has_cross_scope_key_dependency(tree: ast.AST) -> bool:
-        """Detect an outer-key dependency inside a nested reduction predicate.
-
-        This uses AST structure rather than domain-specific field names: a
-        dictionary-comprehension key is related to a nested generator predicate
-        when that predicate references the comprehension's key expression.
-        """
+        """Detect an outer-key dependency inside a nested reduction predicate."""
         for node in ast.walk(tree):
             if not isinstance(node, ast.DictComp) or not isinstance(node.key, ast.Name):
                 continue
             key_name = node.key.id
+            nested_generators = [item for item in ast.walk(node.value) if isinstance(item, ast.GeneratorExp)]
+            for generator in nested_generators:
+                if any(
+                    isinstance(item, ast.Name) and item.id == key_name
+                    for item in ast.walk(generator)
+                    if item is not generator
+                ):
+                    return True
             for generator in node.generators:
                 if any(isinstance(item, ast.Name) and item.id == key_name for item in ast.walk(generator.iter)):
                     return True
                 for condition in generator.ifs:
                     if any(isinstance(item, ast.Name) and item.id == key_name for item in ast.walk(condition)):
                         return True
-            if any(isinstance(item, ast.Name) and item.id == key_name for item in ast.walk(node.value)):
-                return True
         return False
