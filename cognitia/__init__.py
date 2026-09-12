@@ -10,6 +10,7 @@ from .candidate_registry import CandidateRecord, CandidateRegistry, CandidateSta
 from .capability_acquisition import AcquisitionMode, CapabilityCandidate, Operation, ReasoningTrace, compose_capability, construct_capability, learn_procedure
 from .cognitive_history import CognitiveHistory, EvaluationRecord, PromotionEvent, evaluation_from_comparison
 from .engineering import EngineeringEvent, EngineeringExperienceRecorder, engineering_memory
+from .durable import DurableEvent, SQLiteCognitiveJournal
 from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureClass, FailureObservation
 from .git_environment import GitCommitObservation, GitEnvironmentError, GitHistoryIngestor, GitRepositoryObserver
 from .learning import PersistentPatternLearner
@@ -31,6 +32,7 @@ __all__ = [
     "CapabilityRecord", "CognitiveBuild", "create_build",
     "CognitiveHistory", "EvaluationRecord", "PromotionEvent", "evaluation_from_comparison",
     "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory",
+    "DurableEvent", "SQLiteCognitiveJournal",
     "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver",
     "GitKnowledgeIngestor", "PersistentPatternLearner",
     "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis",
