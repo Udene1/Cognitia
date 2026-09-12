@@ -69,7 +69,7 @@ class GitRepositoryObserver:
         args = [
             "log",
             "--date=iso-strict",
-            "--format=%H%x1f%P%x1f%an%x1f%aI%x1f%s%x1e",
+            "--format=%x1e%H%x1f%P%x1f%an%x1f%aI%x1f%s",
             "--shortstat",
         ]
         if limit is not None:
@@ -77,8 +77,6 @@ class GitRepositoryObserver:
         output = self._run(args)
         observations: list[GitCommitObservation] = []
         for record in output.split("\x1e"):
-            if not record.strip():
-                continue
             lines = [line for line in record.splitlines() if line.strip()]
             if not lines:
                 continue
@@ -86,12 +84,16 @@ class GitRepositoryObserver:
             if len(fields) != 5:
                 raise GitEnvironmentError("unexpected git log record")
             stats = lines[1] if len(lines) > 1 else ""
+            try:
+                authored_at = datetime.fromisoformat(fields[3])
+            except ValueError as exc:
+                raise GitEnvironmentError("invalid git commit timestamp") from exc
             observations.append(
                 GitCommitObservation(
                     commit_id=fields[0],
                     parent_ids=tuple(fields[1].split()) if fields[1] else (),
                     author=fields[2],
-                    authored_at=datetime.fromisoformat(fields[3]),
+                    authored_at=authored_at,
                     subject=fields[4],
                     files_changed=_stat_value(stats, r"file(?:s)? changed"),
                     insertions=_stat_value(stats, r"insertion(?:s)?"),
