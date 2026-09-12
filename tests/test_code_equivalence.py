@@ -22,12 +22,27 @@ def aggregate(entries):
     return totals
 '''
 
+IMPLEMENTATION_C = '''
+def declarative(records):
+    keys = {record["customer"] for record in records}
+    return {
+        key: sum(record["cost"] for record in records if record["customer"] == key)
+        for key in keys
+    }
+'''
+
 
 def test_independently_written_grouped_aggregations_share_structure():
     match = CodeStructureComparator().compare(IMPLEMENTATION_A, IMPLEMENTATION_B)
     assert match.equivalent_family
     assert "iterate records" in match.shared_operations
     assert "iteration" in match.shared_control_flow
+    assert match.confidence > 0.5
+
+
+def test_different_syntax_with_same_reduction_structure_is_grouped():
+    match = CodeStructureComparator().compare(IMPLEMENTATION_A, IMPLEMENTATION_C)
+    assert match.equivalent_family
     assert match.confidence > 0.5
 
 
