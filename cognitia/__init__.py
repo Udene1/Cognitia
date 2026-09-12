@@ -15,6 +15,12 @@ from .benchmark import (
     CaseResult,
     compare_builds,
 )
+from .regression import (
+    PromotionDecision,
+    RegressionFinding,
+    RegressionPolicy,
+    evaluate_promotion,
+)
 
 __version__ = "0.1.0"
 
@@ -30,5 +36,9 @@ __all__ = [
     "BuildComparison",
     "CaseResult",
     "compare_builds",
+    "PromotionDecision",
+    "RegressionFinding",
+    "RegressionPolicy",
+    "evaluate_promotion",
     "__version__",
 ]
