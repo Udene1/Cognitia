@@ -32,7 +32,7 @@ def test_solution_knowledge_survives_a_new_store_instance(tmp_path) -> None:
     recovered = fresh_learner.candidates()
 
     assert len(recovered) == 1
-    assert recovered[0].value["logic"] == (
+    assert tuple(recovered[0].value["logic"]) == (
         "partition records by key",
         "combine values within each partition",
         "return one result per key",
