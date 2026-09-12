@@ -8,9 +8,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Mapping
+from typing import Mapping, Protocol
+from uuid import uuid4
 
-from .memory.experience import Experience, Outcome
+from .memory.experience import Experience, ExperienceStore, Outcome
+
+
+class ExperienceRecorder(Protocol):
+    """Minimal storage contract required by engineering ingestion."""
+
+    def record(self, experience: Experience) -> Experience: ...
 
 
 @dataclass(frozen=True)
@@ -22,7 +29,7 @@ class EngineeringEvent:
     action: str
     observation: Mapping[str, object]
     outcome: Outcome
-    id: str = field(default="")
+    id: str = field(default_factory=lambda: str(uuid4()))
     occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __post_init__(self) -> None:
@@ -38,8 +45,7 @@ class EngineeringEvent:
         context = dict(self.context)
         context["environment"] = "engineering"
         context["event_kind"] = self.kind
-        if self.id:
-            context["event_id"] = self.id
+        context["event_id"] = self.id
         return Experience(
             context=context,
             action=self.action,
@@ -52,7 +58,7 @@ class EngineeringEvent:
 class EngineeringExperienceRecorder:
     """Bridge engineering observations into the existing append-only experience memory."""
 
-    def __init__(self, store) -> None:
+    def __init__(self, store: ExperienceRecorder) -> None:
         self._store = store
 
     def record(self, event: EngineeringEvent) -> Experience:
@@ -80,3 +86,9 @@ class EngineeringExperienceRecorder:
                 occurred_at=occurred_at or datetime.now(timezone.utc),
             )
         )
+
+
+def engineering_memory() -> tuple[ExperienceStore, EngineeringExperienceRecorder]:
+    """Create the default in-memory engineering environment for experiments."""
+    store = ExperienceStore()
+    return store, EngineeringExperienceRecorder(store)
