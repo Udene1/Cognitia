@@ -71,16 +71,19 @@ def compare_prediction(
     A prediction agrees when its absolute error does not exceed the explicit
     acceptance bound. A zero bound therefore requires exact equality, while
     real measurements can specify a physically meaningful tolerance.
+
+    Error values are kept at full floating-point precision so callers can
+    reason from the actual ratio rather than a presentation-rounded value.
     """
     if not math.isfinite(predicted):
         raise ValueError("predicted value must be finite")
     if not model.strip():
         raise ValueError("model is required")
 
-    error = round(abs(predicted - observed.value), 12)
+    error = abs(predicted - observed.value)
     bound = observed.acceptance_bound
     verdict = PredictionVerdict.AGREEMENT if error <= bound else PredictionVerdict.DISCREPANCY
-    normalized = None if bound == 0 else round(error / bound, 12)
+    normalized = None if bound == 0 else error / bound
     return PredictionError(
         predicted=predicted,
         observed=observed,
