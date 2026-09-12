@@ -22,9 +22,10 @@ def test_event_survives_store_recreation(tmp_path):
 
     with SQLiteCognitiveJournal(path) as reopened:
         recovered = reopened.all()
+        by_kind = reopened.by_kind("hypothesis_revision")
 
     assert recovered == (event,)
-    assert reopened.by_kind("hypothesis_revision") == (event,)
+    assert by_kind == (event,)
 
 
 def test_append_many_is_atomic_for_serializable_events(tmp_path):
