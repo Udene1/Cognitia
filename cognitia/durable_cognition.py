@@ -14,6 +14,8 @@ from .build import CognitiveBuild
 from .candidate_registry import CandidateRecord
 from .cognitive_history import EvaluationRecord
 from .durable import DurableEvent, SQLiteCognitiveJournal
+from .learning.scientific import Hypothesis, TestResult
+from .self_model import CapabilityOutcome
 
 
 class DurableCognitiveLedger:
@@ -85,6 +87,60 @@ class DurableCognitiveLedger:
         )
         return self.journal.append(event)
 
+    def record_hypothesis(self, hypothesis: Hypothesis) -> DurableEvent:
+        return self.journal.append(
+            DurableEvent(
+                kind="hypothesis_state",
+                source="scientific_reasoning",
+                payload={
+                    "id": hypothesis.id,
+                    "proposition": hypothesis.proposition,
+                    "domain": hypothesis.domain,
+                    "confidence": hypothesis.confidence,
+                    "status": hypothesis.status,
+                    "support_count": hypothesis.support_count,
+                    "challenge_count": hypothesis.challenge_count,
+                    "inconclusive_count": hypothesis.inconclusive_count,
+                    "tested_conditions": list(hypothesis.tested_conditions),
+                },
+            )
+        )
+
+    def record_test_result(self, result: TestResult, *, hypothesis_id: str) -> DurableEvent:
+        if not hypothesis_id.strip():
+            raise ValueError("hypothesis_id is required")
+        return self.journal.append(
+            DurableEvent(
+                kind="hypothesis_test",
+                source="scientific_evaluator",
+                payload={
+                    "hypothesis_id": hypothesis_id,
+                    "id": result.id,
+                    "verdict": result.verdict,
+                    "predicted": result.predicted,
+                    "observed": result.observed,
+                    "condition": result.condition,
+                    "reliability": result.reliability,
+                    "explanation": result.explanation,
+                    "tested_at": result.tested_at.isoformat(),
+                },
+            )
+        )
+
+    def record_capability_outcome(self, outcome: CapabilityOutcome) -> DurableEvent:
+        return self.journal.append(
+            DurableEvent(
+                kind="capability_outcome",
+                source="self_model",
+                payload={
+                    "capability": outcome.capability,
+                    "successful": outcome.successful,
+                    "context": outcome.context,
+                    "failure_mode": outcome.failure_mode,
+                },
+            )
+        )
+
     def candidate_snapshots(self) -> tuple[dict[str, Any], ...]:
         return tuple(event.payload for event in self.journal.by_kind("candidate_state"))
 
@@ -93,3 +149,12 @@ class DurableCognitiveLedger:
 
     def builds(self) -> tuple[dict[str, Any], ...]:
         return tuple(event.payload for event in self.journal.by_kind("cognitive_build"))
+
+    def hypotheses(self) -> tuple[dict[str, Any], ...]:
+        return tuple(event.payload for event in self.journal.by_kind("hypothesis_state"))
+
+    def hypothesis_tests(self) -> tuple[dict[str, Any], ...]:
+        return tuple(event.payload for event in self.journal.by_kind("hypothesis_test"))
+
+    def capability_outcomes(self) -> tuple[dict[str, Any], ...]:
+        return tuple(event.payload for event in self.journal.by_kind("capability_outcome"))
