@@ -20,6 +20,7 @@ from .capability_acquisition import (
     construct_capability,
     learn_procedure,
 )
+from .failure_analysis import CapabilityGapDiagnosis
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,33 @@ class CapabilityGapSignal:
             raise ValueError("capability names are required")
         if not self.representation.strip():
             raise ValueError("representation is required")
+
+    @classmethod
+    def from_diagnosis(
+        cls,
+        diagnosis: CapabilityGapDiagnosis,
+        *,
+        candidate_name: str | None = None,
+        representation: str | None = None,
+        traces: Sequence[ReasoningTrace] = (),
+        operation_sequence: Sequence[str] = (),
+        allow_construction: bool = False,
+    ) -> "CapabilityGapSignal":
+        """Promote a diagnosed failure into an actionable acquisition signal.
+
+        The diagnosis identifies *what* machinery appears missing; this signal
+        adds the representation and evidence needed to decide *how* to acquire
+        it. Construction remains explicitly opt-in.
+        """
+        capability = candidate_name or diagnosis.capability
+        return cls(
+            required_capability=diagnosis.capability,
+            candidate_name=capability,
+            representation=representation or diagnosis.capability,
+            operation_sequence=tuple(operation_sequence),
+            traces=tuple(traces),
+            allow_construction=allow_construction,
+        )
 
 
 @dataclass(frozen=True)
