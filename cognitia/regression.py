@@ -3,14 +3,27 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Iterable
 
 from .benchmark import BenchmarkResult, BuildComparison, compare_builds
 
 
+class CandidateDisposition(str, Enum):
+    """What Cognitia should do with a candidate after evaluation."""
+
+    ACCEPT = "accept"
+    HOLD_FOR_BALANCING = "hold_for_balancing"
+
+
 @dataclass(frozen=True)
 class RegressionPolicy:
-    """Promotion policy protecting existing capabilities."""
+    """Promotion policy protecting existing capabilities.
+
+    Regression blocks promotion by default, but it never discards the
+    candidate. A blocked candidate remains available for further balancing,
+    repair, and re-evaluation.
+    """
 
     max_regression: float = 0.0
     minimum_new_capability_improvement: float = 0.0
@@ -36,6 +49,8 @@ class PromotionDecision:
     primary: BuildComparison
     findings: tuple[RegressionFinding, ...]
     reason: str
+    disposition: CandidateDisposition
+    retain_candidate: bool = True
 
 
 def evaluate_promotion(
@@ -45,7 +60,13 @@ def evaluate_promotion(
     protected_candidate: Iterable[BenchmarkResult],
     policy: RegressionPolicy | None = None,
 ) -> PromotionDecision:
-    """Determine whether a candidate improved without unacceptable regressions."""
+    """Evaluate promotion without throwing away useful candidate capabilities.
+
+    A regression is a reason to delay merging a candidate into the active
+    cognitive build, not a reason to delete the candidate. This preserves the
+    new capability so Cognitia can balance, repair, or selectively integrate it
+    before promotion.
+    """
     policy = policy or RegressionPolicy()
     primary = compare_builds(baseline_primary, candidate_primary)
     if primary.improvement < policy.minimum_new_capability_improvement:
@@ -54,6 +75,7 @@ def evaluate_promotion(
             primary,
             (),
             "new capability did not meet the minimum improvement threshold",
+            CandidateDisposition.HOLD_FOR_BALANCING,
         )
 
     baseline = tuple(protected_baseline)
@@ -80,7 +102,8 @@ def evaluate_promotion(
             False,
             primary,
             tuple(findings),
-            "candidate regresses a protected capability beyond policy tolerance",
+            "candidate regresses a protected capability beyond policy tolerance; hold candidate for balancing",
+            CandidateDisposition.HOLD_FOR_BALANCING,
         )
 
     return PromotionDecision(
@@ -88,4 +111,5 @@ def evaluate_promotion(
         primary,
         tuple(findings),
         "candidate improved the target capability without unacceptable regressions",
+        CandidateDisposition.ACCEPT,
     )
