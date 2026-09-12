@@ -1,5 +1,6 @@
 """Foundational physical models used by Cognitia for prediction and testing."""
 
+from .dynamics import DynamicsPrediction, NewtonianDynamics
 from .mechanics import KinematicState, KinematicsModel, Prediction
 from .newton import NewtonPrediction, NewtonianModel
 from .quantities import (
@@ -15,18 +16,7 @@ from .quantities import (
 )
 
 __all__ = [
-    "ACCELERATION",
-    "DIMENSIONLESS",
-    "FORCE",
-    "LENGTH",
-    "MASS",
-    "TIME",
-    "VELOCITY",
-    "Dimension",
-    "KinematicState",
-    "KinematicsModel",
-    "Prediction",
-    "NewtonPrediction",
-    "NewtonianModel",
-    "Quantity",
+    "ACCELERATION", "DIMENSIONLESS", "FORCE", "LENGTH", "MASS", "TIME", "VELOCITY",
+    "Dimension", "Quantity", "KinematicState", "KinematicsModel", "Prediction",
+    "NewtonPrediction", "NewtonianModel", "DynamicsPrediction", "NewtonianDynamics",
 ]
