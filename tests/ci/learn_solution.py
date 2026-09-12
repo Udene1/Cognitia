@@ -20,7 +20,7 @@ def main() -> None:
     experiences = [
         Experience(
             context={
-                "solution_problem": "aggregate records by key",
+                "solution_problem": "sum transaction amounts by account",
                 "solution_logic": (
                     "partition records by key",
                     "combine values within each partition",
@@ -28,6 +28,7 @@ def main() -> None:
                 ),
                 "solution_implementation": "partition_then_reduce",
                 "solution_language": "python",
+                "problem_signature": ("group_by_key", "sum_values"),
                 "data_shape": "batch",
             },
             action="implement transaction aggregation",
@@ -36,7 +37,7 @@ def main() -> None:
         ),
         Experience(
             context={
-                "solution_problem": "aggregate records by key",
+                "solution_problem": "sum transaction amounts by account",
                 "solution_logic": (
                     "partition records by key",
                     "combine values within each partition",
@@ -44,6 +45,7 @@ def main() -> None:
                 ),
                 "solution_implementation": "partition_then_reduce",
                 "solution_language": "python",
+                "problem_signature": ("group_by_key", "sum_values"),
                 "data_shape": "batch",
             },
             action="implement transaction aggregation",
