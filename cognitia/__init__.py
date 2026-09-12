@@ -22,6 +22,7 @@ from .benchmark import (
     compare_builds,
 )
 from .build import CapabilityRecord, CognitiveBuild, create_build
+from .candidate_pipeline import CandidateEvaluation, benchmark_candidate, evaluate_candidate
 from .capability_acquisition import (
     AcquisitionMode,
     CapabilityCandidate,
@@ -56,6 +57,9 @@ __all__ = [
     "compose_capability",
     "construct_capability",
     "learn_procedure",
+    "CandidateEvaluation",
+    "benchmark_candidate",
+    "evaluate_candidate",
     "BenchmarkCase",
     "BenchmarkOutcome",
     "BenchmarkResult",
