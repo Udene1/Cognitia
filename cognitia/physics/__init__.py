@@ -1,6 +1,7 @@
 """Foundational physical models used by Cognitia for prediction and testing."""
 
 from .mechanics import KinematicState, KinematicsModel, Prediction
+from .newton import NewtonPrediction, NewtonianModel
 from .quantities import (
     ACCELERATION,
     DIMENSIONLESS,
@@ -25,5 +26,7 @@ __all__ = [
     "KinematicState",
     "KinematicsModel",
     "Prediction",
+    "NewtonPrediction",
+    "NewtonianModel",
     "Quantity",
 ]
