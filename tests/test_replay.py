@@ -48,7 +48,7 @@ def test_replay_reconstructs_active_hypothesis_and_capability_history(tmp_path):
     assert state.capability_history.failure_modes("simulation") == (
         "insufficient_precision",
     )
-    assert state.replayed_events == 3
+    assert state.replayed_events == 4
 
 
 def test_replay_does_not_execute_persisted_candidate_code(tmp_path):
@@ -60,6 +60,7 @@ def test_replay_does_not_execute_persisted_candidate_code(tmp_path):
         name="stored-candidate",
         mode=AcquisitionMode.LEARN_PROCEDURE,
         operations=("aggregate",),
+        implementation=lambda value: value,
         representation="group_by_reduce",
         source_trace_ids=("trace-1",),
         code_artifact="raise RuntimeError('must never execute')",
