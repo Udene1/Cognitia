@@ -71,7 +71,11 @@ class PythonCodeInterpreter:
             elif isinstance(node, ast.If):
                 control_flow.append("conditional")
                 has_filter = True
-                if any(isinstance(item, ast.Subscript) for item in ast.walk(node.body)):
+                if any(
+                    isinstance(item, ast.Subscript)
+                    for statement in node.body
+                    for item in ast.walk(statement)
+                ):
                     has_conditional_key_initialization = True
             elif isinstance(node, ast.Return):
                 has_return = True
