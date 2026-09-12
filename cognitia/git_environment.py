@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+import re
 import subprocess
 from typing import Sequence
 
@@ -92,21 +93,17 @@ class GitRepositoryObserver:
                     author=fields[2],
                     authored_at=datetime.fromisoformat(fields[3]),
                     subject=fields[4],
-                    files_changed=_stat_value(stats, "file", "files"),
-                    insertions=_stat_value(stats, "insertion", "insertions"),
-                    deletions=_stat_value(stats, "deletion", "deletions"),
+                    files_changed=_stat_value(stats, r"file(?:s)? changed"),
+                    insertions=_stat_value(stats, r"insertion(?:s)?"),
+                    deletions=_stat_value(stats, r"deletion(?:s)?"),
                 )
             )
         return tuple(observations)
 
 
-def _stat_value(stats: str, singular: str, plural: str) -> int:
-    for token in stats.replace(",", "").split():
-        if token.endswith(singular) or token.endswith(plural):
-            number = token.split(singular)[0].split(plural)[0]
-            if number.isdigit():
-                return int(number)
-    return 0
+def _stat_value(stats: str, label_pattern: str) -> int:
+    match = re.search(rf"(\d+)\s+{label_pattern}", stats)
+    return int(match.group(1)) if match else 0
 
 
 class GitHistoryIngestor:
