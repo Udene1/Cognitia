@@ -18,6 +18,7 @@ from .learning import PersistentPatternLearner
 from .git_knowledge import GitKnowledgeIngestor
 from .learning.transfer import TransferAssessment, assess_transfer
 from .promotion import CognitivePromotionOrchestrator, PromotionEvaluation
+from .replay import CognitiveStateReplayer, RecoveredCognitiveState
 from .regression import CandidateDisposition, PromotionDecision, RegressionFinding, RegressionPolicy, evaluate_promotion
 from .verification import VerificationOutcome, VerificationPlan, VerificationResult, VerificationStep, execute_plan
 
@@ -34,6 +35,7 @@ __all__ = [
     "CognitiveHistory", "EvaluationRecord", "PromotionEvent", "evaluation_from_comparison",
     "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory",
     "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger",
+    "CognitiveStateReplayer", "RecoveredCognitiveState",
     "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver",
     "GitKnowledgeIngestor", "PersistentPatternLearner",
     "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis",
