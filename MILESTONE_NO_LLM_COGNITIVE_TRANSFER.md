@@ -146,6 +146,66 @@ Cognitia now receives the executable implementation instead of its explanation. 
 
 This is the first milestone where the experiment removes the explicit solution-logic label from training.
 
+### Stage 3 — Git-environment source discovery
+
+Cognitia no longer needs the training source to be handed directly to the learning script. The Git environment observer discovers tracked Python source through `GitRepositoryObserver.python_sources()`. The discovered source is then interpreted and persisted.
+
+A fresh process subsequently solves the target problem using only the persisted Git-derived knowledge; it does not reload the training source.
+
+The observed CI path was:
+
+```text
+Git repository
+    -> GitRepositoryObserver.python_sources()
+    -> PythonCodeInterpreter
+    -> computational representation
+    -> persistent knowledge
+    -> fresh process
+    -> retrieve pattern
+    -> execute on new data
+    -> verify result
+```
+
+The CI experiment produced `GIT_SOURCE_LEARNING_SUCCESS` followed by `GIT_DERIVED_TRANSFER_SUCCESS`.
+
+This matters because the repository has now become an environment Cognitia can observe rather than a fixture from which the test directly hands Cognitia its source.
+
+### Stage 4 — cross-domain conceptual transfer
+
+The next experiment raises the bar beyond numeric aggregation.
+
+The training source is an engineering decision policy about balancing a newly acquired capability against a regression. Cognitia discovers that source through the Git observer and extracts an abstract decision pattern:
+
+```text
+evaluate competing outcomes
+    -> preserve the baseline when an improvement carries a regression
+    -> adopt the improvement when the regression is resolved
+```
+
+A fresh process is then given an economics problem involving a policy that improves growth but worsens inflation risk. The source code and engineering domain are unavailable in that process. Cognitia maps the new problem to the learned abstract family and applies the transferred decision structure.
+
+The test also includes held-out cases so agreement is not established from only one scenario.
+
+The intended CI evidence is:
+
+```text
+SOURCE_DISCOVERY_PATH: GitRepositoryObserver.python_sources
+INFERRED_FAMILY: tradeoff_balance
+CROSS_DOMAIN_CONCEPT_LEARNED
+TARGET_SIGNATURE: ('tradeoff_balance',)
+ECONOMIC_DECISION: hold_for_balancing
+HELD_OUT_CASES: 2
+CROSS_DOMAIN_TRANSFER_SUCCESS
+```
+
+This is a more meaningful test than asking Cognitia to repeat the same arithmetic in a different wording. It tests whether a computational decision structure learned in one domain can be applied to a structurally analogous problem in another domain.
+
+It is still a controlled experiment, not proof of general reasoning. The target-domain interpreter and decision executor remain bounded and explicitly engineered. The next challenge is to make those abstractions increasingly discoverable and verifiable rather than adding domain-specific mappings.
+
 ## Principle
 
 > **Do not give Cognitia the abstraction if Cognitia is supposed to learn the abstraction. Give it evidence from which the abstraction can be earned.**
+
+And the stronger version now guiding the next phase:
+
+> **Do not test whether Cognitia remembers the answer. Test whether it can recover the underlying structure and transfer that structure where the surface changes.**
