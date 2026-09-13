@@ -10,6 +10,7 @@ from math import log2
 from typing import Iterable
 
 from .discovery import ExplanatoryGap
+from .discovery_failures import DiscoveryFailureLearner
 from .discovery_structure import StructuralAlternative, StructuralHypothesisBuilder, StructuralModel
 from .learning.hypothesis_search import HypothesisSearchLearner, SearchStrategy
 from .memory.experience import Experience
@@ -35,31 +36,21 @@ class SearchBudget:
 
 
 class DiscoverySearchEngine:
-    """Explore a bounded hypothesis space with explicit derivation traces.
+    """Explore a bounded hypothesis space with learned success/failure pressure."""
 
-    Multi-step candidates are represented as transformation paths over the same
-    starting model. They are hypotheses, not executable model mutations.
-    """
-
-    def __init__(self, learner: HypothesisSearchLearner | None = None) -> None:
+    def __init__(self, learner: HypothesisSearchLearner | None = None, failure_learner: DiscoveryFailureLearner | None = None) -> None:
         self.learner = learner or HypothesisSearchLearner()
+        self.failure_learner = failure_learner or DiscoveryFailureLearner()
 
-    def search(
-        self,
-        model: StructuralModel,
-        *,
-        gap: ExplanatoryGap | None = None,
-        budget: SearchBudget | None = None,
-        experiences: Iterable[Experience] = (),
-    ) -> tuple[SearchCandidate, ...]:
+    def search(self, model: StructuralModel, *, gap: ExplanatoryGap | None = None,
+               budget: SearchBudget | None = None, experiences: Iterable[Experience] = ()) -> tuple[SearchCandidate, ...]:
         budget = budget or SearchBudget()
         strategies = self.learner.rank(experiences)
         base = StructuralHypothesisBuilder().build(model)
         if not base:
             return ()
-
         ranked: list[SearchCandidate] = []
-        frontier: list[tuple[tuple[StructuralAlternative, ...], float]] = [ ((), 0.0) ]
+        frontier: list[tuple[tuple[StructuralAlternative, ...], float]] = [((), 0.0)]
         visited: set[str] = {model.id}
         for depth in range(1, budget.max_depth + 1):
             next_frontier: list[tuple[tuple[StructuralAlternative, ...], float]] = []
@@ -72,9 +63,9 @@ class DiscoverySearchEngine:
                     if fingerprint in visited:
                         continue
                     visited.add(fingerprint)
-                    new_score = score + self._score(alternative, strategies) / depth
-                    candidate = self._path_candidate(model, new_trace, new_score, depth, gap)
-                    ranked.append(candidate)
+                    utility = self._score(alternative, strategies)
+                    new_score = score + max(0.0, utility - self.failure_learner.penalty(alternative.operation)) / depth
+                    ranked.append(self._path_candidate(model, new_trace, new_score, depth, gap))
                     next_frontier.append((new_trace, new_score))
                     if len(ranked) >= budget.max_candidates:
                         break
@@ -87,49 +78,31 @@ class DiscoverySearchEngine:
 
     @staticmethod
     def _path_fingerprint(model: StructuralModel, trace: tuple[StructuralAlternative, ...]) -> str:
-        payload = model.id + "|" + "|".join(item.id for item in trace)
-        return sha256(payload.encode()).hexdigest()[:24]
+        return sha256((model.id + "|" + "|".join(item.id for item in trace)).encode()).hexdigest()[:24]
 
     @classmethod
-    def _path_candidate(
-        cls, model: StructuralModel, trace: tuple[StructuralAlternative, ...], score: float,
-        depth: int, gap: ExplanatoryGap | None,
-    ) -> SearchCandidate:
+    def _path_candidate(cls, model, trace, score, depth, gap):
         last = trace[-1]
-        cid = "path-" + cls._path_fingerprint(model, trace)[:16]
         alternative = StructuralAlternative(
-            id=cid,
-            source_model=model.id,
-            operation="compose:" + "+".join(item.operation for item in trace),
-            target=last.target,
+            id="path-" + cls._path_fingerprint(model, trace)[:16], source_model=model.id,
+            operation="compose:" + "+".join(item.operation for item in trace), target=last.target,
             changed_structure=" then ".join(item.changed_structure for item in trace),
-            epistemic_status="hypothesis",
-            novelty_status="unassessed",
+            epistemic_status="hypothesis", novelty_status="unassessed",
         )
-        return SearchCandidate(
-            candidate=alternative,
-            search_score=score,
-            depth=depth,
-            derivation=tuple(item.id for item in trace),
-            novelty_evidence="candidate-diff-from-current-model" if gap is not None else "unassessed",
-        )
+        return SearchCandidate(alternative, score, depth, tuple(item.id for item in trace),
+                               "candidate-diff-from-current-model" if gap is not None else "unassessed")
 
     @staticmethod
     def _score(item: StructuralAlternative, strategies: tuple[SearchStrategy, ...]) -> float:
-        operation = item.operation
         for strategy in strategies:
-            if strategy.transform.value in operation or DiscoverySearchEngine._transform_operation(strategy.transform.value) == operation:
+            if strategy.transform.value in item.operation or DiscoverySearchEngine._transform_operation(strategy.transform.value) == item.operation:
                 return strategy.success_rate * (1.0 + min(strategy.observations, 10) / 10.0)
         return 0.0
 
     @staticmethod
     def _transform_operation(transform: str) -> str:
-        return {
-            "add_missing_variable": "add_dependency",
-            "relax_assumption": "change_constraint",
-            "reverse_assumption": "reverse_relation",
-            "partition_context": "add_dependency",
-        }.get(transform, transform)
+        return {"add_missing_variable": "add_dependency", "relax_assumption": "change_constraint",
+                "reverse_assumption": "reverse_relation", "partition_context": "add_dependency"}.get(transform, transform)
 
 
 def normalized_entropy(probabilities: tuple[float, ...]) -> float:
