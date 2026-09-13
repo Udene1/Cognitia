@@ -78,6 +78,8 @@ jobs:
         run: python tests/ci/discovery_search_engine.py
       - name: Exercise full discovery research batch
         run: python tests/ci/discovery_research_batch.py
+      - name: Exercise parallel multi-environment investigation
+        run: python tests/ci/parallel_investigation.py
       - name: Exercise validated-knowledge persistence
         run: |
           rm -rf .ci/validated-knowledge
