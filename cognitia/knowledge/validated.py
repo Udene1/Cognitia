@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..durable import DurableEvent, SQLiteCognitiveJournal
-from .model import KnowledgeItem
+from ..learning.scientific import Hypothesis, TestResult
+from .model import KnowledgeItem, KnowledgeSource
 
 
 @dataclass(frozen=True)
@@ -39,12 +40,9 @@ class ValidatedKnowledgeStore:
         self.min_reliability = min_reliability
 
     def record_test(self, test: KnowledgeTest) -> DurableEvent:
-        return self.journal.append(DurableEvent(
-            kind="knowledge_test",
-            source="knowledge_validation",
+        return self.journal.append(DurableEvent(kind="knowledge_test", source="knowledge_validation",
             payload={"id": test.id, "knowledge_id": test.knowledge_id, "passed": test.passed,
-                     "reliability": test.reliability, "challenge": test.challenge},
-        ))
+                     "reliability": test.reliability, "challenge": test.challenge}))
 
     def promote(self, item: KnowledgeItem, tests: tuple[KnowledgeTest, ...]) -> DurableEvent:
         if not tests:
@@ -53,21 +51,47 @@ class ValidatedKnowledgeStore:
             raise ValueError("all tests must reference the knowledge item")
         if any(not test.passed or test.challenge or test.reliability < self.min_reliability for test in tests):
             raise ValueError("knowledge has not survived its validation requirements")
-        # Persist the tests and the resulting durable knowledge atomically in one journal transaction.
-        events = [DurableEvent(
-            kind="knowledge_test", source="knowledge_validation",
-            payload={"id": t.id, "knowledge_id": t.knowledge_id, "passed": t.passed,
-                     "reliability": t.reliability, "challenge": t.challenge},
-        ) for t in tests]
-        events.append(DurableEvent(
-            kind="validated_knowledge", source="knowledge_validation",
-            payload={"id": item.id, "subject": item.subject, "predicate": item.predicate,
-                     "value": item.value, "source_kind": item.source.kind,
-                     "source_reference": item.source.reference, "source_reliability": item.source.reliability,
-                     "scope": item.scope, "test_ids": [t.id for t in tests],
-                     "validation": "survived_explicit_tests"},
-        ))
+        events = [DurableEvent(kind="knowledge_test", source="knowledge_validation", payload={
+            "id": t.id, "knowledge_id": t.knowledge_id, "passed": t.passed,
+            "reliability": t.reliability, "challenge": t.challenge}) for t in tests]
+        events.append(self._knowledge_event(item, [t.id for t in tests]))
         return self.journal.append_many(events)[-1]
+
+    def promote_hypothesis(
+        self,
+        hypothesis: Hypothesis,
+        tests: tuple[TestResult, ...],
+        *,
+        source: KnowledgeSource,
+        scope: str = "validated",
+    ) -> DurableEvent:
+        """Promote a scientific hypothesis only after all supplied tests support it."""
+        if not tests:
+            raise ValueError("a hypothesis requires test evidence before promotion")
+        if hypothesis.status not in {"supported", "mixed"}:
+            raise ValueError("hypothesis is not in a promotable epistemic state")
+        if any(test.verdict != "supported" or test.reliability < self.min_reliability for test in tests):
+            raise ValueError("hypothesis has not survived all required tests")
+        item = KnowledgeItem(
+            subject=hypothesis.domain or "general",
+            predicate="supports",
+            value=hypothesis.proposition,
+            source=source,
+            id="knowledge:" + hypothesis.id,
+            scope=scope,
+        )
+        knowledge_tests = tuple(KnowledgeTest(
+            id=test.id, knowledge_id=item.id, passed=True, reliability=test.reliability
+        ) for test in tests)
+        return self.promote(item, knowledge_tests)
+
+    @staticmethod
+    def _knowledge_event(item: KnowledgeItem, test_ids: list[str]) -> DurableEvent:
+        return DurableEvent(kind="validated_knowledge", source="knowledge_validation", payload={
+            "id": item.id, "subject": item.subject, "predicate": item.predicate, "value": item.value,
+            "source_kind": item.source.kind, "source_reference": item.source.reference,
+            "source_reliability": item.source.reliability, "scope": item.scope,
+            "test_ids": test_ids, "validation": "survived_explicit_tests"})
 
     def all(self) -> tuple[dict[str, Any], ...]:
         return tuple(event.payload for event in self.journal.by_kind("validated_knowledge"))
