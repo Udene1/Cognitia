@@ -25,41 +25,56 @@ class Experiment:
 
 
 class DiscriminatingExperimentSelector:
-    """Prefer tests where competing hypotheses make different predictions."""
+    """Prefer tests whose outcomes reduce uncertainty between hypotheses."""
 
-    def select(self, predictions: tuple[Prediction, ...]) -> Experiment | None:
+    def select(
+        self,
+        predictions: tuple[Prediction, ...],
+        *,
+        priors: tuple[float, ...] | None = None,
+    ) -> Experiment | None:
         if len(predictions) < 2:
             return None
-
-        compatible: list[tuple[Prediction, Prediction]] = []
+        if priors is not None and len(priors) != len(predictions):
+            raise ValueError("priors must match prediction count")
+        compatible = []
         for index, left in enumerate(predictions):
             for right in predictions[index + 1:]:
                 if PredictionDeriver.is_discriminating(left, right):
-                    compatible.append((left, right))
+                    gain = self._information_gain(
+                        (left, right),
+                        self._pair_priors(priors, index, index + 1),
+                    )
+                    compatible.append((gain, left, right))
         if not compatible:
             return None
-
-        best = max(compatible, key=self._information_gain)
-        left, right = best
+        gain, left, right = max(compatible, key=lambda item: (item[0], item[1].id, item[2].id))
         return Experiment(
             id=f"experiment:{left.id}:{right.id}",
             condition=left.condition,
             objective="discriminate between competing predictions",
             predictions=(left, right),
-            expected_information_gain=self._information_gain(best),
+            expected_information_gain=gain,
         )
 
     @staticmethod
-    def _information_gain(pair: tuple[Prediction, Prediction]) -> float:
-        """Normalize entropy reduction for two equally likely hypotheses.
+    def _pair_priors(priors: tuple[float, ...] | None, left: int, right: int) -> tuple[float, float]:
+        if priors is None:
+            return (0.5, 0.5)
+        a, b = priors[left], priors[right]
+        total = a + b
+        if a < 0 or b < 0 or total <= 0:
+            raise ValueError("selected hypothesis priors must be non-negative and non-zero")
+        return (a / total, b / total)
 
-        With two competing predictions and equal prior weight, disagreement gives
-        one bit of expected information gain. Agreement would provide zero, but
-        agreement is excluded by the discriminating-pair check.
-        """
+    @staticmethod
+    def _information_gain(pair: tuple[Prediction, Prediction], priors: tuple[float, float]) -> float:
+        """Expected entropy reduction when competing deterministic outcomes disagree."""
         left, right = pair
         if left.expected == right.expected:
             return 0.0
-        prior_entropy = 1.0  # H([0.5, 0.5]) = 1 bit.
-        outcome_entropy = 0.0  # deterministic prediction partitions under the pair.
-        return min(1.0, max(0.0, (prior_entropy - outcome_entropy) / prior_entropy))
+        prior_entropy = -sum(p * log2(p) for p in priors if p > 0)
+        if prior_entropy == 0.0:
+            return 0.0
+        # A discriminating deterministic outcome identifies the member of the pair.
+        return min(1.0, max(0.0, prior_entropy / prior_entropy))
