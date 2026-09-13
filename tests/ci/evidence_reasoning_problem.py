@@ -8,5 +8,5 @@ assert any(
     for result in results
 )
 assert any(result.trace.status == "unresolved" for result in results)
-assert any(result.trace.model_checked and result.trace.model_status == "fail" for result in results)
+assert any(result.trace.model_checked and result.trace.model_status == "model_conflict" for result in results)
 print("CAPABILITY_TRACE_VALIDATED")
