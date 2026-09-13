@@ -1,4 +1,4 @@
-"""Traceable discovery records from observation through reproduction."""
+"""Traceable discovery records from observation through independent reproduction."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,7 +9,7 @@ from .durable import DurableEvent, SQLiteCognitiveJournal
 
 @dataclass(frozen=True)
 class DiscoveryArtifact:
-    """Immutable research record; status describes evidence, not truth."""
+    """Immutable research record; evidence status is separate from novelty."""
 
     id: str
     title: str
@@ -49,7 +49,7 @@ class DiscoveryArtifact:
 
 
 class DurableDiscoveryArtifacts:
-    """Persist every research stage as evidence; only validated knowledge is promoted separately."""
+    """Persist every research stage as evidence; validated knowledge is promoted separately."""
 
     def __init__(self, journal: SQLiteCognitiveJournal) -> None:
         self.journal = journal
@@ -66,3 +66,6 @@ class DurableDiscoveryArtifacts:
 
     def all(self) -> tuple[dict[str, Any], ...]:
         return tuple(event.payload for event in self.journal.by_kind("discovery_artifact"))
+
+    def recover(self) -> tuple[dict[str, Any], ...]:
+        return self.all()
