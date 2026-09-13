@@ -13,10 +13,13 @@ from .engineering import EngineeringEvent, EngineeringExperienceRecorder, engine
 from .durable import DurableEvent, SQLiteCognitiveJournal
 from .durable_cognition import DurableCognitiveLedger
 from .discovery import DiscoveryWorkspace, ExplanationAssessment, ExplanationStatus, ExplanatoryGap, HypothesisCandidate, Observation, unresolved_observations
+from .discovery_artifact import DiscoveryArtifact
 from .discovery_experiments import DiscriminatingExperimentSelector, Experiment
 from .discovery_hypotheses import ExplanatoryModel, HypothesisAlternative, HypothesisSpaceBuilder, HypothesisTransform
 from .discovery_prediction import Prediction, PredictionDeriver
+from .discovery_search import DiscoverySearchEngine, SearchBudget, SearchCandidate, normalized_entropy
 from .discovery_structure import ModelElement, ModelRelation, RelationKind, StructuralAlternative, StructuralHypothesisBuilder, StructuralModel
+from .discovery_ir import DiscoveryIR, DiscoveryIRBuilder, IRNode, IRRelation
 from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureClass, FailureObservation
 from .git_environment import GitCommitObservation, GitEnvironmentError, GitHistoryIngestor, GitRepositoryObserver
 from .learning import HypothesisSearchLearner, PersistentPatternLearner, SearchStrategy
@@ -41,8 +44,10 @@ __all__ = [
     "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory",
     "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger",
     "DiscoveryWorkspace", "ExplanationAssessment", "ExplanationStatus", "ExplanatoryGap", "HypothesisCandidate", "Observation", "unresolved_observations",
+    "DiscoveryArtifact", "DiscoveryIR", "DiscoveryIRBuilder", "IRNode", "IRRelation",
     "ExplanatoryModel", "HypothesisAlternative", "HypothesisSpaceBuilder", "HypothesisTransform",
     "Prediction", "PredictionDeriver", "DiscriminatingExperimentSelector", "Experiment",
+    "DiscoverySearchEngine", "SearchBudget", "SearchCandidate", "normalized_entropy",
     "ModelElement", "ModelRelation", "RelationKind", "StructuralAlternative", "StructuralHypothesisBuilder", "StructuralModel",
     "CognitiveStateReplayer", "RecoveredCognitiveState",
     "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver",
