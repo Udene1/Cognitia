@@ -57,33 +57,18 @@ class ValidatedKnowledgeStore:
         events.append(self._knowledge_event(item, [t.id for t in tests]))
         return self.journal.append_many(events)[-1]
 
-    def promote_hypothesis(
-        self,
-        hypothesis: Hypothesis,
-        tests: tuple[TestResult, ...],
-        *,
-        source: KnowledgeSource,
-        scope: str = "validated",
-    ) -> DurableEvent:
-        """Promote a scientific hypothesis only after all supplied tests support it."""
+    def promote_hypothesis(self, hypothesis: Hypothesis, tests: tuple[TestResult, ...], *,
+                           source: KnowledgeSource, scope: str = "validated") -> DurableEvent:
+        """Promote a scientific hypothesis only after it is supported by all supplied tests."""
         if not tests:
             raise ValueError("a hypothesis requires test evidence before promotion")
-        if hypothesis.status not in {"supported", "mixed"}:
-            raise ValueError("hypothesis is not in a promotable epistemic state")
+        if hypothesis.status != "supported":
+            raise ValueError("only a supported hypothesis can become durable knowledge")
         if any(test.verdict != "supported" or test.reliability < self.min_reliability for test in tests):
             raise ValueError("hypothesis has not survived all required tests")
-        item = KnowledgeItem(
-            subject=hypothesis.domain or "general",
-            predicate="supports",
-            value=hypothesis.proposition,
-            source=source,
-            id="knowledge:" + hypothesis.id,
-            scope=scope,
-        )
-        knowledge_tests = tuple(KnowledgeTest(
-            id=test.id, knowledge_id=item.id, passed=True, reliability=test.reliability
-        ) for test in tests)
-        return self.promote(item, knowledge_tests)
+        item = KnowledgeItem(subject=hypothesis.domain or "general", predicate="supports",
+            value=hypothesis.proposition, source=source, id="knowledge:" + hypothesis.id, scope=scope)
+        return self.promote(item, tuple(KnowledgeTest(test.id, item.id, True, test.reliability) for test in tests))
 
     @staticmethod
     def _knowledge_event(item: KnowledgeItem, test_ids: list[str]) -> DurableEvent:
@@ -97,5 +82,4 @@ class ValidatedKnowledgeStore:
         return tuple(event.payload for event in self.journal.by_kind("validated_knowledge"))
 
     def recover(self) -> tuple[dict[str, Any], ...]:
-        """Restart-safe read path; only promoted knowledge is returned."""
         return self.all()
