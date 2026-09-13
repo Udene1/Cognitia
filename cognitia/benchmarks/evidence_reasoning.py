@@ -9,10 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable
 
 from cognitia.evidence.convergence import EvidenceConvergenceEngine
-from cognitia.evidence.model import Claim, EvidenceRecord, EvidenceSource
+from cognitia.evidence.model import Claim, EvidenceRecord, EvidenceSource, SourceLineage
 from cognitia.evidence.model_checks import ModelConsistencyChecker, ModelConstraint
 
 
@@ -75,8 +74,8 @@ class EvidenceReasoningSolver:
         stale = self._stale(problem.evidence)
         model_status = None
         if problem.model is not None:
-            result = self.models.check(problem.model, problem.model_value)
-            model_status = result.status
+            result = self.models.check(problem.model, problem.model_value)  # type: ignore[arg-type]
+            model_status = result.reason
 
         contradiction = assessment.independent_contradiction_groups > 0
         next_test = self._next_test(problem, assessment.status, contradiction, model_status)
@@ -98,7 +97,6 @@ class EvidenceReasoningSolver:
 
     @staticmethod
     def _stale(evidence: tuple[EvidenceRecord, ...]) -> tuple[str, ...]:
-        """Use an explicit benchmark freshness rule rather than source prestige."""
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
         stale: list[str] = []
         for item in evidence:
@@ -116,7 +114,7 @@ class EvidenceReasoningSolver:
     def _next_test(problem: BenchmarkProblem, status: str, contradiction: bool, model_status: str | None) -> str | None:
         if status in {"conflicted", "unresolved"}:
             return f"independent test for {problem.claim.id}"
-        if contradiction or model_status == "fail":
+        if contradiction or model_status == "model_conflict":
             return f"discriminating test for {problem.claim.id}"
         return None
 
@@ -148,11 +146,15 @@ def _source(id: str, name: str, reliability: float, kind: str = "web") -> Eviden
 
 def _evidence(id: str, claim: Claim, source: EvidenceSource, supports: bool | None, content: str,
               upstream: tuple[str, ...] = (), measured_at: str | None = None) -> EvidenceRecord:
-    from cognitia.evidence.model import SourceLineage
     return EvidenceRecord(
-        id=id, claim_id=claim.id, source=source, content=content, supports=supports,
+        id=id,
+        claim_id=claim.id,
+        source=source,
+        content=content,
+        supports=supports,
         lineage=SourceLineage(source.id, upstream) if upstream else None,
-        measured_at=measured_at, method="benchmark-observation",
+        measured_at=measured_at,
+        method="benchmark-observation",
     )
 
 
@@ -172,10 +174,15 @@ def benchmark_problems() -> tuple[BenchmarkProblem, ...]:
     old = _source("old-report", "2023 market report", .9)
     recent = _source("recent-observation", "2026 customer observation", .9, "observation")
     p4 = Claim("free-fall", "An object falls with acceleration 9.81 m/s^2 in the stated idealized conditions.", "physics")
-    physics = ModelConstraint("gravity-model", "Newtonian near-surface gravity", lambda value: abs(float(value) - 9.81) < 0.05)
+    physics = ModelConstraint(
+        "gravity-model",
+        "Newtonian near-surface gravity",
+        "reported acceleration should be close to 9.81 m/s^2",
+        lambda context: abs(float(context["value"]) - 9.81) < 0.05,
+    )
     p5 = Claim("hidden-cause", "The service outage was caused by dependency X.", "incident")
     return (
-        BenchmarkProblem("correlated-slop", "Does the device produce 100 units?", p1, copies + (e1,), "contradicted", 0, 1, ()),
+        BenchmarkProblem("correlated-slop", "Does the device produce 100 units?", p1, copies + (e1,), "contradicted", 0, 1),
         BenchmarkProblem("independent-conflict", "Is release 42 safe?", p2, (
             _evidence("safe-test", p2, release, True, "Controlled test passed."),
             _evidence("incident", p2, incident, False, "Production failure occurred during the same release."),
@@ -186,7 +193,7 @@ def benchmark_problems() -> tuple[BenchmarkProblem, ...]:
         ), "conflicted", 1, 1, ("old",)),
         BenchmarkProblem("model-check", "Is the reported acceleration consistent with the model?", p4, (
             _evidence("measurement", p4, _source("sensor", "Independent sensor", .9, "experiment"), True, "Measured acceleration: 8.2 m/s^2."),
-        ), "supported", 1, 0, model=physics, model_value=8.2, expected_model_status="fail"),
+        ), "supported", 1, 0, model=physics, model_value={"value": 8.2}, expected_model_status="model_conflict"),
         BenchmarkProblem("insufficient", "Was dependency X the cause?", p5, (
             _evidence("uncertain", p5, _source("logs", "Partial logs", .7, "database"), None, "Logs show a restart near the outage, but do not establish causality."),
         ), "unresolved", 0, 0),
