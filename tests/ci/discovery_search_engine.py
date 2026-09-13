@@ -46,7 +46,7 @@ artifact = DiscoveryArtifact(
     hypothesis_ids=(results[0].candidate.id,),
     prediction_ids=(predictions[0].id, predictions[1].id),
     experiment_id=experiment.id,
-)
+).with_outcome("experiment selected; outcome pending", epistemic_status="prediction")
 assert artifact.is_ready_for_reproduction
 
 print("DISCOVERY_SEARCH_ENGINE_SUCCESS")
