@@ -6,10 +6,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import log2
+from typing import Iterable
 
-from .discovery import ExplanatoryGap, HypothesisCandidate
+from .discovery import ExplanatoryGap
 from .discovery_structure import StructuralAlternative, StructuralHypothesisBuilder, StructuralModel
-from .learning.hypothesis_search import HypothesisSearchLearner
+from .learning.hypothesis_search import HypothesisSearchLearner, SearchStrategy
+from .memory.experience import Experience
 
 
 @dataclass(frozen=True)
@@ -41,12 +43,13 @@ class DiscoverySearchEngine:
         *,
         gap: ExplanatoryGap | None = None,
         budget: SearchBudget | None = None,
+        experiences: Iterable[Experience] = (),
     ) -> tuple[SearchCandidate, ...]:
         budget = budget or SearchBudget()
         if budget.max_depth != 1:
             raise ValueError("multi-step structural search is not implemented yet")
 
-        strategies = {item.transform: item for item in self.learner.rank()}
+        strategies = self.learner.rank(experiences)
         alternatives = StructuralHypothesisBuilder().build(model)[: budget.max_candidates]
         ranked = [
             SearchCandidate(
@@ -59,13 +62,17 @@ class DiscoverySearchEngine:
         return tuple(sorted(ranked, key=lambda item: (-item.search_score, item.candidate.id)))
 
     @staticmethod
-    def _score(item: StructuralAlternative, strategies: dict[str, object]) -> float:
-        learned = strategies.get(item.operation)
-        if learned is None:
-            return 0.0
-        observations = getattr(learned, "observations", 0)
-        success_rate = getattr(learned, "success_rate", 0.0)
-        return float(success_rate) * (1.0 + min(observations, 10) / 10.0)
+    def _score(item: StructuralAlternative, strategies: tuple[SearchStrategy, ...]) -> float:
+        mapping = {
+            "add_missing_variable": "add_dependency",
+            "relax_assumption": "change_constraint",
+            "reverse_assumption": "reverse_relation",
+            "partition_context": "add_dependency",
+        }
+        for strategy in strategies:
+            if mapping.get(strategy.transform.value) == item.operation:
+                return strategy.success_rate * (1.0 + min(strategy.observations, 10) / 10.0)
+        return 0.0
 
     @staticmethod
     def _novelty_evidence(item: StructuralAlternative, gap: ExplanatoryGap | None) -> str:
