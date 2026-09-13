@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import log2
 
 from .discovery_prediction import Prediction, PredictionDeriver
 
@@ -38,11 +39,27 @@ class DiscriminatingExperimentSelector:
         if not compatible:
             return None
 
-        left, right = compatible[0]
+        best = max(compatible, key=self._information_gain)
+        left, right = best
         return Experiment(
             id=f"experiment:{left.id}:{right.id}",
             condition=left.condition,
             objective="discriminate between competing predictions",
             predictions=(left, right),
-            expected_information_gain=0.5,
+            expected_information_gain=self._information_gain(best),
         )
+
+    @staticmethod
+    def _information_gain(pair: tuple[Prediction, Prediction]) -> float:
+        """Normalize entropy reduction for two equally likely hypotheses.
+
+        With two competing predictions and equal prior weight, disagreement gives
+        one bit of expected information gain. Agreement would provide zero, but
+        agreement is excluded by the discriminating-pair check.
+        """
+        left, right = pair
+        if left.expected == right.expected:
+            return 0.0
+        prior_entropy = 1.0  # H([0.5, 0.5]) = 1 bit.
+        outcome_entropy = 0.0  # deterministic prediction partitions under the pair.
+        return min(1.0, max(0.0, (prior_entropy - outcome_entropy) / prior_entropy))
