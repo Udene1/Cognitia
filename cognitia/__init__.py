@@ -13,18 +13,25 @@ from .engineering import EngineeringEvent, EngineeringExperienceRecorder, engine
 from .durable import DurableEvent, SQLiteCognitiveJournal
 from .durable_cognition import DurableCognitiveLedger
 from .discovery import DiscoveryWorkspace, ExplanationAssessment, ExplanationStatus, ExplanatoryGap, HypothesisCandidate, Observation, unresolved_observations
-from .discovery_artifact import DiscoveryArtifact
+from .discovery_artifact import DiscoveryArtifact, DurableDiscoveryArtifacts
 from .discovery_experiments import DiscriminatingExperimentSelector, Experiment
 from .discovery_hypotheses import ExplanatoryModel, HypothesisAlternative, HypothesisSpaceBuilder, HypothesisTransform
 from .discovery_prediction import Prediction, PredictionDeriver
 from .discovery_search import DiscoverySearchEngine, SearchBudget, SearchCandidate, normalized_entropy
 from .discovery_structure import ModelElement, ModelRelation, RelationKind, StructuralAlternative, StructuralHypothesisBuilder, StructuralModel
 from .discovery_ir import DiscoveryIR, DiscoveryIRBuilder, IRNode, IRRelation
+from .discovery_investigation import DiscoveryInvestigator, InvestigationResult
+from .discovery_failures import DiscoveryFailure, DiscoveryFailureLearner
+from .environment import EnvironmentObservation, EnvironmentSource, NullEnvironmentSource
+from .web_evidence import EvidenceAssessment, WebEvidenceEvaluator
+from .web_search import SearchQuery, WebEnvironmentSource, WebSearchProvider
 from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureClass, FailureObservation
 from .git_environment import GitCommitObservation, GitEnvironmentError, GitHistoryIngestor, GitRepositoryObserver
 from .learning import HypothesisSearchLearner, PersistentPatternLearner, SearchStrategy
 from .git_knowledge import GitKnowledgeIngestor
 from .learning.transfer import TransferAssessment, assess_transfer
+from .knowledge.model import KnowledgeItem, KnowledgeSource
+from .knowledge.validated import KnowledgeTest, ValidatedKnowledgeStore
 from .promotion import CognitivePromotionOrchestrator, PromotionEvaluation
 from .replay import CognitiveStateReplayer, RecoveredCognitiveState
 from .regression import CandidateDisposition, PromotionDecision, RegressionFinding, RegressionPolicy, evaluate_promotion
@@ -33,28 +40,15 @@ from .verification import VerificationOutcome, VerificationPlan, VerificationRes
 __version__ = "0.1.0"
 
 __all__ = [
-    "AcquisitionProposal", "AcquisitionStage", "CapabilityRequirement", "propose_capability_acquisition",
-    "AcquisitionDecision", "AcquisitionPlan", "CapabilityAcquisitionEngine", "CapabilityGapSignal",
-    "BalancingEngine", "BalancingProposal", "BalancingStrategy", "RepairPolicy",
-    "AcquisitionMode", "CapabilityCandidate", "Operation", "ReasoningTrace", "compose_capability", "construct_capability", "learn_procedure",
-    "CandidateEvaluation", "benchmark_candidate", "evaluate_candidate", "CandidateRecord", "CandidateRegistry", "CandidateState",
-    "BenchmarkCase", "BenchmarkOutcome", "BenchmarkResult", "BenchmarkSuite", "BuildComparison", "CaseResult", "compare_builds",
-    "CapabilityRecord", "CognitiveBuild", "create_build",
-    "CognitiveHistory", "EvaluationRecord", "PromotionEvent", "evaluation_from_comparison",
-    "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory",
-    "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger",
-    "DiscoveryWorkspace", "ExplanationAssessment", "ExplanationStatus", "ExplanatoryGap", "HypothesisCandidate", "Observation", "unresolved_observations",
-    "DiscoveryArtifact", "DiscoveryIR", "DiscoveryIRBuilder", "IRNode", "IRRelation",
-    "ExplanatoryModel", "HypothesisAlternative", "HypothesisSpaceBuilder", "HypothesisTransform",
-    "Prediction", "PredictionDeriver", "DiscriminatingExperimentSelector", "Experiment",
-    "DiscoverySearchEngine", "SearchBudget", "SearchCandidate", "normalized_entropy",
-    "ModelElement", "ModelRelation", "RelationKind", "StructuralAlternative", "StructuralHypothesisBuilder", "StructuralModel",
-    "CognitiveStateReplayer", "RecoveredCognitiveState",
-    "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver",
-    "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy",
-    "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis",
-    "TransferAssessment", "assess_transfer",
-    "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan",
-    "CandidateDisposition", "PromotionDecision", "RegressionFinding", "RegressionPolicy", "evaluate_promotion",
-    "CognitivePromotionOrchestrator", "PromotionEvaluation", "__version__",
+    "AcquisitionProposal", "AcquisitionStage", "CapabilityRequirement", "propose_capability_acquisition", "AcquisitionDecision", "AcquisitionPlan", "CapabilityAcquisitionEngine", "CapabilityGapSignal",
+    "BalancingEngine", "BalancingProposal", "BalancingStrategy", "RepairPolicy", "AcquisitionMode", "CapabilityCandidate", "Operation", "ReasoningTrace", "compose_capability", "construct_capability", "learn_procedure",
+    "CandidateEvaluation", "benchmark_candidate", "evaluate_candidate", "CandidateRecord", "CandidateRegistry", "CandidateState", "BenchmarkCase", "BenchmarkOutcome", "BenchmarkResult", "BenchmarkSuite", "BuildComparison", "CaseResult", "compare_builds",
+    "CapabilityRecord", "CognitiveBuild", "create_build", "CognitiveHistory", "EvaluationRecord", "PromotionEvent", "evaluation_from_comparison", "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory",
+    "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger", "DiscoveryWorkspace", "ExplanationAssessment", "ExplanationStatus", "ExplanatoryGap", "HypothesisCandidate", "Observation", "unresolved_observations",
+    "DiscoveryArtifact", "DurableDiscoveryArtifacts", "DiscoveryIR", "DiscoveryIRBuilder", "IRNode", "IRRelation", "ExplanatoryModel", "HypothesisAlternative", "HypothesisSpaceBuilder", "HypothesisTransform", "Prediction", "PredictionDeriver", "DiscriminatingExperimentSelector", "Experiment",
+    "DiscoverySearchEngine", "SearchBudget", "SearchCandidate", "normalized_entropy", "ModelElement", "ModelRelation", "RelationKind", "StructuralAlternative", "StructuralHypothesisBuilder", "StructuralModel", "DiscoveryInvestigator", "InvestigationResult", "DiscoveryFailure", "DiscoveryFailureLearner",
+    "EnvironmentObservation", "EnvironmentSource", "NullEnvironmentSource", "SearchQuery", "WebEnvironmentSource", "WebSearchProvider", "EvidenceAssessment", "WebEvidenceEvaluator",
+    "CognitiveStateReplayer", "RecoveredCognitiveState", "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy",
+    "KnowledgeItem", "KnowledgeSource", "KnowledgeTest", "ValidatedKnowledgeStore", "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis", "TransferAssessment", "assess_transfer", "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan",
+    "CandidateDisposition", "PromotionDecision", "RegressionFinding", "RegressionPolicy", "evaluate_promotion", "CognitivePromotionOrchestrator", "PromotionEvaluation", "__version__",
 ]
