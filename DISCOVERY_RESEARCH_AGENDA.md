@@ -141,6 +141,14 @@ Cognitia can select a test when competing hypotheses make different predictions 
 
 The discovery CI experiment constructs multiple alternatives from a baseline model, creates two competing hypotheses, derives conflicting predictions, and selects a discriminating experiment. The experiment explicitly reports that it has made **no novelty claim**.
 
+### Bounded structural search and research artifacts
+
+Cognitia now has a canonical structural discovery IR plus a bounded search engine over structural alternatives. The IR removes model-specific identifiers from comparison and produces stable fingerprints; similarity remains evidence rather than semantic equivalence.
+
+The search engine is explicitly budgeted and ranks alternatives using learned transformation utility when available. Unseen alternatives are not labeled "novel" merely because they were not previously stored. Discovery artifacts now preserve the chain from observations through models, hypotheses, predictions, experiments, outcomes, and reproduction status.
+
+The experiment selector also moved away from a hard-coded `0.5` information-gain placeholder: for a pair of equally likely, conflicting deterministic hypotheses, it now computes the full one-bit prior-to-outcome reduction and normalizes it to `1.0`.
+
 ## Current architectural consequence
 
 The existing knowledge, memory, hypothesis, verification, capability, failure-analysis, candidate, and durable-state systems are foundations for discovery. The discovery layers must remain connected to those systems rather than becoming a separate idea-generation subsystem.
