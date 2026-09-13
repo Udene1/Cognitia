@@ -36,8 +36,8 @@ class EvidenceConvergenceEngine:
 
         support_groups = self._groups_for(graph, supporting)
         contradiction_groups = self._groups_for(graph, contradicting)
-        support = self._weighted_groups(relevant, support_groups)
-        contradiction = self._weighted_groups(relevant, contradiction_groups)
+        support = self._weighted_groups(relevant, support_groups, set(supporting))
+        contradiction = self._weighted_groups(relevant, contradiction_groups, set(contradicting))
 
         if not relevant:
             status = "no_evidence"
@@ -75,9 +75,23 @@ class EvidenceConvergenceEngine:
         return tuple(tuple(sorted(group)) for group in groups)
 
     @staticmethod
-    def _weighted_groups(records: tuple[EvidenceRecord, ...], groups: tuple[tuple[str, ...], ...]) -> float:
-        by_root: dict[str, float] = {}
-        for record in records:
-            for root in record.provenance_roots:
-                by_root[root] = max(by_root.get(root, 0.0), record.source.reliability)
-        return min(1.0, sum(max((by_root.get(root, 0.0) for root in group), default=0.0) for group in groups))
+    def _weighted_groups(
+        records: tuple[EvidenceRecord, ...],
+        groups: tuple[tuple[str, ...], ...],
+        selected: set[str],
+    ) -> float:
+        """Weight only evidence in the requested polarity.
+
+        A shared upstream root can appear in both supporting and contradicting
+        records. It must not lend its reliability to the opposite polarity.
+        """
+        selected_records = tuple(record for record in records if record.id in selected)
+        total = 0.0
+        for group in groups:
+            roots = set(group)
+            reliability = max(
+                (record.source.reliability for record in selected_records if roots.intersection(record.provenance_roots)),
+                default=0.0,
+            )
+            total += reliability
+        return min(1.0, total)
