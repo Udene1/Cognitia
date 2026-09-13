@@ -1,7 +1,10 @@
-"""Traceable records for investigations from observation to reproduction."""
+"""Traceable discovery records from observation through reproduction."""
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
+
+from .durable import DurableEvent, SQLiteCognitiveJournal
 
 
 @dataclass(frozen=True)
@@ -33,33 +36,33 @@ class DiscoveryArtifact:
     def with_outcome(self, outcome: str, *, epistemic_status: str) -> "DiscoveryArtifact":
         if not outcome.strip() or not epistemic_status.strip():
             raise ValueError("outcome and epistemic status are required")
-        return DiscoveryArtifact(
-            id=self.id,
-            title=self.title,
-            observation_ids=self.observation_ids,
-            model_id=self.model_id,
-            gap_id=self.gap_id,
-            hypothesis_ids=self.hypothesis_ids,
-            prediction_ids=self.prediction_ids,
-            experiment_id=self.experiment_id,
-            outcome=outcome,
-            epistemic_status=epistemic_status,
-            reproduction_status=self.reproduction_status,
-        )
+        return DiscoveryArtifact(self.id, self.title, self.observation_ids, self.model_id, self.gap_id,
+                                 self.hypothesis_ids, self.prediction_ids, self.experiment_id,
+                                 outcome, epistemic_status, self.reproduction_status)
 
     def with_reproduction(self, status: str) -> "DiscoveryArtifact":
         if not status.strip():
             raise ValueError("reproduction status is required")
-        return DiscoveryArtifact(
-            id=self.id,
-            title=self.title,
-            observation_ids=self.observation_ids,
-            model_id=self.model_id,
-            gap_id=self.gap_id,
-            hypothesis_ids=self.hypothesis_ids,
-            prediction_ids=self.prediction_ids,
-            experiment_id=self.experiment_id,
-            outcome=self.outcome,
-            epistemic_status=self.epistemic_status,
-            reproduction_status=status,
-        )
+        return DiscoveryArtifact(self.id, self.title, self.observation_ids, self.model_id, self.gap_id,
+                                 self.hypothesis_ids, self.prediction_ids, self.experiment_id,
+                                 self.outcome, self.epistemic_status, status)
+
+
+class DurableDiscoveryArtifacts:
+    """Persist every research stage as evidence; only validated knowledge is promoted separately."""
+
+    def __init__(self, journal: SQLiteCognitiveJournal) -> None:
+        self.journal = journal
+
+    def record(self, artifact: DiscoveryArtifact) -> DurableEvent:
+        return self.journal.append(DurableEvent(
+            kind="discovery_artifact", source="discovery_lifecycle",
+            payload={"id": artifact.id, "title": artifact.title, "observation_ids": list(artifact.observation_ids),
+                     "model_id": artifact.model_id, "gap_id": artifact.gap_id, "hypothesis_ids": list(artifact.hypothesis_ids),
+                     "prediction_ids": list(artifact.prediction_ids), "experiment_id": artifact.experiment_id,
+                     "outcome": artifact.outcome, "epistemic_status": artifact.epistemic_status,
+                     "reproduction_status": artifact.reproduction_status},
+        ))
+
+    def all(self) -> tuple[dict[str, Any], ...]:
+        return tuple(event.payload for event in self.journal.by_kind("discovery_artifact"))
