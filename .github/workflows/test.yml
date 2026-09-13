@@ -76,3 +76,5 @@ jobs:
         run: python tests/ci/structural_hypothesis_space.py
       - name: Exercise bounded discovery search engine
         run: python tests/ci/discovery_search_engine.py
+      - name: Exercise full discovery research batch
+        run: python tests/ci/discovery_research_batch.py
