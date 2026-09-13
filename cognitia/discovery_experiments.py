@@ -25,35 +25,29 @@ class Experiment:
 
 
 class DiscriminatingExperimentSelector:
-    """Prefer tests whose outcomes reduce uncertainty between hypotheses."""
+    """Prefer tests whose deterministic outcomes reduce hypothesis uncertainty."""
 
-    def select(
-        self,
-        predictions: tuple[Prediction, ...],
-        *,
-        priors: tuple[float, ...] | None = None,
-    ) -> Experiment | None:
+    def select(self, predictions: tuple[Prediction, ...], *, priors: tuple[float, ...] | None = None) -> Experiment | None:
         if len(predictions) < 2:
             return None
-        if priors is not None and len(priors) != len(predictions):
-            raise ValueError("priors must match prediction count")
-        compatible = []
-        for index, left in enumerate(predictions):
-            for right in predictions[index + 1:]:
+        if priors is not None:
+            if len(priors) != len(predictions):
+                raise ValueError("priors must match prediction count")
+            if any(p < 0 for p in priors) or sum(priors) <= 0:
+                raise ValueError("priors must be non-negative and non-zero")
+        compatible: list[tuple[float, Prediction, Prediction]] = []
+        for left_index, left in enumerate(predictions):
+            for right_index in range(left_index + 1, len(predictions)):
+                right = predictions[right_index]
                 if PredictionDeriver.is_discriminating(left, right):
-                    gain = self._information_gain(
-                        (left, right),
-                        self._pair_priors(priors, index, index + 1),
-                    )
+                    gain = self._information_gain((left, right), self._pair_priors(priors, left_index, right_index))
                     compatible.append((gain, left, right))
         if not compatible:
             return None
         gain, left, right = max(compatible, key=lambda item: (item[0], item[1].id, item[2].id))
         return Experiment(
-            id=f"experiment:{left.id}:{right.id}",
-            condition=left.condition,
-            objective="discriminate between competing predictions",
-            predictions=(left, right),
+            id=f"experiment:{left.id}:{right.id}", condition=left.condition,
+            objective="discriminate between competing predictions", predictions=(left, right),
             expected_information_gain=gain,
         )
 
@@ -63,18 +57,15 @@ class DiscriminatingExperimentSelector:
             return (0.5, 0.5)
         a, b = priors[left], priors[right]
         total = a + b
-        if a < 0 or b < 0 or total <= 0:
-            raise ValueError("selected hypothesis priors must be non-negative and non-zero")
+        if total <= 0:
+            raise ValueError("selected hypothesis priors must sum to a positive value")
         return (a / total, b / total)
 
     @staticmethod
     def _information_gain(pair: tuple[Prediction, Prediction], priors: tuple[float, float]) -> float:
-        """Expected entropy reduction when competing deterministic outcomes disagree."""
-        left, right = pair
-        if left.expected == right.expected:
+        if pair[0].expected == pair[1].expected:
             return 0.0
-        prior_entropy = -sum(p * log2(p) for p in priors if p > 0)
-        if prior_entropy == 0.0:
-            return 0.0
-        # A discriminating deterministic outcome identifies the member of the pair.
-        return min(1.0, max(0.0, prior_entropy / prior_entropy))
+        # For two mutually exclusive deterministic predictions, the outcome
+        # identifies the surviving hypothesis. One bit is the normalization unit.
+        entropy = -sum(p * log2(p) for p in priors if p > 0)
+        return min(1.0, max(0.0, entropy))
