@@ -27,6 +27,7 @@ from .environment import EnvironmentObservation, EnvironmentSource, NullEnvironm
 from .parallel_investigation import InvestigationTask, InvestigationResult as ParallelInvestigationResult, ParallelInvestigator
 from .web_evidence import EvidenceAssessment, WebEvidenceEvaluator
 from .web_search import SearchQuery, WebEnvironmentSource, WebSearchProvider
+from .evidence import Claim, EvidenceRecord, EvidenceSource, SourceLineage, EvidenceGraph, EvidenceRelation, EvidenceConvergenceEngine, ConvergenceAssessment, ModelConstraint, ModelConsistencyChecker, ModelCheckResult
 from .failure_analysis import CapabilityGapDiagnosis, FailureAnalyzer, FailureClass, FailureObservation
 from .git_environment import GitCommitObservation, GitEnvironmentError, GitHistoryIngestor, GitRepositoryObserver
 from .learning import HypothesisSearchLearner, PersistentPatternLearner, SearchStrategy
@@ -49,6 +50,7 @@ __all__ = [
     "DiscoveryArtifact", "DurableDiscoveryArtifacts", "DiscoveryIR", "DiscoveryIRBuilder", "IRNode", "IRRelation", "ExplanatoryModel", "HypothesisAlternative", "HypothesisSpaceBuilder", "HypothesisTransform", "Prediction", "PredictionDeriver", "DiscriminatingExperimentSelector", "Experiment", "DiscoverySearchEngine", "SearchBudget", "SearchCandidate", "normalized_entropy",
     "ModelElement", "ModelRelation", "RelationKind", "StructuralAlternative", "StructuralHypothesisBuilder", "StructuralModel", "DiscoveryInvestigator", "InvestigationResult", "DiscoveryFailure", "DiscoveryFailureLearner", "DiscoveryKnowledgePromoter", "KnowledgePromotionDecision",
     "EnvironmentObservation", "EnvironmentSource", "NullEnvironmentSource", "InvestigationTask", "ParallelInvestigationResult", "ParallelInvestigator", "SearchQuery", "WebEnvironmentSource", "WebSearchProvider", "EvidenceAssessment", "WebEvidenceEvaluator",
+    "Claim", "EvidenceRecord", "EvidenceSource", "SourceLineage", "EvidenceGraph", "EvidenceRelation", "EvidenceConvergenceEngine", "ConvergenceAssessment", "ModelConstraint", "ModelConsistencyChecker", "ModelCheckResult",
     "CognitiveStateReplayer", "RecoveredCognitiveState", "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy", "KnowledgeItem", "KnowledgeSource", "KnowledgeTest", "ValidatedKnowledgeStore",
     "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis", "TransferAssessment", "assess_transfer", "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan", "CandidateDisposition", "PromotionDecision", "RegressionFinding", "RegressionPolicy", "evaluate_promotion", "CognitivePromotionOrchestrator", "PromotionEvaluation", "__version__",
 ]
