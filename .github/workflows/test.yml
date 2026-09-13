@@ -74,3 +74,5 @@ jobs:
         run: python tests/ci/learn_hypothesis_search.py
       - name: Construct structural hypothesis space
         run: python tests/ci/structural_hypothesis_space.py
+      - name: Exercise bounded discovery search engine
+        run: python tests/ci/discovery_search_engine.py
