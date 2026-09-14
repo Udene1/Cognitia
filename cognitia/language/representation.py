@@ -101,7 +101,8 @@ def build_language_frame(text: str, *, question: bool | None = None) -> Language
     tokens = tuple(TextToken(m.group(0), m.start(), m.end()) for m in re.finditer(r"\S+", text))
     entities = _entities(text)
     modality = _markers(text, r"\b(?:may|might|could|can|must|should|would|possibly|likely|unlikely|probably|perhaps|maybe|reportedly|believed|estimated|alleged)\b")
-    temporal = _markers(text, r"\b(?:18|19|20|21)\d{2}\b|\b(?:today|currently|historically|formerly|originally|before|after|during|since|until|by|later|earlier|now)\b")
+    # Support historical years such as 476 as well as modern four-digit years.
+    temporal = _markers(text, r"\b(?:[1-9]\d{2,3})\b|\b(?:today|currently|historically|formerly|originally|before|after|during|since|until|by|later|earlier|now)\b")
     negation = _markers(text, r"\b(?:does not|did not|do not|is not|are not|was not|were not|has not|have not|had not|cannot|can't|isn't|wasn't|weren't|don't|doesn't|didn't|not|never|no|neither|without)\b")
     attribution = _markers(text, r"\b(?:according to|reported by|reported|believed by|argued by|claimed by|said by|historians? argue|researchers? report|scientists? report)\b")
     relations = _relations(text, temporal, modality, negation, attribution)
