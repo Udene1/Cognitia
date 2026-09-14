@@ -176,7 +176,7 @@ def benchmark_problems() -> tuple[BenchmarkProblem, ...]:
     p5 = Claim("hidden-cause", "The service outage was caused by dependency X.", "incident")
 
     return (
-        BenchmarkProblem("correlated-slop", "Does the device produce 100 units?", p1, copies + (e1,), "conflicted", 1, 1),
+        BenchmarkProblem("correlated-slop", "Does the device produce 100 units?", p1, copies + (e1,), "contradicted", 1, 1),
         BenchmarkProblem("independent-conflict", "Is release 42 safe?", p2, (
             _evidence("safe-test", p2, release, True, "Controlled test passed."),
             _evidence("incident", p2, incident, False, "Production failure occurred during the same release."),
