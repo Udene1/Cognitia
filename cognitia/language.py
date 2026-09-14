@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
-from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -96,7 +95,7 @@ class LanguageAnalyzer:
     _YEAR = re.compile(r"\b(?:18|19|20|21)\d{2}\b")
     _TEMPORAL = re.compile(r"\b(?:today|now|currently|historically|formerly|originally|recently|later|earlier|before|after|during|since|until|by|in)\b", re.I)
     _MODAL = re.compile(r"\b(?:may|might|could|can|possibly|likely|unlikely|probably|perhaps|apparently|reportedly|believed|estimated|alleged)\b", re.I)
-    _NEGATION = re.compile(r"\b(?:not|never|no|neither|without|cannot|can't|isn't|wasn't|weren't|don't|doesn't|didn't)\b", re.I)
+    _NEGATION = re.compile(r"\b(?:does not|did not|do not|is not|are not|was not|were not|has not|have not|had not|cannot|can not|not|never|no|neither|without|can't|isn't|wasn't|weren't|don't|doesn't|didn't)\b", re.I)
     _RELATION_WORDS = {
         "is", "are", "was", "were", "became", "caused", "causes", "causing", "contributed", "contributes",
         "led", "resulted", "weakened", "undermined", "destabilized", "depends", "contains", "uses", "used",
@@ -122,9 +121,7 @@ class LanguageAnalyzer:
         qtype = self._question_type(lowered)
         contract = self._answer_contract(qtype, lowered)
         operations = self._requested_operations(qtype, lowered)
-        focus = tuple(entity.text for entity in frame.entities if entity.text.lower() not in {"roman", "empire"} or "roman empire" in lowered)
-        if not focus:
-            focus = tuple(entity.text for entity in frame.entities)
+        focus = tuple(entity.text for entity in frame.entities)
         return QuestionAnalysis(
             text=" ".join(text.split()),
             question_type=qtype,
@@ -167,9 +164,6 @@ class LanguageAnalyzer:
         relations = self._relations(text, entities, temporal, modality, negation)
         if not relations:
             return ()
-        confidence = "candidate"
-        if modality:
-            confidence = "candidate_uncertain"
         return (Proposition(
             text=text,
             relations=relations,
@@ -177,7 +171,7 @@ class LanguageAnalyzer:
             temporal_markers=temporal,
             modality="uncertain" if modality else "asserted",
             polarity="negative" if negation else "positive",
-            confidence=confidence,
+            confidence="candidate_uncertain" if modality else "candidate",
         ),)
 
     def _relations(self, text: str, entities: tuple[Entity, ...], temporal: tuple[str, ...], modality: tuple[str, ...], negation: tuple[str, ...]) -> tuple[SemanticRelation, ...]:
