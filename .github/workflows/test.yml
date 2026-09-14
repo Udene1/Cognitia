@@ -102,3 +102,5 @@ jobs:
         run: python tests/ci/research_action_control.py
       - name: Exercise evidence-to-decision utility
         run: python tests/ci/evidence_utility_problem.py
+      - name: Exercise evidence genealogy
+        run: python tests/ci/evidence_genealogy.py
