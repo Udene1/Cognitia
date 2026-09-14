@@ -75,6 +75,7 @@ class ResearchSynthesisEngine:
 
     _CAUSE_PATTERNS = (
         re.compile(r"(?P<factor>.+?)\s+(?:contributed to|led to|resulted in|caused|undermined|weakened|destabilized)\s+(?P<outcome>.+)", re.I),
+        re.compile(r"(?P<factor>.+?)\s+(?:did not|does not|do not)\s+(?:contribute to|lead to|result in|cause|undermine|weaken|destabilize)\s+(?P<outcome>.+)", re.I),
         re.compile(r"(?P<outcome>.+?)\s+(?:was|were|became)\s+(?:weakened|undermined|destabilized)\s+by\s+(?P<factor>.+)", re.I),
         re.compile(r"(?P<outcome>.+?)\s+(?:because of|due to|because)\s+(?P<factor>.+)", re.I),
     )
@@ -130,8 +131,6 @@ class ResearchSynthesisEngine:
             factor = self._factor_text(claim.proposition)
             if factor:
                 buckets.setdefault(_normalize(factor), []).append(claim)
-        # Stable ranking is important: when factors have equal evidence volume,
-        # preserve discovery order instead of using opaque claim IDs as a tie-breaker.
         ranked = sorted(buckets.values(), key=lambda members: -len(members))[:max_factors]
         origin_by_claim = {claim_id: origin.root_id for origin in result.genealogy.origins for claim_id in origin.claim_ids}
         factors: list[FactorExplanation] = []
