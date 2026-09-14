@@ -35,7 +35,7 @@ from .git_knowledge import GitKnowledgeIngestor
 from .learning.transfer import TransferAssessment, assess_transfer
 from .knowledge.model import KnowledgeItem, KnowledgeSource
 from .knowledge.validated import KnowledgeTest, ValidatedKnowledgeStore
-from .language import AnswerContract, EntityMention, LanguageFrame, QuestionAnalysis, RelationMention, SemanticProposition, TextToken, analyze_question, build_language_frame
+from .language import AnswerContract, EntityMention, EventMention, LanguageFrame, QuestionAnalysis, RelationMention, SemanticProposition, TextToken, analyze_question, build_language_frame
 from .answer_contract import AnswerAssessment, AnswerContractPlanner, AnswerPlan, plan_answer
 from .promotion import CognitivePromotionOrchestrator, PromotionEvaluation
 from .replay import CognitiveStateReplayer, RecoveredCognitiveState
@@ -57,7 +57,7 @@ __all__ = [
     "EnvironmentObservation", "EnvironmentSource", "NullEnvironmentSource", "InvestigationTask", "ParallelInvestigationResult", "ParallelInvestigator", "SearchQuery", "WebEnvironmentSource", "WebSearchProvider", "EvidenceAssessment", "WebEvidenceEvaluator",
     "Claim", "EvidenceRecord", "EvidenceSource", "SourceLineage", "EvidenceGraph", "EvidenceRelation", "EvidenceConvergenceEngine", "ConvergenceAssessment", "ModelConstraint", "ModelConsistencyChecker", "ModelCheckResult",
     "CognitiveStateReplayer", "RecoveredCognitiveState", "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy", "KnowledgeItem", "KnowledgeSource", "KnowledgeTest", "ValidatedKnowledgeStore",
-    "TextToken", "EntityMention", "RelationMention", "LanguageFrame", "SemanticProposition", "QuestionAnalysis", "AnswerContract", "build_language_frame", "analyze_question", "AnswerAssessment", "AnswerContractPlanner", "AnswerPlan", "plan_answer",
+    "TextToken", "EntityMention", "EventMention", "RelationMention", "LanguageFrame", "SemanticProposition", "QuestionAnalysis", "AnswerContract", "build_language_frame", "analyze_question", "AnswerAssessment", "AnswerContractPlanner", "AnswerPlan", "plan_answer",
     "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis", "TransferAssessment", "assess_transfer", "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan", "CandidateDisposition", "PromotionDecision", "RegressionFinding", "RegressionPolicy", "evaluate_promotion", "CognitivePromotionOrchestrator", "PromotionEvaluation",
     "LogicModel", "LogicNode", "LogicRelation", "LogicProvenance", "LogicTransferCandidate", "LogicTransferEngine", "LogicTransferVerification", "TransferMapping", "model_from_parts", "LogicAdapterResult", "TextLogicAdapter", "CodeLogicAdapter", "MathLogicAdapter", "UniversalLogicAdapter", "GenericLogicExtractor", "__version__",
 ]
