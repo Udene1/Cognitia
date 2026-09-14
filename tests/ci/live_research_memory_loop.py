@@ -44,16 +44,21 @@ def _run_stage(stage: str, db_path: Path) -> None:
             result, synthesis = OpenEndedResearch(knowledge_store=store).investigate_and_synthesize(
                 QUESTION,
                 max_rounds=4,
-                search_results=5,
-                documents_per_round=3,
-                claims_per_document=12,
+                search_results=8,
+                documents_per_round=5,
+                claims_per_document=20,
             )
+            factor_evidence = [
+                {"factor": factor.factor, "origins": factor.origin_count, "confidence": factor.confidence}
+                for factor in synthesis.factors
+            ]
             payload = {
                 "stage": stage,
                 "prior_knowledge": len(result.prior_knowledge),
                 "promoted_knowledge": len(result.promoted_knowledge),
                 "durable_count": len(store.recover()),
                 "factors": len(synthesis.factors),
+                "factor_evidence": factor_evidence,
             }
             print("LIVE_RESEARCH_MEMORY_WRITE", flush=True)
             print(json.dumps(payload), flush=True)
@@ -66,9 +71,9 @@ def _run_stage(stage: str, db_path: Path) -> None:
             result = OpenEndedResearch(knowledge_store=store).investigate(
                 QUESTION,
                 max_rounds=4,
-                search_results=5,
-                documents_per_round=3,
-                claims_per_document=12,
+                search_results=8,
+                documents_per_round=5,
+                claims_per_document=20,
             )
             memory_actions = [
                 research_round.decision_rationale
