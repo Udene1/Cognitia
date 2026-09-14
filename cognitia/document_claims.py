@@ -38,14 +38,15 @@ class DocumentClaimExtractor:
         re.IGNORECASE,
     )
     _UNCERTAIN = re.compile(
-        r"\b(?:may|might|could|can|possibly|possibly|likely|unlikely|appears|reported|believed|estimated|according to)\b",
+        r"\b(?:may|might|could|can|possibly|likely|unlikely|appears|reported|believed|estimated|according to)\b",
         re.IGNORECASE,
     )
     _RELATION = re.compile(
-        r"\b(?:is|was|were|are|became|changed|defined|redefined|measured|contains|uses|used|causes|produces|depends)\b",
+        r"\b(?:is|was|were|are|became|changed|defined|redefined|measured|contains|uses|used|causes|produces|depends|disagree|disagrees)\b",
         re.IGNORECASE,
     )
-    _ENTITY = re.compile(r"\b[A-Z][A-Za-z0-9-]*(?:\s+[A-Z][A-Za-z0-9-]*){0,4}\b")
+    _ENTITY = re.compile(r"\b[A-Z][A-Za-z0-9-]*\b")
+    _ENTITY_STOPWORDS = {"A", "An", "The", "In", "On", "At", "By", "For", "From", "To", "And", "Or", "Some"}
 
     def extract(self, observation: EnvironmentObservation, *, limit: int = 50) -> tuple[ExtractedClaim, ...]:
         if limit < 1:
@@ -57,7 +58,10 @@ class DocumentClaimExtractor:
                 continue
             temporal = tuple(dict.fromkeys(m.group(0) for m in self._TEMPORAL.finditer(normalized)))
             uncertainty = tuple(dict.fromkeys(m.group(0).lower() for m in self._UNCERTAIN.finditer(normalized)))
-            entities = tuple(dict.fromkeys(m.group(0) for m in self._ENTITY.finditer(normalized)))
+            entities = tuple(dict.fromkeys(
+                m.group(0) for m in self._ENTITY.finditer(normalized)
+                if m.group(0) not in self._ENTITY_STOPWORDS
+            ))
             relations = tuple(dict.fromkeys(m.group(0).lower() for m in self._RELATION.finditer(normalized)))
             confidence = "uncertain" if uncertainty else "candidate"
             fingerprint = sha256(
@@ -93,9 +97,11 @@ class DocumentClaimExtractor:
             if cleaned:
                 yield cleaned
 
-    @staticmethod
-    def _is_claim_candidate(sentence: str) -> bool:
+    def _is_claim_candidate(self, sentence: str) -> bool:
         words = sentence.split()
-        return 5 <= len(words) <= 80 and any(
-            token in sentence.lower().split() for token in ("is", "was", "were", "are", "became", "changed", "defined", "measured", "uses", "used")
+        return 5 <= len(words) <= 80 and (
+            any(token in sentence.lower().split() for token in (
+                "is", "was", "were", "are", "became", "changed", "defined", "measured", "uses", "used",
+            ))
+            or bool(self._UNCERTAIN.search(sentence))
         )
