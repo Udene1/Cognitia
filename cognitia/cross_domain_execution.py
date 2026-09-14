@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import operator
-from typing import Mapping, Sequence
+from typing import Mapping
 
 from .logic_ir import LogicModel, LogicTransferCandidate, LogicTransferEngine, LogicTransferVerification
 
@@ -43,10 +43,12 @@ class LogicExecutionCompiler:
     def compile(self, model: LogicModel) -> ExecutableLogic:
         instructions: list[ExecutableInstruction] = []
         for relation in model.relations:
+            source = model.node(relation.source).value or relation.source
+            target = model.node(relation.target).value or relation.target
             if relation.relation in self._OPS:
-                instructions.append(ExecutableInstruction(relation.relation, relation.target, (relation.source,)))
+                instructions.append(ExecutableInstruction(relation.relation, target, (source,)))
             elif relation.relation in {"=", ">", ">=", "<", "<="}:
-                instructions.append(ExecutableInstruction("compare:" + relation.relation, relation.target, (relation.source,)))
+                instructions.append(ExecutableInstruction("compare:" + relation.relation, target, (source,)))
         if not instructions:
             raise ValueError("logic model has no executable relation")
         return ExecutableLogic(tuple(instructions), instructions[-1].output, model.fingerprint())
