@@ -25,3 +25,5 @@ jobs:
         run: python tests/ci/live_web_research.py
       - name: Run open-ended research experiment on live web
         run: python tests/ci/live_open_ended_research.py
+      - name: Run open-ended research through answer construction
+        run: python tests/ci/live_open_ended_answer.py
