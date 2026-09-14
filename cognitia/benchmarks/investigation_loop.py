@@ -67,7 +67,9 @@ class EvidenceInvestigationLoop:
             )
 
         matching = tuple(p for p in experiment.predictions if p.expected == experiment_observation)
-        updated_evidence = evidence + (self._experiment_evidence(claim, experiment_observation),)
+        if len(matching) != 1:
+            raise ValueError("experiment observation must match exactly one prediction")
+        updated_evidence = evidence + (self._experiment_evidence(claim, matching[0]),)
         updated = self.convergence.assess(claim, updated_evidence)
         return InvestigationLoopTrace(
             claim.id, tuple(task.environment for task in tasks), len(evidence),
@@ -75,7 +77,7 @@ class EvidenceInvestigationLoop:
             initial.independent_contradiction_groups, experiment.id,
             experiment.expected_information_gain, experiment_observation,
             updated.status,
-            len(matching) == 1 and len(evidence) > 0,
+            len(matching) == 1 and len(evidence) > 0 and updated.status != initial.status,
         )
 
     @staticmethod
@@ -103,14 +105,14 @@ class EvidenceInvestigationLoop:
         )
 
     @staticmethod
-    def _experiment_evidence(claim: Claim, observation: str) -> EvidenceRecord:
+    def _experiment_evidence(claim: Claim, prediction: Prediction) -> EvidenceRecord:
         source = EvidenceSource("follow-up-experiment", "experiment", "Discriminating follow-up", .95)
-        supports = observation == "claim confirmed"
+        supports = prediction.hypothesis == "cache-failure"
         return EvidenceRecord(
             id="follow-up-observation",
             claim_id=claim.id,
             source=source,
-            content=observation,
+            content=prediction.expected,
             supports=supports,
             observation_id="follow-up-observation",
             method="discriminating-experiment",
@@ -147,7 +149,7 @@ def benchmark() -> InvestigationLoopTrace:
             InvestigationTask("simulation", "collect model consequence", "simulation"),
         ),
         predictions,
-        "claim confirmed",
+        "latency falls",
     )
 
 
