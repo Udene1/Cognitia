@@ -41,31 +41,27 @@ jobs:
           mkdir -p .ci
           COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/learn_from_git.py
       - name: Solve using persisted Git-derived knowledge in a new process
-        run: |
-          COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/apply_git_learned_solution.py
+        run: COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/apply_git_learned_solution.py
       - name: Learn engineering balancing from Git source
         run: |
           mkdir -p .ci
           COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/learn_engine_balance_from_git.py
       - name: Apply engineering abstraction to economics in a new process
-        run: |
-          COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/apply_cross_domain_learning.py
+        run: COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/apply_cross_domain_learning.py
       - name: Write durable cognitive state
         run: |
           rm -rf .ci/persistence
           mkdir -p .ci/persistence
           COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_writer.py
       - name: Recover durable cognitive state in a fresh process
-        run: |
-          COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_reader.py
+        run: COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_reader.py
       - name: Replay durable cognitive state into active cognition
         run: |
           rm -rf .ci/replay
           mkdir -p .ci/replay
           COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_writer.py
       - name: Use recovered cognitive state in a new process
-        run: |
-          COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_reader.py
+        run: COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_reader.py
       - name: Identify an explanatory gap
         run: python tests/ci/discovery_gap.py
       - name: Construct and discriminate hypothesis space
@@ -92,3 +88,7 @@ jobs:
         run: |
           rm -rf .ci/validated-knowledge
           COGNITIA_VALIDATED_KNOWLEDGE_ROOT=.ci/validated-knowledge python tests/ci/validated_knowledge_persistence.py
+      - name: Exercise knowledge-guided research routing
+        run: |
+          mkdir -p .ci
+          python tests/ci/knowledge_guided_routing.py
