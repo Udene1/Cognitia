@@ -117,3 +117,5 @@ jobs:
         run: python tests/ci/language_representation.py
       - name: Exercise semantic language and answer contracts
         run: python tests/ci/language_cognition.py
+      - name: Exercise answer construction, epistemic boundaries, and revision
+        run: python tests/ci/answering_core.py
