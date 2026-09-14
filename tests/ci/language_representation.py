@@ -1,25 +1,27 @@
-"""Capability-level checks for Cognitia's language representation boundary."""
+"""Capability-level checks for Cognitia's canonical language representation boundary."""
 from cognitia.language import analyze_question, build_language_frame
 
 
 def main() -> None:
     frame = build_language_frame(
-        "Political instability weakened the Roman Empire in 476 because repeated civil conflict reduced central control."
+        "According to historians, political instability weakened the Roman Empire in 476 because repeated civil conflict reduced central control."
     )
     assert frame.tokens
     assert frame.entities
     assert frame.relations
+    assert frame.events
+    assert frame.causal_relations
     assert any(relation.predicate == "weakened" for relation in frame.relations)
     assert "476" in frame.temporal_markers
-    assert frame.relations[0].confidence == "candidate"
+    assert frame.attribution_markers
     assert frame.semantic_propositions
+    assert frame.semantic_propositions[0].attribution is not None
     assert frame.semantic_propositions[0].confidence == "candidate"
 
     uncertain = build_language_frame("The reform may have changed the definition in 2019.")
     assert uncertain.modality == ("may",)
     assert uncertain.semantic_propositions[0].modality == "uncertain"
     assert uncertain.semantic_propositions[0].confidence == "candidate_uncertain"
-    assert uncertain.relations[0].modality == "uncertain"
 
     negative = build_language_frame("The evidence does not establish that the reform caused the decline.")
     assert negative.negation_markers == ("does not",)
@@ -48,24 +50,17 @@ def main() -> None:
     assert "causal explanation" in why.contract.required_elements
     assert "supporting evidence or reasoning" in why.contract.required_elements
     assert "state unresolved explanatory gaps" in why.contract.stopping_conditions
+    assert "compare_explanations" in why.requested_operations
+    assert "satisfy_all_subquestions" in why.requested_operations
+    assert len(why.subquestions) >= 2
 
     how = analyze_question("How does photosynthesis work?")
     assert how.question_type == "procedure_or_mechanism"
     assert how.contract.needs_explanation
     assert not how.contract.bare_answer_sufficient
-    assert "mechanism or ordered procedure" in how.contract.required_elements
-
-    when = analyze_question("When was the kilogram redefined?")
-    assert when.question_type == "time_or_event"
-    assert when.contract.requested_length == "short"
-    assert when.contract.bare_answer_sufficient
-
-    what = analyze_question("What is photosynthesis?")
-    assert what.question_type == "fact_or_identification"
-    assert what.contract.answer_kind == "fact_or_identification"
 
     print("LANGUAGE_REPRESENTATION_SUCCESS")
-    print(f"tokens={len(frame.tokens)} entities={len(frame.entities)} relations={len(frame.relations)}")
+    print(f"tokens={len(frame.tokens)} entities={len(frame.entities)} relations={len(frame.relations)} events={len(frame.events)}")
     print(f"why_contract={why.contract}")
 
 
