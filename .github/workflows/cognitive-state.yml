@@ -1,0 +1,67 @@
+name: cognitive-state
+
+on:
+  workflow_run:
+    workflows: [test]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: cognitia-cognitive-state
+  cancel-in-progress: false
+
+jobs:
+  persist:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download cognitive state produced by the completed test run
+        uses: actions/download-artifact@v5
+        with:
+          name: cognitia-cognitive-state
+          path: ${{ runner.temp }}/cognitive-state
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout durable cognitive-state branch
+        uses: actions/checkout@v4
+        with:
+          ref: cognitia-state
+          path: state
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Replace the durable state snapshot
+        env:
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          test -s "${{ runner.temp }}/cognitive-state/cognitive-state.tar.gz"
+          cp "${{ runner.temp }}/cognitive-state/cognitive-state.tar.gz" state/cognitive-state.tar.gz
+          cat > state/STATE_PROVENANCE.json <<EOF
+          {
+            "source_workflow": "test",
+            "source_run_id": "${SOURCE_RUN_ID}",
+            "source_head_sha": "${SOURCE_SHA}"
+          }
+          EOF
+
+      - name: Commit durable cognitive state
+        working-directory: state
+        env:
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cognitive-state.tar.gz STATE_PROVENANCE.json
+          if git diff --cached --quiet; then
+            echo "COGNITIVE_STATE_UNCHANGED"
+            exit 0
+          fi
+          git commit -m "Persist cognitive state from test run ${SOURCE_RUN_ID}"
+          git push origin HEAD:cognitia-state
+          echo "COGNITIVE_STATE_PERSISTED: ${SOURCE_SHA}"
