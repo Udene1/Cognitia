@@ -10,7 +10,7 @@ def claim(text: str) -> ExtractedClaim:
         observation_id="obs",
         source="source",
         sentence=text,
-        confidence=0.7,
+        confidence="candidate",
         temporal_markers=(),
         entities=(),
         relations=(),
