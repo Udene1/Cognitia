@@ -36,6 +36,8 @@ jobs:
           COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/apply_learned_solution.py
       - name: Compare independently written implementations
         run: python tests/ci/compare_implementations.py
+      - name: Exercise multi-language computational abstraction
+        run: python tests/ci/multilanguage_computation.py
       - name: Learn from Git-discovered repository source
         run: |
           mkdir -p .ci
