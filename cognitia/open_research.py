@@ -1,20 +1,27 @@
 """Open-ended research orchestration with evidence-origin accounting.
 
 The research system deliberately stops short of pretending extracted claims are
-truth. It also distinguishes repeated findings from repeated propositions and
-tracks source genealogy before evidence is allowed to influence conclusions.
+truth. It distinguishes repeated findings from repeated propositions, tracks
+source genealogy, and now crosses an explicit durable-knowledge boundary:
+validated research factors may be promoted, and later investigations can read
+those durable propositions before choosing fresh searches.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+import re
 from typing import Sequence
 
 from .document_claims import DocumentClaimExtractor, ExtractedClaim
 from .environment import EnvironmentObservation
 from .evidence.claim_identity import ClaimIdentityMatcher
 from .evidence.genealogy import EvidenceGenealogyBuilder, GenealogyAssessment
+from .knowledge.model import KnowledgeItem, KnowledgeSource
+from .knowledge.validated import KnowledgeTest, ValidatedKnowledgeStore
 from .language import AnswerContract, analyze_question
 from .research_search import ResearchSearchPlanner, SearchAction
+from .research_synthesis import ResearchSynthesis, ResearchSynthesisEngine
 from .web_research import LiveWebResearchSession
 
 
@@ -49,6 +56,8 @@ class OpenResearchResult:
     genealogy: GenealogyAssessment
     stop_reason: str
     answer_contract: AnswerContract | None = None
+    prior_knowledge: tuple[KnowledgeItem, ...] = ()
+    promoted_knowledge: tuple[KnowledgeItem, ...] = ()
 
     @property
     def status(self) -> str:
@@ -62,18 +71,20 @@ class OpenResearchResult:
 
 
 class OpenEndedResearch:
-    """Run bounded, real-web research while preserving evidence genealogy."""
+    """Run bounded, real-web research with durable knowledge feedback."""
 
     def __init__(self, *, web: LiveWebResearchSession | None = None,
                  planner: ResearchSearchPlanner | None = None,
                  extractor: DocumentClaimExtractor | None = None,
                  genealogy: EvidenceGenealogyBuilder | None = None,
-                 identity: ClaimIdentityMatcher | None = None) -> None:
+                 identity: ClaimIdentityMatcher | None = None,
+                 knowledge_store: ValidatedKnowledgeStore | None = None) -> None:
         self.web = web or LiveWebResearchSession()
         self.planner = planner or ResearchSearchPlanner()
         self.extractor = extractor or DocumentClaimExtractor()
         self.genealogy = genealogy or EvidenceGenealogyBuilder()
         self.identity = identity or ClaimIdentityMatcher()
+        self.knowledge_store = knowledge_store
 
     def investigate(self, question: str, *, max_rounds: int = 4,
                     search_results: int = 5, documents_per_round: int = 3,
@@ -81,7 +92,10 @@ class OpenEndedResearch:
         if not question.strip():
             raise ValueError("question is required")
         answer_contract = analyze_question(question).contract
+        prior_knowledge = self._relevant_knowledge(question)
         plan = self.planner.plan(question, max_actions=max_rounds)
+        if prior_knowledge:
+            plan = self._apply_knowledge_prior(plan, prior_knowledge)
         rounds: list[OpenResearchRound] = []
         all_claims: list[ExtractedClaim] = []
         all_documents: list[EnvironmentObservation] = []
@@ -106,7 +120,10 @@ class OpenEndedResearch:
                     documents=documents,
                     claims=claims,
                     clusters=clusters,
-                    decision_rationale=f"selected for {action.purpose} (priority={action.priority:.2f})",
+                    decision_rationale=(
+                        f"selected for {action.purpose} (priority={action.priority:.2f})"
+                        + ("; informed by durable knowledge" if prior_knowledge else "")
+                    ),
                     expected_information_gain=round(action.priority, 3),
                 )
             )
@@ -124,7 +141,110 @@ class OpenEndedResearch:
             genealogy=genealogy,
             stop_reason=stop_reason,
             answer_contract=answer_contract,
+            prior_knowledge=prior_knowledge,
         )
+
+    def investigate_and_synthesize(self, question: str, *, max_rounds: int = 4,
+                                   search_results: int = 5, documents_per_round: int = 3,
+                                   claims_per_document: int = 20) -> tuple[OpenResearchResult, ResearchSynthesis]:
+        """Research, synthesize, and promote only independently corroborated factors."""
+        result = self.investigate(
+            question,
+            max_rounds=max_rounds,
+            search_results=search_results,
+            documents_per_round=documents_per_round,
+            claims_per_document=claims_per_document,
+        )
+        synthesis = ResearchSynthesisEngine().synthesize(result)
+        promoted = self._promote_synthesis(synthesis)
+        if promoted:
+            result = OpenResearchResult(
+                question=result.question,
+                rounds=result.rounds,
+                claims=result.claims,
+                clusters=result.clusters,
+                unresolved=result.unresolved,
+                genealogy=result.genealogy,
+                stop_reason=result.stop_reason,
+                answer_contract=result.answer_contract,
+                prior_knowledge=result.prior_knowledge,
+                promoted_knowledge=promoted,
+            )
+        return result, synthesis
+
+    def _relevant_knowledge(self, question: str) -> tuple[KnowledgeItem, ...]:
+        if self.knowledge_store is None:
+            return ()
+        tokens = _tokens(question)
+        scored: list[tuple[float, KnowledgeItem]] = []
+        for item in self.knowledge_store.items():
+            text = f"{item.subject} {item.predicate} {item.value} {item.scope}"
+            item_tokens = _tokens(text)
+            overlap = len(tokens & item_tokens) / max(1, len(tokens | item_tokens))
+            if overlap >= 0.08:
+                scored.append((overlap * item.source.reliability, item))
+        scored.sort(key=lambda pair: (-pair[0], pair[1].id))
+        return tuple(item for _, item in scored[:6])
+
+    @staticmethod
+    def _apply_knowledge_prior(plan, prior_knowledge: Sequence[KnowledgeItem]):
+        from dataclasses import replace
+        hints = tuple(_memory_terms(item.value) for item in prior_knowledge)
+        flat_hints = tuple(dict.fromkeys(term for group in hints for term in group))[:8]
+        if not flat_hints:
+            return plan
+        actions = []
+        for action in plan.actions:
+            objective = f"{action.query.objective} {' '.join(flat_hints)}"
+            actions.append(replace(action, query=replace(action.query, objective=objective)))
+        return replace(plan, actions=tuple(actions))
+
+    def _promote_synthesis(self, synthesis: ResearchSynthesis) -> tuple[KnowledgeItem, ...]:
+        if self.knowledge_store is None:
+            return ()
+        promoted: list[KnowledgeItem] = []
+        for factor in synthesis.factors:
+            # Source-origin corroboration is an explicit research validation
+            # gate. It is deliberately weaker than causal proof and remains
+            # scoped as validated research evidence rather than universal truth.
+            if factor.origin_count < 2 or factor.confidence == "candidate_uncertain":
+                continue
+            digest = hashlib.sha256(f"{synthesis.question}|{factor.factor}".encode()).hexdigest()[:20]
+            item = KnowledgeItem(
+                subject=synthesis.question,
+                predicate="has_corroborated_factor",
+                value=factor.factor,
+                source=KnowledgeSource(
+                    "live_research",
+                    f"research:{digest}",
+                    reliability=min(0.95, 0.80 + 0.05 * min(factor.origin_count - 2, 3)),
+                ),
+                id=f"knowledge:research:{digest}",
+                scope="research-corroborated",
+            )
+            tests = tuple(
+                KnowledgeTest(
+                    id=f"research-corroboration:{digest}:{origin}",
+                    knowledge_id=item.id,
+                    passed=True,
+                    reliability=item.source.reliability,
+                )
+                for origin in factor.origin_ids
+            )
+            try:
+                self.knowledge_store.promote(item, tests)
+            except ValueError:
+                continue
+            promoted.append(item)
+        return tuple(promoted)
+
+
+def _tokens(value: str) -> set[str]:
+    return {token for token in re.findall(r"[a-z0-9]+", str(value).lower()) if len(token) > 2}
+
+
+def _memory_terms(value: object) -> tuple[str, ...]:
+    return tuple(token for token in re.findall(r"[a-z0-9]+", str(value).lower()) if len(token) > 3)[:6]
 
 
 def _cluster_claims(claims: Sequence[ExtractedClaim], matcher: ClaimIdentityMatcher) -> tuple[ClaimCluster, ...]:
