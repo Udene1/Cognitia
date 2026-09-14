@@ -66,7 +66,12 @@ class CodeLogicAdapter:
         for control in [n for n in nodes if n.role == "control"]:
             for operation in operation_nodes:
                 relations.append(LogicRelation(control.id, "constrains", operation))
-        invariants = tuple(dict.fromkeys(representation.data_flow))
+        invariants = tuple(dict.fromkeys((
+            *representation.data_flow,
+            *(f"control:{item}" for item in representation.control_flow),
+            f"algorithm-family:{representation.algorithm_family}",
+            "executable outcome structure must be preserved",
+        )))
         model = model_from_parts(purpose=representation.algorithm_family,
                                  nodes=nodes, relations=relations, invariants=invariants,
                                  source_artifacts=(source_id,), source_representations=(language,),
