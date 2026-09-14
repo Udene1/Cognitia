@@ -130,7 +130,9 @@ class ResearchSynthesisEngine:
             factor = self._factor_text(claim.proposition)
             if factor:
                 buckets.setdefault(_normalize(factor), []).append(claim)
-        ranked = sorted(buckets.values(), key=lambda members: (-len(members), members[0].id))[:max_factors]
+        # Stable ranking is important: when factors have equal evidence volume,
+        # preserve discovery order instead of using opaque claim IDs as a tie-breaker.
+        ranked = sorted(buckets.values(), key=lambda members: -len(members))[:max_factors]
         origin_by_claim = {claim_id: origin.root_id for origin in result.genealogy.origins for claim_id in origin.claim_ids}
         factors: list[FactorExplanation] = []
         for members in ranked:
