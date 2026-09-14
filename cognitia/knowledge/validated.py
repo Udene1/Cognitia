@@ -64,7 +64,9 @@ class ValidatedKnowledgeStore:
             raise ValueError("a hypothesis requires test evidence before promotion")
         if hypothesis.status != "supported":
             raise ValueError("only a supported hypothesis can become durable knowledge")
-        if any(test.verdict != "supported" or test.reliability < self.min_reliability for test in tests):
+        # TestResult uses the explicit verdict name "supporting". Keep the
+        # durable gate strict without silently accepting challenged evidence.
+        if any(test.verdict != "supporting" or test.reliability < self.min_reliability for test in tests):
             raise ValueError("hypothesis has not survived all required tests")
         item = KnowledgeItem(subject=hypothesis.domain or "general", predicate="supports",
             value=hypothesis.proposition, source=source, id="knowledge:" + hypothesis.id, scope=scope)
@@ -80,6 +82,24 @@ class ValidatedKnowledgeStore:
 
     def all(self) -> tuple[dict[str, Any], ...]:
         return tuple(event.payload for event in self.journal.by_kind("validated_knowledge"))
+
+    def items(self) -> tuple[KnowledgeItem, ...]:
+        """Recover durable knowledge as typed items for cognition components."""
+        return tuple(
+            KnowledgeItem(
+                subject=payload["subject"],
+                predicate=payload["predicate"],
+                value=payload["value"],
+                source=KnowledgeSource(
+                    payload["source_kind"],
+                    payload["source_reference"],
+                    payload.get("source_reliability", 1.0),
+                ),
+                id=payload["id"],
+                scope=payload.get("scope", "validated"),
+            )
+            for payload in self.all()
+        )
 
     def recover(self) -> tuple[dict[str, Any], ...]:
         return self.all()
