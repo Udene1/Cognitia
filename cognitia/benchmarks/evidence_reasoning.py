@@ -134,8 +134,6 @@ class EvidenceReasoningBenchmark:
                 and trace.independent_contradiction_groups == problem.expected_independent_contradiction
                 and trace.stale_evidence == problem.expected_stale
                 and (problem.expected_model_status is None or trace.model_status == problem.expected_model_status)
-                # Some problems legitimately have no positive/negative evidence.
-                # The next-test decision is the capability proof in that case.
                 and trace.capability_use_score >= 1
             )
             results.append(BenchmarkResult(problem, trace, passed))
@@ -166,7 +164,7 @@ def benchmark_problems() -> tuple[BenchmarkProblem, ...]:
     original = _source("lab-original", "Independent lab", .95, "experiment")
     copies = tuple(
         _evidence(f"copy-{i}", p1, _source(f"copy-source-{i}", f"Copied article {i}", .55), True,
-                   "The device produces 100 units.", upstream=("lab-original",)) for i in range(6)
+                   "The device produces 100 units.", upstream=("copy-origin",)) for i in range(6)
     )
     e1 = _evidence("primary-measurement", p1, original, False, "Controlled measurement produced 71 units.", measured_at="2026-06-10T00:00:00Z")
     p2 = Claim("release-safe", "Release 42 is safe to deploy.", "software")
