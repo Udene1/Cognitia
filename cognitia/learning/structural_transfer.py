@@ -101,7 +101,7 @@ def _structural_feature_score(left: frozenset[str], right: frozenset[str]) -> fl
     """Category-aware fallback; untyped legacy signatures retain Jaccard behavior."""
     if not left or not right:
         return 0.0
-    exact = len(left & right) / max(1, len(left | right))
+    exact = _jaccard(left, right)
     left_categories = {item.split(":", 1)[0] for item in left if ":" in item}
     right_categories = {item.split(":", 1)[0] for item in right if ":" in item}
     shared_categories = left_categories & right_categories
@@ -109,6 +109,12 @@ def _structural_feature_score(left: frozenset[str], right: frozenset[str]) -> fl
         return exact
     category_score = len(shared_categories) / max(1, len(left_categories | right_categories))
     return 0.7 * exact + 0.3 * category_score
+
+
+def _jaccard(left: frozenset[str], right: frozenset[str]) -> float:
+    """Compatibility helper for callers that used the legacy metric directly."""
+    union = left | right
+    return len(left & right) / len(union) if union else 0.0
 
 
 def _adaptation(source: frozenset[str], target: frozenset[str]) -> tuple[str, ...]:
