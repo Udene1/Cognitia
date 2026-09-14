@@ -32,8 +32,7 @@ jobs:
           mkdir -p .ci
           COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/learn_solution.py
       - name: New-process code-to-problem transfer
-        run: |
-          COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/apply_learned_solution.py
+        run: COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/apply_learned_solution.py
       - name: Compare independently written implementations
         run: python tests/ci/compare_implementations.py
       - name: Exercise multi-language computational abstraction
@@ -106,3 +105,5 @@ jobs:
         run: python tests/ci/evidence_utility_problem.py
       - name: Exercise evidence genealogy
         run: python tests/ci/evidence_genealogy.py
+      - name: Exercise multi-factor research synthesis
+        run: python tests/ci/research_synthesis.py
