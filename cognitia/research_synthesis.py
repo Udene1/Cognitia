@@ -1,8 +1,9 @@
-"""Grounded synthesis for multi-factor research questions.
+"""Grounded multi-factor explanatory synthesis.
 
-This layer turns a candidate evidence landscape into a structured explanatory
-answer. It never upgrades extracted claims to truth: every factor remains a
-candidate explanation with explicit source/origin accounting and uncertainty.
+This module constructs an auditable explanatory structure from candidate claims.
+It does not treat different factor domains as competing explanations merely
+because they are different. Multiple factors may jointly contribute to one
+outcome; competition requires explicit contrary evidence.
 """
 from __future__ import annotations
 
@@ -24,6 +25,7 @@ class FactorExplanation:
     source_count: int
     origin_count: int
     confidence: str
+    domain: str
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,7 @@ class ResearchSynthesis:
     status: str
     thesis: str
     factors: tuple[FactorExplanation, ...]
+    complementary_domains: tuple[str, ...]
     competing_explanations: tuple[CompetingExplanation, ...]
     distinguishing_evidence: tuple[str, ...]
     caveats: tuple[str, ...]
@@ -47,13 +50,16 @@ class ResearchSynthesis:
     def render(self) -> str:
         lines = [self.thesis, "", "Contributing factors:"]
         for factor in self.factors:
-            lines.append(f"- {factor.factor}: {factor.contribution}")
+            lines.append(f"- [{factor.domain}] {factor.factor}: {factor.contribution}")
+        if self.complementary_domains:
+            lines.append("\nComplementary domains:")
+            lines.append("- " + ", ".join(self.complementary_domains))
         if self.competing_explanations:
-            lines.append("\nCompeting explanations:")
+            lines.append("\nCompeting explanations (only where evidence indicates genuine alternatives):")
             for explanation in self.competing_explanations:
                 lines.append(f"- {explanation.name}: " + "; ".join(explanation.distinguishing_evidence))
         if self.distinguishing_evidence:
-            lines.append("\nEvidence that would distinguish them:")
+            lines.append("\nEvidence needed to discriminate remaining alternatives:")
             lines.extend(f"- {item}" for item in self.distinguishing_evidence)
         if self.caveats:
             lines.append("\nCaveats:")
@@ -65,13 +71,14 @@ class ResearchSynthesis:
 
 
 class ResearchSynthesisEngine:
-    """Construct a cautious explanatory synthesis from extracted claims."""
+    """Construct a cautious, multi-factor explanation from extracted claims."""
 
     _CAUSE_PATTERNS = (
         re.compile(r"(?P<factor>.+?)\s+(?:contributed to|led to|resulted in|caused|undermined|weakened|destabilized)\s+(?P<outcome>.+)", re.I),
         re.compile(r"(?P<outcome>.+?)\s+(?:was|were|became)\s+(?:weakened|undermined|destabilized)\s+by\s+(?P<factor>.+)", re.I),
         re.compile(r"(?P<outcome>.+?)\s+(?:because of|due to|because)\s+(?P<factor>.+)", re.I),
     )
+    _NEGATION = re.compile(r"\b(?:not|never|no|neither|without|contradicts|contradicted|inconsistent)\b", re.I)
     _OUTCOME_TERMS = ("decline", "declined", "fall", "fell", "collapse", "collapsed", "end", "ended", "crisis", "weakened", "threatened")
     _PRONOUN_FACTORS = re.compile(r"^(?:this|that|it|he|she|they|these|those)\b", re.I)
     _HISTORIOGRAPHY = re.compile(r"\b(?:historians?|gibbon|theory|theories|historiography|speculat|account of the event)\b", re.I)
@@ -89,9 +96,9 @@ class ResearchSynthesisEngine:
     def synthesize(self, result: "OpenResearchResult", *, max_factors: int = 8) -> ResearchSynthesis:
         candidates = self._causal_claims(result.claims)
         factors = self._factorize(candidates, result, max_factors=max_factors)
-        domains = self._domains(factors)
-        competing = self._competing(domains)
-        distinguishing = self._distinguishing(factors)
+        domains = tuple(dict.fromkeys(factor.domain for factor in factors))
+        competing = self._competing(factors, candidates)
+        distinguishing = self._distinguishing(factors, competing)
         caveats = list(result.unresolved)
         caveats.append(
             f"{result.genealogy.finding_count} findings came from {result.genealogy.observed_origin_count} observed origins; "
@@ -105,12 +112,13 @@ class ResearchSynthesisEngine:
         return ResearchSynthesis(
             question=result.question,
             status=status,
-            thesis=self._thesis(result.question, factors),
+            thesis=self._thesis(result.question, factors, domains),
             factors=tuple(factors),
+            complementary_domains=domains,
             competing_explanations=tuple(competing),
             distinguishing_evidence=tuple(distinguishing),
             caveats=tuple(dict.fromkeys(caveats)),
-            next_actions=tuple(self._next_actions(factors, result)),
+            next_actions=tuple(self._next_actions(factors, competing, result)),
         )
 
     def _causal_claims(self, claims: Sequence[ExtractedClaim]) -> tuple[ExtractedClaim, ...]:
@@ -128,20 +136,22 @@ class ResearchSynthesisEngine:
         for members in ranked:
             source_ids = {claim.source for claim in members}
             origin_ids = {origin_by_claim.get(claim.id) for claim in members} - {None}
+            factor_text = self._factor_text(members[0].proposition)
             factors.append(FactorExplanation(
-                factor=self._factor_text(members[0].proposition),
-                contribution="; ".join(dict.fromkeys(claim.proposition for claim in members))[:600],
+                factor=factor_text,
+                contribution="; ".join(dict.fromkeys(claim.proposition for claim in members))[:700],
                 claim_ids=tuple(claim.id for claim in members),
                 source_count=len(source_ids),
                 origin_count=len(origin_ids),
                 confidence="candidate_uncertain" if any(claim.confidence == "uncertain" for claim in members) else "candidate",
+                domain=self._domain(factor_text),
             ))
         return factors
 
     def _factor_text(self, text: str) -> str:
-        lowered = text.lower()
         if self._HISTORIOGRAPHY.search(text):
             return ""
+        lowered = text.lower()
         for pattern in self._CAUSE_PATTERNS:
             match = pattern.search(text)
             if not match:
@@ -152,9 +162,7 @@ class ResearchSynthesisEngine:
                 continue
             if not any(term in outcome for term in self._OUTCOME_TERMS):
                 continue
-            if self._PRONOUN_FACTORS.search(factor):
-                continue
-            if len(factor.split()) < 2:
+            if self._PRONOUN_FACTORS.search(factor) or len(factor.split()) < 2:
                 continue
             if self._domain(factor) == "other":
                 continue
@@ -167,57 +175,60 @@ class ResearchSynthesisEngine:
         best = max(scores, key=scores.get)
         return best if scores[best] else "other"
 
-    def _domains(self, factors: Sequence[FactorExplanation]) -> dict[str, list[FactorExplanation]]:
-        result: dict[str, list[FactorExplanation]] = {}
-        for factor in factors:
-            result.setdefault(self._domain(factor.factor), []).append(factor)
-        return result
-
-    def _competing(self, domains: dict[str, list[FactorExplanation]]) -> list[CompetingExplanation]:
-        groups = [(name, members) for name, members in domains.items() if members]
-        if len(groups) < 2:
+    def _competing(self, factors: Sequence[FactorExplanation], claims: Sequence[ExtractedClaim]) -> list[CompetingExplanation]:
+        # Different domains are complementary by default. Competition requires
+        # explicit negation/contradiction evidence tied to a factor proposition.
+        contrary = [claim for claim in claims if self._NEGATION.search(claim.proposition)]
+        if not contrary:
             return []
         result: list[CompetingExplanation] = []
-        for name, members in groups[:4]:
-            alternatives = [other for other, _ in groups if other != name]
+        for claim in contrary[:4]:
+            factor = self._factor_text(claim.proposition)
+            if not factor:
+                continue
             result.append(CompetingExplanation(
-                name=f"{name}-weighted explanation",
-                factor_ids=tuple(factor.factor for factor in members),
-                distinguishing_evidence=tuple(
-                    f"Compare {name} evidence against {other} evidence under the same historical period and outcome definition."
-                    for other in alternatives[:2]
+                name=f"alternative involving {factor}",
+                factor_ids=(factor,),
+                distinguishing_evidence=(
+                    "Test the contrary proposition against the positive contribution claims using independent evidence and the same outcome/time window.",
                 ),
             ))
         return result
 
-    def _distinguishing(self, factors: Sequence[FactorExplanation]) -> list[str]:
-        domains = list(dict.fromkeys(self._domain(factor.factor) for factor in factors))
-        if len(domains) < 2:
-            return ["Acquire independent evidence that directly measures the leading factor and the claimed outcome over the same period."] if factors else []
+    def _distinguishing(self, factors: Sequence[FactorExplanation], competing: Sequence[CompetingExplanation]) -> list[str]:
+        if competing:
+            return [
+                "Compare the competing propositions with independent evidence that measures mechanism, timing, and outcome together.",
+                "Check whether the apparently competing factors can instead operate jointly; do not force mutual exclusivity without evidence.",
+            ]
+        if len(factors) < 2:
+            return ["Acquire independent evidence that directly connects the leading factor to the outcome over the relevant period."] if factors else []
         return [
-            f"Find evidence that separates {domains[index]} effects from {domains[index + 1]} effects rather than merely reporting both."
-            for index in range(min(len(domains) - 1, 4))
+            f"Test whether {factors[index].factor} contributes independently to the outcome alongside {factors[index + 1].factor}.",
+            f"Search for evidence of a mechanism linking {factors[index].factor} to {factors[index + 1].factor}, rather than assuming interaction.",
         ]
 
-    def _thesis(self, question: str, factors: Sequence[FactorExplanation]) -> str:
+    def _thesis(self, question: str, factors: Sequence[FactorExplanation], domains: Sequence[str]) -> str:
         if not factors:
             return f"Cognitia cannot yet construct a grounded multi-factor explanation for: {question}"
-        names = ", ".join(dict.fromkeys(self._domain(factor.factor) for factor in factors))
+        domain_text = ", ".join(domains)
         return (
-            f"The current candidate evidence does not reduce {question} to one cause. "
-            f"It points to a multi-factor explanation involving {names}. "
-            "The factors below describe candidate contribution mechanisms; they are not promoted to established knowledge by extraction alone."
+            f"The current candidate evidence does not justify reducing {question} to one cause. "
+            f"It identifies multiple potentially complementary contributing factors across {domain_text}. "
+            "The synthesis describes observed candidate contribution mechanisms without promoting extraction alone to established knowledge."
         )
 
-    def _next_actions(self, factors: Sequence[FactorExplanation], result: "OpenResearchResult") -> list[str]:
+    def _next_actions(self, factors: Sequence[FactorExplanation], competing: Sequence[CompetingExplanation], result: "OpenResearchResult") -> list[str]:
         actions = [
-            "Acquire independent evidence for the strongest competing factor domains.",
-            "Separate correlation from causal contribution by searching for evidence tied to timing and mechanism.",
+            "Acquire independent evidence for each leading factor and preserve source genealogy.",
+            "Separate temporal association from causal contribution by requiring evidence of mechanism as well as timing.",
         ]
-        if len(factors) >= 2:
-            actions.append("Run a discriminating investigation designed to distinguish at least two leading factor combinations.")
+        if competing:
+            actions.append("Run a discriminating investigation against the explicitly contrary propositions.")
+        elif len(factors) >= 2:
+            actions.append("Investigate whether leading factors interact or form causal chains; record only links supported by evidence.")
         if result.genealogy.effective_independent_count < 2:
-            actions.append("Increase independent source-origin diversity before promoting the synthesis.")
+            actions.append("Increase independent source-origin diversity before promoting the synthesis to durable knowledge.")
         return actions
 
 
