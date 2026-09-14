@@ -80,18 +80,23 @@ class EvidenceConvergenceEngine:
         groups: tuple[tuple[str, ...], ...],
         selected: set[str],
     ) -> float:
-        """Weight only evidence in the requested polarity.
+        """Combine independent groups with diminishing returns.
 
-        A shared upstream root can appear in both supporting and contradicting
-        records. It must not lend its reliability to the opposite polarity.
+        A group is a unit of independent evidence. Combining group reliabilities
+        with a noisy-OR prevents a second independent source from either being
+        ignored by a hard cap or creating impossible confidence above 1.0.
+        Shared provenance is collapsed before this calculation.
         """
         selected_records = tuple(record for record in records if record.id in selected)
-        total = 0.0
+        group_reliabilities: list[float] = []
         for group in groups:
             roots = set(group)
             reliability = max(
                 (record.source.reliability for record in selected_records if roots.intersection(record.provenance_roots)),
                 default=0.0,
             )
-            total += reliability
-        return min(1.0, total)
+            group_reliabilities.append(reliability)
+        remaining = 1.0
+        for reliability in group_reliabilities:
+            remaining *= 1.0 - reliability
+        return 1.0 - remaining
