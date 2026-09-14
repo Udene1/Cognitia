@@ -46,22 +46,24 @@ class WikimediaSearchProvider:
 
         timestamp = datetime.now(timezone.utc).isoformat()
         observations: list[EnvironmentObservation] = []
-        for item in payload.get("query", {}).get("search", []):
+        for index, item in enumerate(payload.get("query", {}).get("search", [])):
             title = str(item.get("title", ""))
             snippet = str(item.get("snippet", ""))
-            page_id = str(item.get("pageid", ""))
+            page_id = str(item.get("pageid", index))
             observations.append(
                 EnvironmentObservation(
+                    id=f"web:wikimedia:{page_id}",
                     source="web:wikimedia",
-                    observation=f"{title}: {snippet}",
-                    metadata={
-                        "kind": "search_result",
-                        "url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(title.replace(' ', '_'))}",
-                        "page_id": page_id,
-                        "measured_at": timestamp,
-                        "supports": None,
-                        "query": query.objective,
-                    },
+                    content=f"{title}: {snippet}",
+                    reliability=0.7,
+                    metadata=(
+                        ("kind", "search_result"),
+                        ("url", f"https://en.wikipedia.org/wiki/{urllib.parse.quote(title.replace(' ', '_'))}"),
+                        ("page_id", page_id),
+                        ("measured_at", timestamp),
+                        ("supports", "unknown"),
+                        ("query", query.objective),
+                    ),
                 )
             )
         return tuple(observations)
