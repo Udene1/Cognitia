@@ -130,8 +130,6 @@ class ResearchSynthesisEngine:
             factor = self._factor_text(claim.proposition)
             if factor:
                 buckets.setdefault(_normalize(factor), []).append(claim)
-        # Stable ranking is important: when factors have equal evidence volume,
-        # preserve discovery order instead of using opaque claim IDs as a tie-breaker.
         ranked = sorted(buckets.values(), key=lambda members: -len(members))[:max_factors]
         origin_by_claim = {claim_id: origin.root_id for origin in result.genealogy.origins for claim_id in origin.claim_ids}
         factors: list[FactorExplanation] = []
@@ -179,13 +177,15 @@ class ResearchSynthesisEngine:
         if not contrary:
             return []
         result: list[CompetingExplanation] = []
+        known = {_normalize(factor.factor): factor for factor in factors}
         for claim in contrary[:4]:
             factor = self._factor_text(claim.proposition)
             if not factor:
                 continue
+            canonical = known.get(_normalize(factor))
             result.append(CompetingExplanation(
-                name=f"alternative involving {factor}",
-                factor_ids=(factor,),
+                name=f"alternative involving {canonical.factor if canonical else factor}",
+                factor_ids=(canonical.factor if canonical else factor,),
                 distinguishing_evidence=(
                     "Test the contrary proposition against the positive contribution claims using independent evidence and the same outcome/time window.",
                 ),
@@ -236,4 +236,6 @@ def _normalize(value: str) -> str:
 
 def _trim_factor(value: str) -> str:
     value = re.sub(r"^(according to|some historians|most historians|the traditional view)\s+", "", value, flags=re.I)
+    value = re.sub(r"\b(?:does|did|do|is|was|were|are)\s+not\b\s*", "", value, flags=re.I)
+    value = re.sub(r"\b(?:never|no|neither|without)\b\s*", "", value, flags=re.I)
     return value.strip(" ,;:.")[:220]
