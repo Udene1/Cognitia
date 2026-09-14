@@ -109,17 +109,15 @@ class AnsweringCore:
         changes = tuple(dict.fromkeys(self._what_would_change(synthesis)))
         verification = tuple(dict.fromkeys(self._verification(synthesis, capability_limits_tuple)))
         epistemic = self._epistemic(synthesis, uncertainty, capability_limits_tuple)
-
-        elements = {"direct answer", "explanation", "evidence"}
+        contract = _contract_from_plan_source(synthesis.question)
+        elements = _assessment_elements(contract, answer, reasoning, evidence, uncertainty)
         assessment = self.planner.assess(
-            _contract_from_plan_source(synthesis.question),
+            contract,
             elements=elements,
             direct_answer=bool(answer.strip()),
             explanation=bool(reasoning),
             evidence=bool(evidence),
         )
-        # A capability boundary never silently turns an answer into a refusal.
-        # It is represented in epistemic state and verification requirements.
         return CandidateAnswer(
             question=synthesis.question,
             answer=answer,
@@ -144,6 +142,8 @@ class AnsweringCore:
         capability_limits: Iterable[str] = (),
     ) -> tuple[CandidateAnswer, AnswerRevision]:
         updated = self.build(updated_synthesis, capability_limits=capability_limits)
+        previous_fp = _fingerprint(previous)
+        new_fp = _fingerprint(updated)
         reasons: list[str] = []
         if updated.answer != previous.answer:
             reasons.append("new synthesis changed the candidate conclusion")
@@ -153,15 +153,14 @@ class AnsweringCore:
             reasons.append(f"new evidence incorporated: {len(new_evidence)} item(s)")
         if not reasons:
             reasons.append("new evidence did not change the current conclusion")
-        revision = AnswerRevision(
-            previous_fingerprint=_fingerprint(previous),
-            new_fingerprint=_fingerprint(updated),
-            changed=_fingerprint(previous) != _fingerprint(updated),
+        return updated, AnswerRevision(
+            previous_fingerprint=previous_fp,
+            new_fingerprint=new_fp,
+            changed=previous_fp != new_fp,
             changed_because=tuple(reasons),
             previous_answer=previous.answer,
             new_answer=updated.answer,
         )
-        return updated, revision
 
     @staticmethod
     def _direct_answer(synthesis: ResearchSynthesis) -> str:
@@ -183,8 +182,8 @@ class AnsweringCore:
             return f"{question}? The available evidence indicates that {mechanism}."
         if question.lower().startswith(("is ", "are ", "was ", "were ", "did ", "does ", "do ")):
             return (
-                f"My best current answer to {question}? is yes only to the extent supported by the candidate evidence; "
-                "the available evidence does not establish a categorical conclusion."
+                f"My best current answer to {question}? is that the proposition is not established categorically; "
+                "the available evidence supports only a bounded candidate conclusion."
             )
         return f"My best current answer to {question}? is supported by {len(factors)} candidate evidence-backed factor(s)."
 
@@ -218,11 +217,7 @@ class AnsweringCore:
         return list(dict.fromkeys(actions))
 
     @staticmethod
-    def _epistemic(
-        synthesis: ResearchSynthesis,
-        uncertainty: Sequence[str],
-        capability_limits: Sequence[str],
-    ) -> EpistemicState:
+    def _epistemic(synthesis: ResearchSynthesis, uncertainty: Sequence[str], capability_limits: Sequence[str]) -> EpistemicState:
         independent = max((factor.origin_count for factor in synthesis.factors), default=0)
         if synthesis.status == "insufficient_explanatory_structure":
             confidence, strength = "very_low", "insufficient"
@@ -244,8 +239,47 @@ class AnsweringCore:
         )
 
 
+def _assessment_elements(contract, answer: str, reasoning: Sequence[str], evidence: Sequence[str], uncertainty: Sequence[str]) -> set[str]:
+    elements: set[str] = set()
+    required = {item.lower() for item in contract.required_elements}
+    if "causal explanation" in required and answer.strip() and reasoning:
+        elements.add("causal explanation")
+    if "supporting evidence or reasoning" in required and (evidence or reasoning):
+        elements.add("supporting evidence or reasoning")
+    if "uncertainty where applicable" in required and uncertainty:
+        elements.add("uncertainty where applicable")
+    if "identified object or fact" in required and answer.strip():
+        elements.add("identified object or fact")
+    if "time or relevant event" in required and answer.strip():
+        elements.add("time or relevant event")
+    if "location" in required and answer.strip():
+        elements.add("location")
+    if "quantity" in required and answer.strip():
+        elements.add("quantity")
+    if "mechanism or ordered procedure" in required and (answer.strip() and reasoning):
+        elements.add("mechanism or ordered procedure")
+    if "comparison dimensions" in required and reasoning:
+        elements.add("comparison dimensions")
+    if "differences" in required and reasoning:
+        elements.add("differences")
+    if "similarities where relevant" in required and reasoning:
+        elements.add("similarities where relevant")
+    if "requested items" in required and answer.strip():
+        elements.add("requested items")
+    if "brief rationale" in required and reasoning:
+        elements.add("brief rationale")
+    if "derivation or justification" in required and reasoning:
+        elements.add("derivation or justification")
+    if "direct answer" in required and answer.strip():
+        elements.add("direct answer")
+    if "brief justification" in required and reasoning:
+        elements.add("brief justification")
+    if "answer matching the explicit objective" in required and answer.strip():
+        elements.add("answer matching the explicit objective")
+    return elements
+
+
 def _contract_from_plan_source(question: str):
-    """Return the real contract so assessment remains the single source of truth."""
     from .language import analyze_question
     return analyze_question(question).contract
 
