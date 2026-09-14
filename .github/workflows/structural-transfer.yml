@@ -16,3 +16,7 @@ jobs:
         run: python -m pip install --upgrade pip && pip install -e . pytest
       - name: Exercise structural transfer and answer sufficiency
         run: python tests/ci/structural_transfer.py
+      - name: Exercise historical temporal semantics
+        run: python tests/ci/temporal_marker_regression.py
+      - name: Exercise semantic polarity and cognitive preservation
+        run: python tests/ci/semantic_polarity.py
