@@ -9,7 +9,7 @@ The implementation is deliberately deterministic and model-independent.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 from typing import Iterable, Sequence
 
@@ -118,6 +118,15 @@ class AnsweringCore:
             explanation=bool(reasoning),
             evidence=bool(evidence),
         )
+        # An explicit insufficiency state is a hard epistemic boundary. A
+        # non-empty bounded answer may still be rendered, but it must never be
+        # labelled contract-sufficient when the research structure is empty.
+        if synthesis.status == "insufficient_explanatory_structure" and assessment.sufficient:
+            assessment = replace(
+                assessment,
+                sufficient=False,
+                stopping_reason="insufficient_explanatory_structure",
+            )
         return CandidateAnswer(
             question=synthesis.question,
             answer=answer,
