@@ -32,11 +32,12 @@ class DocumentClaimExtractor:
     """Extract bounded, auditable candidate claims without an LLM."""
 
     _SENTENCE = re.compile(r"(?<=[.!?])\s+|\n+")
-    _TEMPORAL = re.compile(
+    _TEMPORAL_CONTEXT = re.compile(
         r"\b(?:in|since|from|during|by|after|before)\s+(?:the\s+)?(?:19\d{2}|20\d{2}|\d{4}|\d{1,2}\s+century)\b"
-        r"|\b(?:19\d{2}|20\d{2})\b|\b(?:historically|currently|today|now|formerly|originally)\b",
+        r"|\b(?:historically|currently|today|now|formerly|originally)\b",
         re.IGNORECASE,
     )
+    _YEAR = re.compile(r"\b(?:18|19|20|21)\d{2}\b")
     _UNCERTAIN = re.compile(
         r"\b(?:may|might|could|can|possibly|likely|unlikely|appears|reported|believed|estimated|according to)\b",
         re.IGNORECASE,
@@ -56,7 +57,9 @@ class DocumentClaimExtractor:
             normalized = " ".join(sentence.split())
             if not self._is_claim_candidate(normalized):
                 continue
-            temporal = tuple(dict.fromkeys(m.group(0) for m in self._TEMPORAL.finditer(normalized)))
+            temporal_values = [m.group(0) for m in self._TEMPORAL_CONTEXT.finditer(normalized)]
+            temporal_values.extend(m.group(0) for m in self._YEAR.finditer(normalized))
+            temporal = tuple(dict.fromkeys(temporal_values))
             uncertainty = tuple(dict.fromkeys(m.group(0).lower() for m in self._UNCERTAIN.finditer(normalized)))
             entities = tuple(dict.fromkeys(
                 m.group(0) for m in self._ENTITY.finditer(normalized)
