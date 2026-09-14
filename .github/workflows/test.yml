@@ -84,6 +84,8 @@ jobs:
         run: python tests/ci/evidence_convergence.py
       - name: Exercise real evidence reasoning problem-solving
         run: python tests/ci/evidence_reasoning_problem.py
+      - name: Exercise discriminating experiment problem-solving
+        run: python tests/ci/decision_experiment_problem.py
       - name: Exercise validated-knowledge persistence
         run: |
           rm -rf .ci/validated-knowledge
