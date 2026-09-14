@@ -109,3 +109,5 @@ jobs:
         run: python tests/ci/research_synthesis.py
       - name: Exercise structured language representation
         run: python tests/ci/language_representation.py
+      - name: Exercise semantic language and answer contracts
+        run: python tests/ci/language_cognition.py
