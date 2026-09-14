@@ -13,6 +13,7 @@ from .document_claims import DocumentClaimExtractor, ExtractedClaim
 from .environment import EnvironmentObservation
 from .evidence.claim_identity import ClaimIdentityMatcher
 from .evidence.genealogy import EvidenceGenealogyBuilder, GenealogyAssessment
+from .language import AnswerContract, analyze_question
 from .research_search import ResearchSearchPlanner, SearchAction
 from .web_research import LiveWebResearchSession
 
@@ -47,6 +48,7 @@ class OpenResearchResult:
     unresolved: tuple[str, ...]
     genealogy: GenealogyAssessment
     stop_reason: str
+    answer_contract: AnswerContract | None = None
 
     @property
     def status(self) -> str:
@@ -78,6 +80,7 @@ class OpenEndedResearch:
                     claims_per_document: int = 20) -> OpenResearchResult:
         if not question.strip():
             raise ValueError("question is required")
+        answer_contract = analyze_question(question).contract
         plan = self.planner.plan(question, max_actions=max_rounds)
         rounds: list[OpenResearchRound] = []
         all_claims: list[ExtractedClaim] = []
@@ -120,6 +123,7 @@ class OpenEndedResearch:
             unresolved=tuple(unresolved),
             genealogy=genealogy,
             stop_reason=stop_reason,
+            answer_contract=answer_contract,
         )
 
 
@@ -158,22 +162,16 @@ def _unresolved_questions(question: str, rounds: Sequence[OpenResearchRound],
         gaps.append("No source documents were retrieved; search snippets are insufficient for deeper interpretation.")
     if not clusters:
         gaps.append("No candidate claims were extracted from acquired documents.")
-    if any(cluster.conflict for cluster in clusters):
-        gaps.append("At least one claim identity group contains lexical polarity conflict; independent verification is required.")
     if genealogy.finding_count > genealogy.observed_origin_count:
-        gaps.append(
-            f"{genealogy.finding_count} findings came from {genealogy.observed_origin_count} observed origins; "
-            "finding count must not be interpreted as independent-source count."
-        )
+        gaps.append("Multiple findings may share source origins; finding count must not be treated as independent evidence count.")
     if genealogy.effective_independent_count < 2:
-        gaps.append("Fewer than two candidate independent origins are available; corroboration remains weak.")
-    gaps.append(f"The current result is an evidence landscape for: {question}")
+        gaps.append("Independent source-origin diversity remains too thin for durable promotion.")
     return gaps
 
 
 def _stop_reason(rounds: Sequence[OpenResearchRound], genealogy: GenealogyAssessment) -> str:
-    if not rounds:
-        return "no_search_rounds"
     if genealogy.effective_independent_count < 2:
         return "independent_evidence_budget_exhausted"
-    return "bounded_search_budget_exhausted"
+    if rounds:
+        return "bounded_search_budget_exhausted"
+    return "no_research_round"
