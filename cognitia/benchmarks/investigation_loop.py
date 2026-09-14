@@ -107,7 +107,7 @@ class EvidenceInvestigationLoop:
     @staticmethod
     def _experiment_evidence(claim: Claim, prediction: Prediction) -> EvidenceRecord:
         source = EvidenceSource("follow-up-experiment", "experiment", "Discriminating follow-up", .95)
-        supports = prediction.hypothesis == "cache-failure"
+        supports = prediction.hypothesis_id == "cache-failure"
         return EvidenceRecord(
             id="follow-up-observation",
             claim_id=claim.id,
