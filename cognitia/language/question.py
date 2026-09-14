@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 import re
 
 from .representation import AnswerContract, LanguageFrame, build_language_frame
+from .cognition import CognitiveRepresentation, build_cognitive_representation
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,7 @@ class QuestionAnalysis:
     focus: str
     requested_operations: tuple[str, ...] = ()
     subquestions: tuple[str, ...] = ()
+    cognitive: CognitiveRepresentation | None = None
 
 
 def analyze_question(text: str) -> QuestionAnalysis:
@@ -101,9 +103,12 @@ def analyze_question(text: str) -> QuestionAnalysis:
     operations = _operations(kind, lower)
     if len(subquestions) > 1:
         operations = tuple(dict.fromkeys((*operations, "satisfy_all_subquestions")))
+    frame = replace(frame, answer_contract=contract)
+    cognitive = build_cognitive_representation(frame, operations=operations, answer_elements=required)
     return QuestionAnalysis(
-        frame=replace(frame, answer_contract=contract), contract=contract, question_type=kind,
-        focus=_focus(normalized), requested_operations=operations, subquestions=subquestions,
+        frame=frame, contract=contract, question_type=kind,
+        focus=_focus(normalized), requested_operations=operations,
+        subquestions=subquestions, cognitive=cognitive,
     )
 
 
@@ -129,7 +134,6 @@ def _operations(kind: str, text: str) -> tuple[str, ...]:
 
 
 def _subquestions(text: str) -> tuple[str, ...]:
-    # Preserve the question clauses; this is intentionally structural, not a claim extractor.
     parts = re.split(r"\s*(?:,\s+and\s+|\s+and\s+|;|\?)\s*", text.strip().rstrip("?"), flags=re.I)
     return tuple(p.strip() + ("?" if p.strip() and not p.strip().endswith("?") else "") for p in parts if p.strip())
 
