@@ -100,3 +100,5 @@ jobs:
         run: python tests/ci/document_claim_extraction.py
       - name: Exercise evidence-driven research action control
         run: python tests/ci/research_action_control.py
+      - name: Exercise evidence-to-decision utility
+        run: python tests/ci/evidence_utility_problem.py
