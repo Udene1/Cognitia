@@ -26,6 +26,7 @@ class FactorExplanation:
     origin_count: int
     confidence: str
     domain: str
+    origin_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -146,6 +147,7 @@ class ResearchSynthesisEngine:
                 origin_count=len(origin_ids),
                 confidence="candidate_uncertain" if any(claim.confidence == "uncertain" for claim in members) else "candidate",
                 domain=self._domain(factor_text),
+                origin_ids=tuple(sorted(origin_ids)),
             ))
         return factors
 
