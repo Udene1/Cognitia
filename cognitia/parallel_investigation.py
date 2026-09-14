@@ -37,12 +37,13 @@ class ParallelInvestigator:
     def investigate(self, tasks: Sequence[InvestigationTask], *, limit: int = 10) -> tuple[InvestigationResult, ...]:
         if limit < 1:
             raise ValueError("limit must be positive")
+
         def run(task: InvestigationTask) -> InvestigationResult:
             source = self.sources.get(task.environment)
             if source is None:
                 return InvestigationResult(task.id, task.environment, (), "environment_unavailable")
             try:
-                observations = tuple(source.observe(task.objective, limit))
+                observations = tuple(source.observe(task.objective, limit=limit))
                 return InvestigationResult(task.id, task.environment, observations)
             except Exception as exc:  # environment failures are evidence about capability, not cognition crashes
                 return InvestigationResult(task.id, task.environment, (), f"{type(exc).__name__}: {exc}")
