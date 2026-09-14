@@ -117,5 +117,14 @@ jobs:
         run: python tests/ci/language_representation.py
       - name: Exercise semantic language and answer contracts
         run: python tests/ci/language_cognition.py
+      - name: Diagnose answer construction state
+        if: always()
+        run: python tests/ci/answering_diagnostics.py
       - name: Exercise answer construction, epistemic boundaries, and revision
         run: python tests/ci/answering_core.py
+      - name: Upload answer-core diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: answering-core-diagnostics
+          path: .ci/answering-diagnostics.txt
