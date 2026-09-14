@@ -1,12 +1,4 @@
-"""Answer construction and epistemic control for Cognitia.
-
-Research modules determine what the system currently believes. This module is
-responsible for turning that state into an explicit candidate answer, checking
-that the answer contract is satisfied, exposing uncertainty, and representing
-answer revisions when new evidence changes the conclusion.
-
-The implementation is deliberately deterministic and model-independent.
-"""
+"""Answer construction and epistemic control for Cognitia."""
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -19,8 +11,6 @@ from .research_synthesis import ResearchSynthesis
 
 @dataclass(frozen=True)
 class EpistemicState:
-    """What Cognitia knows about the strength and limits of a conclusion."""
-
     status: str
     confidence: str
     evidence_strength: str
@@ -33,8 +23,6 @@ class EpistemicState:
 
 @dataclass(frozen=True)
 class CandidateAnswer:
-    """A user-facing answer plus the cognitive state that produced it."""
-
     question: str
     answer: str
     answer_kind: str
@@ -77,8 +65,6 @@ class CandidateAnswer:
 
 @dataclass(frozen=True)
 class AnswerRevision:
-    """An auditable transition between two answers."""
-
     previous_fingerprint: str
     new_fingerprint: str
     changed: bool
@@ -88,17 +74,10 @@ class AnswerRevision:
 
 
 class AnsweringCore:
-    """Construct, validate, and revise answers without requiring an LLM."""
-
     def __init__(self, planner: AnswerContractPlanner | None = None) -> None:
         self.planner = planner or AnswerContractPlanner()
 
-    def build(
-        self,
-        synthesis: ResearchSynthesis,
-        *,
-        capability_limits: Iterable[str] = (),
-    ) -> CandidateAnswer:
+    def build(self, synthesis: ResearchSynthesis, *, capability_limits: Iterable[str] = ()) -> CandidateAnswer:
         plan = self.planner.plan(synthesis.question)
         capability_limits_tuple = tuple(dict.fromkeys(item.strip() for item in capability_limits if item.strip()))
         answer = self._direct_answer(synthesis)
@@ -111,22 +90,9 @@ class AnsweringCore:
         epistemic = self._epistemic(synthesis, uncertainty, capability_limits_tuple)
         contract = _contract_from_plan_source(synthesis.question)
         elements = _assessment_elements(contract, answer, reasoning, evidence, uncertainty)
-        assessment = self.planner.assess(
-            contract,
-            elements=elements,
-            direct_answer=bool(answer.strip()),
-            explanation=bool(reasoning),
-            evidence=bool(evidence),
-        )
-        # An explicit insufficiency state is a hard epistemic boundary. A
-        # non-empty bounded answer may still be rendered, but it must never be
-        # labelled contract-sufficient when the research structure is empty.
+        assessment = self.planner.assess(contract, elements=elements, direct_answer=bool(answer.strip()), explanation=bool(reasoning), evidence=bool(evidence))
         if synthesis.status == "insufficient_explanatory_structure" and assessment.sufficient:
-            assessment = replace(
-                assessment,
-                sufficient=False,
-                stopping_reason="insufficient_explanatory_structure",
-            )
+            assessment = replace(assessment, sufficient=False, stopping_reason="insufficient_explanatory_structure")
         return CandidateAnswer(
             question=synthesis.question,
             answer=answer,
@@ -142,14 +108,7 @@ class AnsweringCore:
             assessment=assessment,
         )
 
-    def revise(
-        self,
-        previous: CandidateAnswer,
-        updated_synthesis: ResearchSynthesis,
-        *,
-        new_evidence: Sequence[str] = (),
-        capability_limits: Iterable[str] = (),
-    ) -> tuple[CandidateAnswer, AnswerRevision]:
+    def revise(self, previous: CandidateAnswer, updated_synthesis: ResearchSynthesis, *, new_evidence: Sequence[str] = (), capability_limits: Iterable[str] = ()) -> tuple[CandidateAnswer, AnswerRevision]:
         updated = self.build(updated_synthesis, capability_limits=capability_limits)
         previous_fp = _fingerprint(previous)
         new_fp = _fingerprint(updated)
@@ -162,50 +121,38 @@ class AnsweringCore:
             reasons.append(f"new evidence incorporated: {len(new_evidence)} item(s)")
         if not reasons:
             reasons.append("new evidence did not change the current conclusion")
-        return updated, AnswerRevision(
-            previous_fingerprint=previous_fp,
-            new_fingerprint=new_fp,
-            changed=previous_fp != new_fp,
-            changed_because=tuple(reasons),
-            previous_answer=previous.answer,
-            new_answer=updated.answer,
-        )
+        return updated, AnswerRevision(previous_fingerprint=previous_fp, new_fingerprint=new_fp, changed=previous_fp != new_fp, changed_because=tuple(reasons), previous_answer=previous.answer, new_answer=updated.answer)
 
     @staticmethod
     def _direct_answer(synthesis: ResearchSynthesis) -> str:
         if not synthesis.factors:
-            return (
-                f"I cannot currently establish a reliable answer to {synthesis.question} "
-                "from the available evidence. My best current conclusion is that the evidence is insufficient."
-            )
+            return f"I cannot currently establish a reliable answer to {synthesis.question} from the available evidence. My best current conclusion is that the evidence is insufficient."
         question = synthesis.question.strip().rstrip("?")
         factors = synthesis.factors
         if question.lower().startswith(("why ", "what caused ", "what causes ")):
             factor_text = _join_factors(factor.factor for factor in factors)
-            return (
-                f"{question}? The best current explanation is that {factor_text}. "
-                "These factors are supported as candidate contributors, but their relative importance is not yet established."
-            )
+            answer = f"{question}? The best current explanation is that {factor_text}. These factors are supported as candidate contributors, but their relative importance is not yet established."
+            if synthesis.competing_explanations:
+                answer += " The evidence contains competing propositions, so Cognitia does not treat the alternatives as settled."
+            elif synthesis.distinguishing_evidence:
+                answer += " The current evidence does not yet cleanly distinguish the leading explanations; the discriminating evidence Cognitia still needs is " + _join_factors(synthesis.distinguishing_evidence) + "."
+            return answer
         if question.lower().startswith("how "):
-            mechanism = _join_factors(factor.contribution for factor in factors)
-            return f"{question}? The available evidence indicates that {mechanism}."
+            return f"{question}? The available evidence indicates that {_join_factors(factor.contribution for factor in factors)}."
         if question.lower().startswith(("is ", "are ", "was ", "were ", "did ", "does ", "do ")):
-            return (
-                f"My best current answer to {question}? is that the proposition is not established categorically; "
-                "the available evidence supports only a bounded candidate conclusion."
-            )
+            return f"My best current answer to {question}? is that the proposition is not established categorically; the available evidence supports only a bounded candidate conclusion."
         return f"My best current answer to {question}? is supported by {len(factors)} candidate evidence-backed factor(s)."
 
     @staticmethod
     def _reasoning(synthesis: ResearchSynthesis) -> list[str]:
-        return [factor.contribution for factor in synthesis.factors]
+        reasoning = [factor.contribution for factor in synthesis.factors]
+        if synthesis.distinguishing_evidence:
+            reasoning.append("Discrimination requirement: " + "; ".join(synthesis.distinguishing_evidence))
+        return reasoning
 
     @staticmethod
     def _evidence(synthesis: ResearchSynthesis) -> list[str]:
-        return [
-            f"{factor.factor} ({factor.source_count} source(s), {factor.origin_count} observed origin(s), confidence={factor.confidence})."
-            for factor in synthesis.factors
-        ]
+        return [f"{factor.factor} ({factor.source_count} source(s), {factor.origin_count} observed origin(s), confidence={factor.confidence})." for factor in synthesis.factors]
 
     @staticmethod
     def _limitations(synthesis: ResearchSynthesis, capability_limits: Sequence[str]) -> list[str]:
@@ -236,16 +183,7 @@ class AnsweringCore:
             confidence, strength = "low", "candidate"
         else:
             confidence, strength = "candidate", "candidate"
-        return EpistemicState(
-            status="bounded_candidate" if confidence != "very_low" else "insufficient",
-            confidence=confidence,
-            evidence_strength=strength,
-            independent_origin_count=independent,
-            uncertainty=tuple(uncertainty),
-            limitations=tuple(capability_limits),
-            verification_required=bool(uncertainty or capability_limits or confidence != "candidate"),
-            capability_limits=tuple(capability_limits),
-        )
+        return EpistemicState(status="bounded_candidate" if confidence != "very_low" else "insufficient", confidence=confidence, evidence_strength=strength, independent_origin_count=independent, uncertainty=tuple(uncertainty), limitations=tuple(capability_limits), verification_required=bool(uncertainty or capability_limits or confidence != "candidate"), capability_limits=tuple(capability_limits))
 
 
 def _assessment_elements(contract, answer: str, reasoning: Sequence[str], evidence: Sequence[str], uncertainty: Sequence[str]) -> set[str]:
@@ -257,34 +195,20 @@ def _assessment_elements(contract, answer: str, reasoning: Sequence[str], eviden
         elements.add("supporting evidence or reasoning")
     if "uncertainty where applicable" in required and uncertainty:
         elements.add("uncertainty where applicable")
-    if "identified object or fact" in required and answer.strip():
-        elements.add("identified object or fact")
-    if "time or relevant event" in required and answer.strip():
-        elements.add("time or relevant event")
-    if "location" in required and answer.strip():
-        elements.add("location")
-    if "quantity" in required and answer.strip():
-        elements.add("quantity")
-    if "mechanism or ordered procedure" in required and (answer.strip() and reasoning):
-        elements.add("mechanism or ordered procedure")
-    if "comparison dimensions" in required and reasoning:
-        elements.add("comparison dimensions")
-    if "differences" in required and reasoning:
-        elements.add("differences")
-    if "similarities where relevant" in required and reasoning:
-        elements.add("similarities where relevant")
-    if "requested items" in required and answer.strip():
-        elements.add("requested items")
-    if "brief rationale" in required and reasoning:
-        elements.add("brief rationale")
-    if "derivation or justification" in required and reasoning:
-        elements.add("derivation or justification")
-    if "direct answer" in required and answer.strip():
-        elements.add("direct answer")
-    if "brief justification" in required and reasoning:
-        elements.add("brief justification")
-    if "answer matching the explicit objective" in required and answer.strip():
-        elements.add("answer matching the explicit objective")
+    if "identified object or fact" in required and answer.strip(): elements.add("identified object or fact")
+    if "time or relevant event" in required and answer.strip(): elements.add("time or relevant event")
+    if "location" in required and answer.strip(): elements.add("location")
+    if "quantity" in required and answer.strip(): elements.add("quantity")
+    if "mechanism or ordered procedure" in required and answer.strip() and reasoning: elements.add("mechanism or ordered procedure")
+    if "comparison dimensions" in required and reasoning: elements.add("comparison dimensions")
+    if "differences" in required and reasoning: elements.add("differences")
+    if "similarities where relevant" in required and reasoning: elements.add("similarities where relevant")
+    if "requested items" in required and answer.strip(): elements.add("requested items")
+    if "brief rationale" in required and reasoning: elements.add("brief rationale")
+    if "derivation or justification" in required and reasoning: elements.add("derivation or justification")
+    if "direct answer" in required and answer.strip(): elements.add("direct answer")
+    if "brief justification" in required and reasoning: elements.add("brief justification")
+    if "answer matching the explicit objective" in required and answer.strip(): elements.add("answer matching the explicit objective")
     return elements
 
 
@@ -297,10 +221,8 @@ def _join_factors(values: Iterable[str]) -> str:
     cleaned = [value.strip().rstrip(".") for value in values if value.strip()]
     if not cleaned:
         return "the available evidence does not establish a specific mechanism"
-    if len(cleaned) == 1:
-        return cleaned[0]
-    if len(cleaned) == 2:
-        return f"{cleaned[0]} and {cleaned[1]}"
+    if len(cleaned) == 1: return cleaned[0]
+    if len(cleaned) == 2: return f"{cleaned[0]} and {cleaned[1]}"
     return ", ".join(cleaned[:-1]) + ", and " + cleaned[-1]
 
 
