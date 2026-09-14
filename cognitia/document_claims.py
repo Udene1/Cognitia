@@ -43,7 +43,11 @@ class DocumentClaimExtractor:
         re.IGNORECASE,
     )
     _RELATION = re.compile(
-        r"\b(?:is|was|were|are|became|changed|defined|redefined|measured|contains|uses|used|causes|produces|depends|disagree|disagrees)\b",
+        r"\b(?:is|was|were|are|became|changed|defined|redefined|measured|contains|uses|used|causes|caused|produces|depends|disagree|disagrees|contributed|contributes|led|resulted|weakened|undermined|destabilized)\b",
+        re.IGNORECASE,
+    )
+    _CAUSAL = re.compile(
+        r"\b(?:because|because of|due to|caused|causes|contributed|led to|resulted in|weakened|undermined|destabilized)\b",
         re.IGNORECASE,
     )
     _ENTITY = re.compile(r"\b[A-Z][A-Za-z0-9-]*\b")
@@ -67,23 +71,19 @@ class DocumentClaimExtractor:
             ))
             relations = tuple(dict.fromkeys(m.group(0).lower() for m in self._RELATION.finditer(normalized)))
             confidence = "uncertain" if uncertainty else "candidate"
-            fingerprint = sha256(
-                f"{observation.id}|{normalized}".encode("utf-8")
-            ).hexdigest()[:24]
-            candidates.append(
-                ExtractedClaim(
-                    id=f"claim:{fingerprint}",
-                    proposition=normalized,
-                    observation_id=observation.id,
-                    source=observation.source,
-                    sentence=normalized,
-                    confidence=confidence,
-                    temporal_markers=temporal,
-                    entities=entities,
-                    relations=relations,
-                    uncertainty_markers=uncertainty,
-                )
-            )
+            fingerprint = sha256(f"{observation.id}|{normalized}".encode("utf-8")).hexdigest()[:24]
+            candidates.append(ExtractedClaim(
+                id=f"claim:{fingerprint}",
+                proposition=normalized,
+                observation_id=observation.id,
+                source=observation.source,
+                sentence=normalized,
+                confidence=confidence,
+                temporal_markers=temporal,
+                entities=entities,
+                relations=relations,
+                uncertainty_markers=uncertainty,
+            ))
             if len(candidates) >= limit:
                 break
         return tuple(candidates)
@@ -107,4 +107,5 @@ class DocumentClaimExtractor:
                 "is", "was", "were", "are", "became", "changed", "defined", "measured", "uses", "used",
             ))
             or bool(self._UNCERTAIN.search(sentence))
+            or bool(self._CAUSAL.search(sentence))
         )
