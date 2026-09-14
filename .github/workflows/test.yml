@@ -41,6 +41,8 @@ jobs:
         run: python tests/ci/structural_transfer.py
       - name: Exercise executable artifact structural transfer
         run: python tests/ci/artifact_transfer.py
+      - name: Exercise unified representation-neutral logic substrate
+        run: python tests/ci/unified_logic_substrate.py
       - name: Exercise question-driven research control
         run: python tests/ci/research_controller.py
       - name: Learn from Git-discovered repository source
