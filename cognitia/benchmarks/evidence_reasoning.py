@@ -1,10 +1,4 @@
-"""Capability-level benchmark for solving evidence-poisoned problems.
-
-This is deliberately above the evidence primitives: each case is a problem that
-requires Cognitia to reason over provenance, contradiction, staleness, and the
-need for another test. The benchmark never supplies the expected answer to the
-solver; expectations are used only by the benchmark harness after solving.
-"""
+"""Capability-level benchmark for solving evidence-poisoned problems."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -63,7 +57,7 @@ class BenchmarkResult:
 
 
 class EvidenceReasoningSolver:
-    """A deterministic problem solver built from the evidence capabilities."""
+    """Deterministic solver that must use the evidence capabilities."""
 
     def __init__(self) -> None:
         self.convergence = EvidenceConvergenceEngine()
@@ -76,11 +70,8 @@ class EvidenceReasoningSolver:
         if problem.model is not None:
             result = self.models.check(problem.model, problem.model_value)  # type: ignore[arg-type]
             model_status = result.reason
-
         contradiction = assessment.independent_contradiction_groups > 0
         next_test = self._next_test(problem, assessment.status, contradiction, model_status)
-        naive_support = sum(item.supports is True for item in problem.evidence)
-        naive_contradiction = sum(item.supports is False for item in problem.evidence)
         return BenchmarkTrace(
             problem.id,
             assessment.status,
@@ -91,8 +82,8 @@ class EvidenceReasoningSolver:
             problem.model is not None,
             model_status,
             next_test,
-            naive_support,
-            naive_contradiction,
+            sum(item.supports is True for item in problem.evidence),
+            sum(item.supports is False for item in problem.evidence),
         )
 
     @staticmethod
@@ -159,7 +150,6 @@ def _evidence(id: str, claim: Claim, source: EvidenceSource, supports: bool | No
 
 
 def benchmark_problems() -> tuple[BenchmarkProblem, ...]:
-    """Adversarial, deterministic problems; duplicated narratives share lineage."""
     p1 = Claim("power-a", "The device produces 100 units of output under the stated test conditions.", "measurement")
     original = _source("lab-original", "Independent lab", .95, "experiment")
     copies = tuple(
@@ -167,12 +157,15 @@ def benchmark_problems() -> tuple[BenchmarkProblem, ...]:
                    "The device produces 100 units.", upstream=("copy-origin",)) for i in range(6)
     )
     e1 = _evidence("primary-measurement", p1, original, False, "Controlled measurement produced 71 units.", measured_at="2026-06-10T00:00:00Z")
+
     p2 = Claim("release-safe", "Release 42 is safe to deploy.", "software")
     release = _source("release-test", "Independent release test", .95, "test")
     incident = _source("incident-db", "Production incident database", .95, "database")
+
     p3 = Claim("growth", "The system's current growth rate is 20 percent per month.", "economics")
     old = _source("old-report", "2023 market report", .9)
     recent = _source("recent-observation", "2026 customer observation", .9, "observation")
+
     p4 = Claim("free-fall", "An object falls with acceleration 9.81 m/s^2 in the stated idealized conditions.", "physics")
     physics = ModelConstraint(
         "gravity-model",
@@ -181,8 +174,9 @@ def benchmark_problems() -> tuple[BenchmarkProblem, ...]:
         lambda context: abs(float(context["value"]) - 9.81) < 0.05,
     )
     p5 = Claim("hidden-cause", "The service outage was caused by dependency X.", "incident")
+
     return (
-        BenchmarkProblem("correlated-slop", "Does the device produce 100 units?", p1, copies + (e1,), "contradicted", 1, 1),
+        BenchmarkProblem("correlated-slop", "Does the device produce 100 units?", p1, copies + (e1,), "conflicted", 1, 1),
         BenchmarkProblem("independent-conflict", "Is release 42 safe?", p2, (
             _evidence("safe-test", p2, release, True, "Controlled test passed."),
             _evidence("incident", p2, incident, False, "Production failure occurred during the same release."),
