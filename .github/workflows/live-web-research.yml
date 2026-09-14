@@ -9,7 +9,7 @@ on:
 jobs:
   live-web:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,3 +25,5 @@ jobs:
         run: python tests/ci/live_web_research.py
       - name: Run open-ended research experiment on live web
         run: python tests/ci/live_open_ended_research.py
+      - name: Prove live research crosses the durable-memory boundary
+        run: python tests/ci/live_research_memory_loop.py
