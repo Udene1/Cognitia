@@ -42,8 +42,14 @@ class GenericLogicExtractor:
                 if previous:
                     relations.append(LogicRelation(previous, "precedes", node_id))
                 previous = node_id
-                if isinstance(node, ast.If):
-                    relations.append(LogicRelation(node_id, "guards", previous if previous != node_id else node_id))
+                if isinstance(node, ast.If) and node.body:
+                    # The guard constrains the first operation in its body; do not
+                    # fabricate a self-edge merely to record that a guard exists.
+                    body = node.body[0]
+                    body_id = f"logic:guard-body:{index}"
+                    nodes.append(LogicNode(body_id, "guarded_operation", type(body).__name__))
+                    relations.append(LogicRelation(node_id, "guards", body_id))
+                    index += 1
         invariants = _infer_invariants(tree)
         purpose = "decision procedure" if any(n.role == "condition" for n in nodes) else "computational procedure"
         return model_from_parts(purpose=purpose, nodes=nodes, relations=relations,
@@ -62,8 +68,9 @@ class TradeoffBalanceInterpreter:
     def interpret(self, source: str) -> ConceptualRepresentation:
         base = self._interpreter.interpret(source)
         model = self._extractor.extract_python(source)
-        conditional_count = sum(isinstance(node, ast.If) for node in ast.walk(ast.parse(source)))
-        comparison_count = sum(isinstance(node, ast.Compare) for node in ast.walk(ast.parse(source)))
+        tree = ast.parse(source)
+        conditional_count = sum(isinstance(node, ast.If) for node in ast.walk(tree))
+        comparison_count = sum(isinstance(node, ast.Compare) for node in ast.walk(tree))
         has_return = "return result" in base.operations
         if conditional_count >= 2 and comparison_count >= 2 and has_return:
             return ConceptualRepresentation(
