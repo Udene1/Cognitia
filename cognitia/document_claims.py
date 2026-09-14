@@ -26,6 +26,8 @@ class ExtractedClaim:
     entities: tuple[str, ...] = ()
     relations: tuple[str, ...] = ()
     uncertainty_markers: tuple[str, ...] = ()
+    polarity: str = "positive"
+    attribution_markers: tuple[str, ...] = ()
 
 
 class DocumentClaimExtractor:
@@ -42,12 +44,20 @@ class DocumentClaimExtractor:
         r"\b(?:may|might|could|can|possibly|likely|unlikely|appears|reported|believed|estimated|according to)\b",
         re.IGNORECASE,
     )
+    _NEGATION = re.compile(
+        r"\b(?:does not|did not|do not|is not|are not|was not|were not|has not|have not|had not|cannot|can't|isn't|wasn't|weren't|don't|doesn't|didn't|not|never|no|neither|without)\b",
+        re.IGNORECASE,
+    )
+    _ATTRIBUTION = re.compile(
+        r"\b(?:according to|reported by|reported|believed by|argued by|claimed by|said by|historians? argue|researchers? report|scientists? report)\b",
+        re.IGNORECASE,
+    )
     _RELATION = re.compile(
-        r"\b(?:is|was|were|are|became|changed|defined|redefined|measured|contains|uses|used|causes|caused|produces|depends|disagree|disagrees|contributed|contributes|led|resulted|weakened|undermined|destabilized)\b",
+        r"\b(?:is|was|were|are|became|changed|defined|redefined|measured|contains|uses|used|causes|caused|produces|depends|disagree|disagrees|contribute|contributed|contributes|led|resulted|weakened|undermined|destabilized)\b",
         re.IGNORECASE,
     )
     _CAUSAL = re.compile(
-        r"\b(?:because|because of|due to|caused|causes|contributed|led to|resulted in|weakened|undermined|destabilized)\b",
+        r"\b(?:because|because of|due to|caused|causes|contribute|contributed|contributes|led to|resulted in|weakened|undermined|destabilized)\b",
         re.IGNORECASE,
     )
     _ENTITY = re.compile(r"\b[A-Z][A-Za-z0-9-]*\b")
@@ -65,11 +75,13 @@ class DocumentClaimExtractor:
             temporal_values.extend(m.group(0) for m in self._YEAR.finditer(normalized))
             temporal = tuple(dict.fromkeys(temporal_values))
             uncertainty = tuple(dict.fromkeys(m.group(0).lower() for m in self._UNCERTAIN.finditer(normalized)))
+            attribution = tuple(dict.fromkeys(m.group(0).lower() for m in self._ATTRIBUTION.finditer(normalized)))
             entities = tuple(dict.fromkeys(
                 m.group(0) for m in self._ENTITY.finditer(normalized)
                 if m.group(0) not in self._ENTITY_STOPWORDS
             ))
             relations = tuple(dict.fromkeys(m.group(0).lower() for m in self._RELATION.finditer(normalized)))
+            polarity = "negative" if self._NEGATION.search(normalized) else "positive"
             confidence = "uncertain" if uncertainty else "candidate"
             fingerprint = sha256(f"{observation.id}|{normalized}".encode("utf-8")).hexdigest()[:24]
             candidates.append(ExtractedClaim(
@@ -83,6 +95,8 @@ class DocumentClaimExtractor:
                 entities=entities,
                 relations=relations,
                 uncertainty_markers=uncertainty,
+                polarity=polarity,
+                attribution_markers=attribution,
             ))
             if len(candidates) >= limit:
                 break
