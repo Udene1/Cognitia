@@ -2,9 +2,10 @@
 
 No answer is embedded here. The question is intentionally broad; CI records the
 searches, why each action was chosen, retrieved documents, extracted claims,
-conflicts, and unresolved gaps.
+conflicts, unresolved gaps, and the resulting candidate multi-factor synthesis.
 """
 from cognitia.open_research import OpenEndedResearch
+from cognitia.research_synthesis import ResearchSynthesisEngine
 
 
 QUESTION = "Why did the Roman Empire decline, and what evidence distinguishes the competing explanations?"
@@ -18,6 +19,7 @@ def main() -> None:
         documents_per_round=3,
         claims_per_document=12,
     )
+    synthesis = ResearchSynthesisEngine().synthesize(result)
 
     print("OPEN_ENDED_LIVE_RESEARCH")
     print(f"question={result.question}")
@@ -32,9 +34,25 @@ def main() -> None:
         for cluster in research_round.clusters[:5]:
             print(f"  CLAIM: {cluster.representative.proposition}")
             print(f"    sources={len(cluster.source_ids)} conflict={cluster.conflict}")
-    print("UNRESOLVED")
-    for gap in result.unresolved:
-        print(f"- {gap}")
+
+    print("\nSYNTHESIS")
+    print(f"status={synthesis.status}")
+    print(f"factors={len(synthesis.factors)}")
+    for factor in synthesis.factors:
+        print(f"FACTOR: {factor.factor}")
+        print(f"  contribution={factor.contribution}")
+        print(f"  sources={factor.source_count} origins={factor.origin_count} confidence={factor.confidence}")
+    print("THESIS")
+    print(synthesis.thesis)
+    print("DISTINGUISHING_EVIDENCE")
+    for item in synthesis.distinguishing_evidence:
+        print(f"- {item}")
+    print("NEXT_ACTIONS")
+    for item in synthesis.next_actions:
+        print(f"- {item}")
+    print("CAVEATS")
+    for item in synthesis.caveats:
+        print(f"- {item}")
 
     if not result.rounds:
         raise AssertionError("live research produced no rounds")
