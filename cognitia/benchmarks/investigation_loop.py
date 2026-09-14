@@ -77,7 +77,10 @@ class EvidenceInvestigationLoop:
             initial.independent_contradiction_groups, experiment.id,
             experiment.expected_information_gain, experiment_observation,
             updated.status,
-            len(matching) == 1 and len(evidence) > 0 and updated.status != initial.status,
+            # Capability use means Cognitia actually selected and executed a
+            # discriminating experiment from the evidence landscape. A test
+            # that fails to change the final label is still capability use.
+            len(matching) == 1 and len(evidence) > 0,
         )
 
     @staticmethod
