@@ -94,3 +94,5 @@ jobs:
         run: |
           mkdir -p .ci
           python tests/ci/knowledge_guided_routing.py
+      - name: Exercise adaptive search strategy
+        run: python tests/ci/adaptive_search_strategy.py
