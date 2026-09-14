@@ -32,7 +32,7 @@ class GitKnowledgeIngestor:
         items: list[KnowledgeItem] = []
         existing = {item.id for item in self._store.all()}
         for commit in observer.commits(limit):
-            source_reference = f"git-observation:{observer.repository}#{commit.commit_id}"
+            source_reference = f"git:{observer.repository}#{commit.commit_id}"
             values = {
                 "repository": str(observer.repository), "author": commit.author,
                 "authored_at": commit.authored_at.isoformat(), "subject": commit.subject,
@@ -45,8 +45,8 @@ class GitKnowledgeIngestor:
                     continue
                 item = KnowledgeItem(
                     subject=commit.commit_id, predicate=predicate, value=values[predicate], id=item_id,
-                    source=KnowledgeSource(kind="git_observation_fact", reference=source_reference, reliability=1.0),
-                    scope="repository_observation",
+                    source=KnowledgeSource(kind="git_commit", reference=source_reference, reliability=1.0),
+                    scope="repository_history",
                 )
                 items.append(self._store.add(item))
                 existing.add(item_id)
