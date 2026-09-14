@@ -40,9 +40,21 @@ SQLite persistence is real persistence when the SQLite file is on a durable file
 
 There is an important distinction in the **current CI-only runtime**. GitHub Actions runners are ephemeral. A database created under `.ci/` during one workflow run survives process restarts within that runner, but it does **not** automatically survive destruction of the runner after the workflow finishes.
 
-Therefore the architecture now has durable SQLite storage, but the CI training loop still needs a durable state transport between workflow runs. Git itself is already the durable observation environment; the next persistence integration must make the learned SQLite state survive the CI runner boundary as well. We must not claim that this is solved merely because SQLite survives a fresh Python process.
+### Runner-boundary persistence is now implemented
 
-That distinction is essential for the intended strategy of letting Cognitia continuously learn from its own Git history before the complete system exists.
+The CI-only boundary is now explicit and tested:
+
+1. the `test` workflow restores the latest cognitive SQLite snapshot from the durable `cognitia-state` branch;
+2. the restored databases are integrity-checked before use;
+3. Cognitia records the current CI run and performs the existing process-restart persistence proof;
+4. a successful `main` run creates a consistent SQLite snapshot using SQLite backup plus `PRAGMA integrity_check`;
+5. the snapshot is uploaded as a workflow artifact;
+6. a separate `cognitive-state` workflow, triggered only after a successful `main` test workflow, downloads that artifact and commits it to `cognitia-state`;
+7. the next runner retrieves that durable snapshot and verifies that the prior CI run is present.
+
+The state transport is deliberately separate from cognition semantics. The archive is a transport envelope containing SQLite databases plus a manifest of sizes and SHA-256 digests. Restore verifies the manifest and SQLite integrity before replacing state files. Persisting an event does not turn it into knowledge; it remains subject to Cognitia's normal interpretation and validation boundaries.
+
+GitHub Actions artifacts are only the handoff between workflow runs; the `cognitia-state` branch is the durable long-lived state record. This avoids treating the runner filesystem or the artifact retention window as the cognitive memory itself.
 
 ## Observation vs learning
 
@@ -66,12 +78,12 @@ Execution is not automatically proof. The executable target must emit explicit o
 - A richer symbolic math representation and solver-backed execution.
 - Target-language code generation with behavioral equivalence testing.
 - Cross-domain abstraction selection beyond structural role matching.
-- Durable SQLite state transport across ephemeral CI workflow runs.
 - Multi-observation experience construction from complete development episodes.
+- A production-grade external cognitive-state backend beyond the current GitHub Actions state transport.
 
 ## After this milestone
 
-The next phase is to move from a constrained executable bridge to **general transfer experiments**, while making the learning loop genuinely persistent:
+The next phase is to move from a constrained executable bridge to **general transfer experiments**, while keeping the learning loop genuinely persistent:
 
 1. build a stronger text -> logic extractor for conditional, causal, procedural, and quantitative reasoning;
 2. compile the same logic into multiple executable representations;
@@ -79,14 +91,14 @@ The next phase is to move from a constrained executable bridge to **general tran
 4. transfer one abstraction into a genuinely different domain (for example engineering -> economics, or mathematics -> code);
 5. collect target observations and feed successes/failures back into provenance and learning;
 6. test contradiction-driven revision of previously successful abstractions;
-7. transport the SQLite cognitive state across CI workflow boundaries and recover it at the beginning of the next run;
-8. use retained Git observations to construct multi-commit development episodes rather than treating commits independently;
-9. expand the benchmark from hand-authored cases to discovered reasoning episodes.
+7. use retained Git observations to construct multi-commit development episodes rather than treating commits independently;
+8. expand the benchmark from hand-authored cases to discovered reasoning episodes;
+9. return to the answer problem and investigate communication as a learned cognitive capability.
 
 The eventual research question is not "can Cognitia translate text into code?" It is whether Cognitia can discover reusable reasoning structure, instantiate it in a new representation/domain, execute it, observe the result, retain that experience, and revise the abstraction when reality disagrees.
 
-## Immediate next milestone after this one
+## Immediate next milestone: communication / answer capability
 
-Once the persistence boundary is proven, we return to the **answer problem**. The working hypothesis is changing: the central failure may not be lack of problem understanding. Cognitia may understand a problem sufficiently but lack a learned communication capability—the ability to determine what another agent needs to receive, organize the reasoning into an appropriate communicative structure, express it clearly, expose uncertainty, and adapt the explanation to the interaction.
+The persistence boundary is no longer the blocker. The next milestone returns to the **answer problem**. The working hypothesis is changing: the central failure may not be lack of problem understanding. Cognitia may understand a problem sufficiently but lack a learned communication capability—the ability to determine what another agent needs to receive, organize the reasoning into an appropriate communicative structure, express it clearly, expose uncertainty, and adapt the explanation to the interaction.
 
 The next answer milestone will therefore investigate communication as a cognitive capability rather than simply adding more answer templates.
