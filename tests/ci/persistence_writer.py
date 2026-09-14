@@ -16,6 +16,8 @@ from cognitia.memory import Experience, Outcome, SQLiteExperienceStore
 
 root = Path(os.environ["COGNITIA_PERSISTENCE_ROOT"])
 root.mkdir(parents=True, exist_ok=True)
+run_id = os.environ.get("GITHUB_RUN_ID", "local")
+commit_sha = os.environ.get("GITHUB_SHA", "local")
 
 knowledge = KnowledgeItem(
     id="restart-proof-knowledge",
@@ -76,10 +78,19 @@ with SQLiteCognitiveJournal(root / "cognition.sqlite") as journal:
             payload={"knowledge_id": knowledge.id, "experience_id": experience.id},
         )
     )
+    journal.append(
+        DurableEvent(
+            id=f"ci-state-run:{run_id}",
+            kind="ci_state_run",
+            source="ci:persistence_writer",
+            payload={"run_id": run_id, "commit_sha": commit_sha},
+        )
+    )
     ledger = DurableCognitiveLedger(journal)
     ledger.record_candidate(candidate_record)
     ledger.record_evaluation(evaluation)
     ledger.record_build(build)
 
+print(f"CI_STATE_RUN_RECORDED: {run_id}")
 print("PERSISTENCE_WRITE_SUCCESS")
 print("DURABLE_COGNITIVE_LIFECYCLE_WRITE_SUCCESS")
