@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Sequence
 from .document_claims import ExtractedClaim
 
 if TYPE_CHECKING:
-    from .open_research import ClaimCluster, OpenResearchResult
+    from .open_research import OpenResearchResult
 
 
 @dataclass(frozen=True)
@@ -58,6 +58,9 @@ class ResearchSynthesis:
         if self.caveats:
             lines.append("\nCaveats:")
             lines.extend(f"- {item}" for item in self.caveats)
+        if self.next_actions:
+            lines.append("\nNext actions:")
+            lines.extend(f"- {item}" for item in self.next_actions)
         return "\n".join(lines)
 
 
@@ -73,7 +76,7 @@ class ResearchSynthesisEngine:
         "military": ("army", "armed", "military", "soldier", "frontier", "force", "war", "invasion", "goth", "goths"),
         "political": ("political", "instability", "emperor", "succession", "civil", "governance", "administr", "central rule"),
         "economic": ("economic", "economy", "tax", "fiscal", "trade", "currency", "revenue", "agriculture", "grain"),
-        "demographic": ("population", "demographic", "migration", "disease", "birth", "population"),
+        "demographic": ("population", "demographic", "migration", "disease", "birth"),
         "environmental": ("climate", "drought", "famine", "environment", "volcan", "temperature"),
         "religious": ("christian", "christianity", "pagan", "religion", "church"),
         "external": ("goth", "vandals", "huns", "barbar", "invasion", "external", "migrat", "frontier pressure"),
@@ -83,7 +86,7 @@ class ResearchSynthesisEngine:
         candidates = self._causal_claims(result.claims)
         factors = self._factorize(candidates, result, max_factors=max_factors)
         domains = self._domains(factors)
-        competing = self._competing(domains, factors)
+        competing = self._competing(domains)
         distinguishing = self._distinguishing(factors)
         caveats = list(result.unresolved)
         caveats.append(
@@ -95,38 +98,29 @@ class ResearchSynthesisEngine:
         status = "candidate_multi_factor_synthesis" if factors else "insufficient_explanatory_structure"
         if result.genealogy.effective_independent_count < 2:
             status = "thin_evidence_multi_factor_synthesis"
-        thesis = self._thesis(result.question, factors, result)
-        next_actions = self._next_actions(factors, competing, result)
         return ResearchSynthesis(
             question=result.question,
             status=status,
-            thesis=thesis,
+            thesis=self._thesis(result.question, factors),
             factors=tuple(factors),
             competing_explanations=tuple(competing),
             distinguishing_evidence=tuple(distinguishing),
             caveats=tuple(dict.fromkeys(caveats)),
-            next_actions=tuple(next_actions),
+            next_actions=tuple(self._next_actions(factors, result)),
         )
 
     def _causal_claims(self, claims: Sequence[ExtractedClaim]) -> tuple[ExtractedClaim, ...]:
-        result = []
-        for claim in claims:
-            if any(pattern.search(claim.proposition) for pattern in self._CAUSE_PATTERNS):
-                result.append(claim)
-        return tuple(result)
+        return tuple(claim for claim in claims if any(pattern.search(claim.proposition) for pattern in self._CAUSE_PATTERNS))
 
     def _factorize(self, claims: Sequence[ExtractedClaim], result: "OpenResearchResult", *, max_factors: int) -> list[FactorExplanation]:
         buckets: dict[str, list[ExtractedClaim]] = {}
         for claim in claims:
             factor = self._factor_text(claim.proposition)
-            if not factor:
-                continue
-            key = self._domain(factor)
-            buckets.setdefault(key + ":" + _normalize(factor), []).append(claim)
+            if factor:
+                buckets.setdefault(_normalize(factor), []).append(claim)
         ranked = sorted(buckets.values(), key=lambda members: (-len(members), members[0].id))[:max_factors]
-        origins = {origin.root_id for origin in result.genealogy.origins for claim_id in origin.claim_ids if any(c.id == claim_id for c in members)} if False else set()
-        factors: list[FactorExplanation] = []
         origin_by_claim = {claim_id: origin.root_id for origin in result.genealogy.origins for claim_id in origin.claim_ids}
+        factors: list[FactorExplanation] = []
         for members in ranked:
             source_ids = {claim.source for claim in members}
             origin_ids = {origin_by_claim.get(claim.id) for claim in members} - {None}
@@ -136,7 +130,7 @@ class ResearchSynthesisEngine:
                 claim_ids=tuple(claim.id for claim in members),
                 source_count=len(source_ids),
                 origin_count=len(origin_ids),
-                confidence="candidate" if any(claim.confidence == "uncertain" for claim in members) else "candidate_supported_by_repetition",
+                confidence="candidate_uncertain" if any(claim.confidence == "uncertain" for claim in members) else "candidate",
             ))
         return factors
 
@@ -144,8 +138,7 @@ class ResearchSynthesisEngine:
         for pattern in self._CAUSE_PATTERNS:
             match = pattern.search(text)
             if match:
-                factor = " ".join(match.group("factor").split(" "))
-                return _trim_factor(factor)
+                return _trim_factor(match.group("factor"))
         return ""
 
     def _domain(self, text: str) -> str:
@@ -160,7 +153,7 @@ class ResearchSynthesisEngine:
             result.setdefault(self._domain(factor.factor), []).append(factor)
         return result
 
-    def _competing(self, domains: dict[str, list[FactorExplanation]], factors: Sequence[FactorExplanation]) -> list[CompetingExplanation]:
+    def _competing(self, domains: dict[str, list[FactorExplanation]]) -> list[CompetingExplanation]:
         groups = [(name, members) for name, members in domains.items() if members]
         if len(groups) < 2:
             return []
@@ -182,11 +175,11 @@ class ResearchSynthesisEngine:
         if len(domains) < 2:
             return ["Acquire independent evidence that directly measures the leading factor and the claimed outcome over the same period."] if factors else []
         return [
-            f"Find evidence that separates {domains[index]} effects from {domains[index + 1]} effects rather than merely reporting both." 
+            f"Find evidence that separates {domains[index]} effects from {domains[index + 1]} effects rather than merely reporting both."
             for index in range(min(len(domains) - 1, 4))
         ]
 
-    def _thesis(self, question: str, factors: Sequence[FactorExplanation], result: "OpenResearchResult") -> str:
+    def _thesis(self, question: str, factors: Sequence[FactorExplanation]) -> str:
         if not factors:
             return f"Cognitia cannot yet construct a grounded multi-factor explanation for: {question}"
         names = ", ".join(dict.fromkeys(self._domain(factor.factor) for factor in factors))
@@ -196,7 +189,7 @@ class ResearchSynthesisEngine:
             "The factors below describe candidate contribution mechanisms; they are not promoted to established knowledge by extraction alone."
         )
 
-    def _next_actions(self, factors: Sequence[FactorExplanation], competing: Sequence[CompetingExplanation], result: "OpenResearchResult") -> list[str]:
+    def _next_actions(self, factors: Sequence[FactorExplanation], result: "OpenResearchResult") -> list[str]:
         actions = [
             "Acquire independent evidence for the strongest competing factor domains.",
             "Separate correlation from causal contribution by searching for evidence tied to timing and mechanism.",
@@ -214,5 +207,4 @@ def _normalize(value: str) -> str:
 
 def _trim_factor(value: str) -> str:
     value = re.sub(r"^(according to|some historians|most historians|the traditional view)\s+", "", value, flags=re.I)
-    value = value.strip(" ,;:."")
-    return value[:220]
+    return value.strip(" ,;:.")[:220]
