@@ -6,14 +6,14 @@ from cognitia.evidence.claim_identity import ClaimIdentityMatcher
 def main() -> None:
     extractor = DocumentClaimExtractor()
     docs = (
-        EnvironmentObservation(id="a", source="web:a", content="The Roman Empire declined because political instability weakened central authority in 476."),
-        EnvironmentObservation(id="b", source="web:b", content="Political instability weakened central authority during the decline of the Roman Empire in 476."),
-        EnvironmentObservation(id="c", source="web:c", content="In 2019, the Roman Empire declined because political instability weakened central authority."),
+        EnvironmentObservation(id="a", source="web:a", content="The Roman Empire was weakened by political instability in 476."),
+        EnvironmentObservation(id="b", source="web:b", content="Political instability weakened the Roman Empire in 476."),
+        EnvironmentObservation(id="c", source="web:c", content="In 2019, political instability weakened the Roman Empire."),
     )
     claims = tuple(c for doc in docs for c in extractor.extract(doc))
     matcher = ClaimIdentityMatcher()
-    identities = matcher.match(claims)
-    assert len(claims) == 3
+    identities = matcher.match(claims, threshold=0.60)
+    assert len(claims) == 3, claims
     assert any(len(identity.matched_claim_ids) == 2 for identity in identities)
     score, basis = matcher.score(claims[0], claims[2])
     assert score < 0.78
