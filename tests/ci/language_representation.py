@@ -47,8 +47,7 @@ def main() -> None:
     assert why.contract.needs_uncertainty
     assert "causal explanation" in why.contract.required_elements
     assert "supporting evidence or reasoning" in why.contract.required_elements
-    assert "stop when the requested scope is satisfied" not in why.contract.stopping_conditions
-    assert "compare_explanations" not in ()
+    assert "state unresolved explanatory gaps" in why.contract.stopping_conditions
 
     how = analyze_question("How does photosynthesis work?")
     assert how.question_type == "procedure_or_mechanism"
