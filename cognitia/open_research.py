@@ -126,6 +126,25 @@ class OpenEndedResearch:
             answer_contract=answer_contract,
         )
 
+    def investigate_and_answer(self, question: str, *, max_rounds: int = 4,
+                               search_results: int = 5, documents_per_round: int = 3,
+                               claims_per_document: int = 20,
+                               capability_limits: Sequence[str] = ()):
+        """Complete the research-to-answer path; never expose synthesis as the answer."""
+        from .answering import AnsweringCore
+        from .research_synthesis import ResearchSynthesisEngine
+
+        result = self.investigate(
+            question,
+            max_rounds=max_rounds,
+            search_results=search_results,
+            documents_per_round=documents_per_round,
+            claims_per_document=claims_per_document,
+        )
+        synthesis = ResearchSynthesisEngine().synthesize(result)
+        answer = AnsweringCore().build(synthesis, capability_limits=capability_limits)
+        return result, synthesis, answer
+
 
 def _cluster_claims(claims: Sequence[ExtractedClaim], matcher: ClaimIdentityMatcher) -> tuple[ClaimCluster, ...]:
     identities = matcher.match(claims)
