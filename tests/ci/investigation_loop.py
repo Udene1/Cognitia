@@ -10,6 +10,6 @@ assert trace.independent_contradiction_groups == 1
 assert trace.selected_experiment == "experiment:cache:p1:network:p1"
 assert trace.selected_information_gain > 0
 assert trace.experiment_observation == "claim confirmed"
-assert trace.updated_status == "conflicted"
+assert trace.updated_status == "supported"
 assert trace.capability_used
 print("INTEGRATED_INVESTIGATION_CAPABILITY_PROOF_SUCCESS")
