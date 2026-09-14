@@ -72,6 +72,8 @@ class ResearchSynthesisEngine:
         re.compile(r"(?P<outcome>.+?)\s+(?:was|were|became)\s+(?:weakened|undermined|destabilized)\s+by\s+(?P<factor>.+)", re.I),
         re.compile(r"(?P<outcome>.+?)\s+(?:because of|due to|because)\s+(?P<factor>.+)", re.I),
     )
+    _OUTCOME_TERMS = ("decline", "declined", "fall", "fell", "collapse", "collapsed", "end", "ended", "crisis", "weakened", "threatened")
+    _PRONOUN_FACTORS = re.compile(r"^(?:this|that|it|he|she|they|these|those)\b", re.I)
     _DOMAIN_TERMS = {
         "military": ("army", "armed", "military", "soldier", "frontier", "force", "war", "invasion", "goth", "goths"),
         "political": ("political", "instability", "emperor", "succession", "civil", "governance", "administr", "central rule"),
@@ -135,10 +137,22 @@ class ResearchSynthesisEngine:
         return factors
 
     def _factor_text(self, text: str) -> str:
+        lowered = text.lower()
         for pattern in self._CAUSE_PATTERNS:
             match = pattern.search(text)
-            if match:
-                return _trim_factor(match.group("factor"))
+            if not match:
+                continue
+            factor = _trim_factor(match.group("factor"))
+            outcome = match.group("outcome").lower()
+            if not any(term in lowered for term in self._OUTCOME_TERMS):
+                continue
+            if not any(term in outcome for term in self._OUTCOME_TERMS):
+                continue
+            if self._PRONOUN_FACTORS.search(factor):
+                continue
+            if len(factor.split()) < 2:
+                continue
+            return factor
         return ""
 
     def _domain(self, text: str) -> str:
