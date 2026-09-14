@@ -98,6 +98,8 @@ jobs:
         run: python tests/ci/adaptive_search_strategy.py
       - name: Exercise deterministic document claim extraction
         run: python tests/ci/document_claim_extraction.py
+      - name: Exercise claim identity matching
+        run: python tests/ci/claim_identity.py
       - name: Exercise evidence-driven research action control
         run: python tests/ci/research_action_control.py
       - name: Exercise evidence-to-decision utility
