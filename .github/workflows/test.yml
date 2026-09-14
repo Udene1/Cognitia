@@ -37,6 +37,8 @@ jobs:
         run: python tests/ci/compare_implementations.py
       - name: Exercise multi-language computational abstraction
         run: python tests/ci/multilanguage_computation.py
+      - name: Exercise structural transfer as a testable hypothesis
+        run: python tests/ci/structural_transfer.py
       - name: Learn from Git-discovered repository source
         run: |
           mkdir -p .ci
