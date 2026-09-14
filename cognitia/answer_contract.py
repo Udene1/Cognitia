@@ -40,12 +40,13 @@ class AnswerContractPlanner:
         analysis = question if isinstance(question, QuestionAnalysis) else analyze_question(question)
         contract = analysis.contract
         sections = self._sections(contract)
+        must_state_uncertainty = contract.needs_uncertainty or "uncertainty where applicable" in contract.required_elements
         return AnswerPlan(
             answer_kind=contract.answer_kind,
             sections=sections,
             requested_length=contract.requested_length,
             needs_evidence=contract.needs_evidence,
-            must_state_uncertainty=contract.uncertainty_allowed and ("uncertainty" in contract.required_elements or contract.needs_evidence),
+            must_state_uncertainty=must_state_uncertainty,
             stop_when=contract.stopping_conditions,
         )
 
@@ -62,15 +63,19 @@ class AnswerContractPlanner:
         required = tuple(contract.required_elements)
         satisfied = tuple(item for item in required if item.lower() in supplied)
         missing = tuple(item for item in required if item.lower() not in supplied)
-        direct_ok = direct_answer or not contract.direct_answer_required
+        direct_ok = direct_answer
         explanation_ok = explanation or not contract.needs_explanation
         evidence_ok = evidence or not contract.needs_evidence
         sufficient = not missing and direct_ok and explanation_ok and evidence_ok
         reasons = []
-        if not direct_ok: reasons.append("direct_answer_missing")
-        if not explanation_ok: reasons.append("explanation_missing")
-        if not evidence_ok: reasons.append("evidence_missing")
-        if missing: reasons.append("required_elements_missing")
+        if not direct_ok:
+            reasons.append("direct_answer_missing")
+        if not explanation_ok:
+            reasons.append("explanation_missing")
+        if not evidence_ok:
+            reasons.append("evidence_missing")
+        if missing:
+            reasons.append("required_elements_missing")
         return AnswerAssessment(
             sufficient=sufficient,
             missing_elements=missing,
@@ -84,14 +89,16 @@ class AnswerContractPlanner:
 
     @staticmethod
     def _sections(contract: AnswerContract) -> tuple[str, ...]:
-        if contract.answer_kind == "yes_no":
+        if contract.answer_kind == "yes_no" and contract.bare_answer_sufficient:
             return ("direct_answer",)
-        if contract.answer_kind in {"fact_or_date", "location", "person_or_agent", "definition_or_fact"}:
-            return ("direct_answer", "brief_context")
+        if contract.answer_kind == "yes_no":
+            return ("direct_answer", "brief_justification")
+        if contract.answer_kind in {"fact_or_identification", "time_or_event", "location", "quantity"} and not contract.needs_explanation:
+            return ("direct_answer",)
         sections = ["direct_answer", "explanation"]
         if contract.needs_evidence:
             sections.append("evidence")
-        if "uncertainty" in contract.required_elements:
+        if contract.needs_uncertainty:
             sections.append("uncertainty")
         return tuple(sections)
 
