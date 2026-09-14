@@ -102,8 +102,12 @@ def _structural_feature_score(left: frozenset[str], right: frozenset[str]) -> fl
     if not left or not right:
         return 0.0
     exact = len(left & right) / max(1, len(left | right))
-    categories = {item.split(":", 1)[0] for item in left if ":" in item} & {item.split(":", 1)[0] for item in right if ":" in item}
-    category_score = len(categories) / max(1, len({item.split(":", 1)[0] for item in left} | {item.split(":", 1)[0] for item in right}))
+    left_categories = {item.split(":", 1)[0] for item in left if ":" in item}
+    right_categories = {item.split(":", 1)[0] for item in right if ":" in item}
+    if not left_categories and not right_categories:
+        return exact
+    categories = left_categories & right_categories
+    category_score = len(categories) / max(1, len(left_categories | right_categories))
     return 0.7 * exact + 0.3 * category_score
 
 
