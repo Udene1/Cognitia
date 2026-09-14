@@ -9,7 +9,7 @@ on:
 jobs:
   live-web:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,3 +23,5 @@ jobs:
         run: python tests/ci/live_web_access.py
       - name: Search and fetch real source documents
         run: python tests/ci/live_web_research.py
+      - name: Run open-ended research experiment on live web
+        run: python tests/ci/live_open_ended_research.py
