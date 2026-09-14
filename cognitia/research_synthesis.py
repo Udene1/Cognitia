@@ -157,10 +157,7 @@ class ResearchSynthesisEngine:
             if not match:
                 continue
             factor = _trim_factor(match.group("factor"))
-            outcome = match.group("outcome").lower()
             if not any(term in lowered for term in self._OUTCOME_TERMS):
-                continue
-            if not any(term in outcome for term in self._OUTCOME_TERMS):
                 continue
             if self._PRONOUN_FACTORS.search(factor) or len(factor.split()) < 2:
                 continue
