@@ -43,11 +43,21 @@ class EvidenceLandscapeEngine:
         supported = tuple(item.claim.id for item in landscape.claims if item.assessment.status == "supported")
         contradicted = tuple(item.claim.id for item in landscape.claims if item.assessment.status == "contradicted")
         conflicted = tuple(item.claim.id for item in landscape.claims if item.assessment.status == "conflicted")
+        gaps = list(landscape.gaps)
 
         supported_claims = tuple(item.claim for item in landscape.claims if item.claim.id in supported)
         conflicting_pairs = _contradictory_pairs(supported_claims)
         if conflicting_pairs:
-            conflicted = tuple(dict.fromkeys((*conflicted, *(claim.id for pair in conflicting_pairs for claim in pair))))
+            conflict_ids = tuple(claim.id for pair in conflicting_pairs for claim in pair)
+            conflicted = tuple(dict.fromkeys((*conflicted, *conflict_ids)))
+            existing_gap_ids = {gap.claim_id for gap in gaps}
+            for claim_id in dict.fromkeys(conflict_ids):
+                if claim_id not in existing_gap_ids:
+                    gaps.append(EvidenceGap(
+                        claim_id=claim_id,
+                        reason="claim conflicts with another currently supported claim; distinguishing evidence is required",
+                        priority=1.0,
+                    ))
 
         if conflicted:
             conclusion = "conflicted"
@@ -66,12 +76,13 @@ class EvidenceLandscapeEngine:
             confidence = 0.0
             next_action = "acquire evidence targeted at the highest-priority unresolved gap"
 
+        gaps.sort(key=lambda item: (-item.priority, item.claim_id))
         return LandscapeDecision(
             conclusion=conclusion,
             confidence=confidence,
             supporting_claims=supported,
             contradicting_claims=contradicted,
-            unresolved_gaps=landscape.gaps,
+            unresolved_gaps=tuple(gaps),
             next_action=next_action,
         )
 
