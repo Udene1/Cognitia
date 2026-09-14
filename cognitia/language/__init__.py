@@ -11,7 +11,13 @@ from .representation import (
     build_language_frame,
 )
 from .question import QuestionAnalysis, analyze_question
-from .cognition import CognitiveConstraint, CognitiveGoal, CognitiveRepresentation, build_cognitive_representation
+from .cognition import (
+    CognitiveConstraint,
+    CognitiveGoal,
+    CognitiveProposition,
+    CognitiveRepresentation,
+    build_cognitive_representation,
+)
 
 __all__ = [
     "AnswerContract",
@@ -26,6 +32,7 @@ __all__ = [
     "analyze_question",
     "CognitiveConstraint",
     "CognitiveGoal",
+    "CognitiveProposition",
     "CognitiveRepresentation",
     "build_cognitive_representation",
 ]
