@@ -53,29 +53,51 @@ Push beyond recognizing an evidence problem. Cognitia must choose an action that
 - Added `tests/ci/decision_experiment_problem.py`.
 - Added the capability proof to `.github/workflows/test.yml`.
 
-### Deterministic capability target
+### Verified result
 
-Problem: explain a latency anomaly.
+GitHub Actions run **#305** (`34812836512`) completed successfully on the PR merge commit. The discriminating experiment benchmark passed:
 
-- Hypothesis A predicts latency remains high when the cache is isolated.
-- Hypothesis B predicts latency falls under the same condition.
-- An unrelated hypothesis has a prediction under a different condition and must not be treated as discriminating.
-- Observation: `latency falls`.
+- selected experiment: `experiment:cache:p1:network:p1`;
+- information gain: `1.000`;
+- observation: `latency falls`;
+- surviving hypothesis: `network-failure`;
+- rejected hypothesis: `cache-failure`;
+- benchmark: **1/1 passed**;
+- capability proof: `DISCRIMINATING_EXPERIMENT_CAPABILITY_PROOF_SUCCESS`.
 
-Expected behavior:
+The same run also passed the existing cognitive-transfer, persistence, discovery, parallel-investigation, evidence-convergence, evidence-reasoning, and validated-knowledge CI steps. The evidence-reasoning benchmark specifically passed **5/5** again, including the correlated-source case concluding `contradicted`.
 
-`competing hypotheses → discriminating experiment → observation → hypothesis update`
+## 2026-09-14 — Evidence → experiment integrated investigation loop
 
-The expected selected experiment is `experiment:cache:p1:network:p1`, with information gain `1.0`, leaving `network-failure` as the survivor.
+### Goal
+
+Connect the evidence landscape to action selection instead of keeping evidence reasoning and experiment selection as separate demonstrations.
+
+### Built
+
+- Added `cognitia/benchmarks/investigation_loop.py`.
+- Added a deterministic end-to-end environment fixture using the same `EnvironmentSource` boundary intended for future real adapters.
+- Parallel acquisition now feeds environment observations into canonical `EvidenceRecord` objects.
+- Evidence convergence evaluates the combined landscape before action selection.
+- A discriminating experiment is selected from the competing prediction space.
+- The follow-up observation is fed back into the evidence landscape and convergence is recomputed.
+- Hardened `ParallelInvestigator` to respect the keyword-only `limit` boundary of `EnvironmentSource.observe`.
+- Added `tests/ci/investigation_loop.py` and a dedicated CI step.
+
+### Capability target
+
+`problem → parallel environments → evidence landscape → convergence → discriminating experiment → observation → updated evidence`
+
+The fixture deliberately includes three correlated web reports, one independent controlled measurement, and one simulation observation. The expected initial state is `contradicted`, with two independent support groups and one independent contradiction group; the selected follow-up experiment must have positive information gain and the updated evidence must become `conflicted` rather than silently overwriting the contradiction.
 
 ### Verification status
 
-**Implementation complete; CI execution is pending for the new commit.** No CI-green claim is made until GitHub Actions actually executes this new benchmark.
+**Implementation complete; CI verification pending for the latest commit.** The last completed run (#305) predates this integrated-loop commit, so it is not being used as proof for this new capability.
 
 ## Next research bar
 
-The next step is to connect experiment selection to the evidence landscape and parallel environments:
+Replace deterministic environment fixtures with real adapters while preserving the same interfaces and epistemic boundaries:
 
-`problem → hypotheses → predictions → choose highest-value test → execute in environment → observe → update evidence → revise hypotheses`
+`problem → hypotheses → predictions → parallel real environments → evidence graph → convergence/model checks → highest-value experiment → observation → state update → validated knowledge`
 
-After that, replace synthetic observations with real environment adapters. The benchmark should eventually measure whether Cognitia can solve novel problems using independently gathered observations, not merely pass hand-authored scenarios.
+The benchmark should eventually measure whether Cognitia can construct and revise evidence landscapes from genuinely external observations and solve novel problems without an LLM.
