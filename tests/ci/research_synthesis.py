@@ -41,14 +41,16 @@ def main() -> None:
 
     assert synthesis.status == "candidate_multi_factor_synthesis"
     assert len(synthesis.factors) == 3
-    assert len(synthesis.competing_explanations) >= 2
+    assert synthesis.complementary_domains == ("political", "military", "economic")
+    assert synthesis.competing_explanations == ()
     assert len(synthesis.distinguishing_evidence) >= 2
-    assert "multi-factor explanation" in synthesis.thesis
-    assert "candidate" in synthesis.factors[0].confidence
+    assert "multiple potentially complementary contributing factors" in synthesis.thesis
+    assert all("candidate" in factor.confidence for factor in synthesis.factors)
 
     print("RESEARCH_SYNTHESIS_SUCCESS")
     print(f"STATUS={synthesis.status}")
     print(f"FACTORS={len(synthesis.factors)}")
+    print(f"COMPLEMENTARY_DOMAINS={synthesis.complementary_domains}")
     print(f"COMPETING_EXPLANATIONS={len(synthesis.competing_explanations)}")
     print(f"DISTINGUISHING_TESTS={len(synthesis.distinguishing_evidence)}")
     print(synthesis.render())
