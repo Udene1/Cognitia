@@ -5,6 +5,7 @@ from .representation import (
     EntityMention,
     LanguageFrame,
     RelationMention,
+    SemanticProposition,
     TextToken,
     build_language_frame,
 )
@@ -15,6 +16,7 @@ __all__ = [
     "EntityMention",
     "LanguageFrame",
     "RelationMention",
+    "SemanticProposition",
     "TextToken",
     "build_language_frame",
     "QuestionAnalysis",
