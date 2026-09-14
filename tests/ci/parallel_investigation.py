@@ -6,7 +6,7 @@ class Source:
     def __init__(self, name):
         self.name = name
 
-    def observe(self, objective, limit):
+    def observe(self, objective, *, limit):
         return (EnvironmentObservation(self.name + "-obs", self.name, objective, 0.9, ()),)
 
 
