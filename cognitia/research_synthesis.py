@@ -176,8 +176,6 @@ class ResearchSynthesisEngine:
         return best if scores[best] else "other"
 
     def _competing(self, factors: Sequence[FactorExplanation], claims: Sequence[ExtractedClaim]) -> list[CompetingExplanation]:
-        # Different domains are complementary by default. Competition requires
-        # explicit negation/contradiction evidence tied to a factor proposition.
         contrary = [claim for claim in claims if self._NEGATION.search(claim.proposition)]
         if not contrary:
             return []
@@ -203,9 +201,10 @@ class ResearchSynthesisEngine:
             ]
         if len(factors) < 2:
             return ["Acquire independent evidence that directly connects the leading factor to the outcome over the relevant period."] if factors else []
+        first, second = factors[0], factors[1]
         return [
-            f"Test whether {factors[index].factor} contributes independently to the outcome alongside {factors[index + 1].factor}.",
-            f"Search for evidence of a mechanism linking {factors[index].factor} to {factors[index + 1].factor}, rather than assuming interaction.",
+            f"Test whether {first.factor} contributes independently to the outcome alongside {second.factor}.",
+            f"Search for evidence of a mechanism linking {first.factor} to {second.factor}, rather than assuming interaction.",
         ]
 
     def _thesis(self, question: str, factors: Sequence[FactorExplanation], domains: Sequence[str]) -> str:
