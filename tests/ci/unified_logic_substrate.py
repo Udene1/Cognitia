@@ -72,8 +72,8 @@ def main() -> None:
     assert target.fingerprint() in successful.successful_transfers
 
     traces = (
-        ReasoningTrace(context="engineering", operations=("partition", "compare", "decide"), outcome="worked"),
-        ReasoningTrace(context="economics", operations=("partition", "compare", "decide"), outcome="worked"),
+        ReasoningTrace(id="engineering:1", input="records", output="decision", context="engineering", operations=("partition", "compare", "decide")),
+        ReasoningTrace(id="economics:1", input="investment", output="decision", context="economics", operations=("partition", "compare", "decide")),
     )
     assessment = assess_transfer(traces, "physics")
     assert assessment.transferable
