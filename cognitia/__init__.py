@@ -35,7 +35,7 @@ from .git_knowledge import GitKnowledgeIngestor
 from .learning.transfer import TransferAssessment, assess_transfer
 from .knowledge.model import KnowledgeItem, KnowledgeSource
 from .knowledge.validated import KnowledgeTest, ValidatedKnowledgeStore
-from .language import AnswerContract, Entity, LanguageAnalyzer, LanguageFrame, Proposition, QuestionAnalysis, SemanticRelation, Token, analyze_question, build_language_frame
+from .language import AnswerContract, EntityMention, LanguageFrame, QuestionAnalysis, RelationMention, TextToken, analyze_question, build_language_frame
 from .promotion import CognitivePromotionOrchestrator, PromotionEvaluation
 from .replay import CognitiveStateReplayer, RecoveredCognitiveState
 from .regression import CandidateDisposition, PromotionDecision, RegressionFinding, RegressionPolicy, evaluate_promotion
@@ -53,6 +53,6 @@ __all__ = [
     "EnvironmentObservation", "EnvironmentSource", "NullEnvironmentSource", "InvestigationTask", "ParallelInvestigationResult", "ParallelInvestigator", "SearchQuery", "WebEnvironmentSource", "WebSearchProvider", "EvidenceAssessment", "WebEvidenceEvaluator",
     "Claim", "EvidenceRecord", "EvidenceSource", "SourceLineage", "EvidenceGraph", "EvidenceRelation", "EvidenceConvergenceEngine", "ConvergenceAssessment", "ModelConstraint", "ModelConsistencyChecker", "ModelCheckResult",
     "CognitiveStateReplayer", "RecoveredCognitiveState", "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy", "KnowledgeItem", "KnowledgeSource", "KnowledgeTest", "ValidatedKnowledgeStore",
-    "Token", "Entity", "SemanticRelation", "Proposition", "LanguageFrame", "AnswerContract", "QuestionAnalysis", "LanguageAnalyzer", "build_language_frame", "analyze_question",
+    "TextToken", "EntityMention", "RelationMention", "LanguageFrame", "AnswerContract", "QuestionAnalysis", "build_language_frame", "analyze_question",
     "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis", "TransferAssessment", "assess_transfer", "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan", "CandidateDisposition", "PromotionDecision", "RegressionFinding", "RegressionPolicy", "evaluate_promotion", "CognitivePromotionOrchestrator", "PromotionEvaluation", "__version__",
 ]
