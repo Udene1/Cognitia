@@ -1,8 +1,9 @@
 """Deterministic search-strategy planning for open-ended research.
 
-The planner does not answer the question. It constructs a small set of
-independent information-seeking actions from the objective, records why each
-query was selected, and leaves truth assessment to the evidence subsystem.
+The planner does not answer the question. It constructs bounded information-
+seeking actions while preserving the subject of the original question. Search
+failures are useful observations: a later learner can use the recorded query,
+results, and outcome to improve this planner.
 """
 from __future__ import annotations
 
@@ -13,6 +14,14 @@ from typing import Sequence
 from .web_search import SearchQuery
 
 _TOKEN = re.compile(r"[A-Za-z0-9_]+")
+_ENTITY = re.compile(r"\b(?:[A-Z][A-Za-z0-9-]*)(?:\s+[A-Z][A-Za-z0-9-]*){0,4}\b")
+_STOPWORDS = {
+    "why", "what", "when", "where", "who", "which", "how", "did", "does", "do",
+    "is", "are", "was", "were", "the", "a", "an", "of", "to", "in", "on", "for",
+    "and", "or", "with", "from", "by", "about", "this", "that", "these", "those",
+    "evidence", "distinguishes", "distinguish", "competing", "explanations", "explanation",
+    "question", "information", "according", "report", "reports", "account", "accounts",
+}
 
 
 @dataclass(frozen=True)
@@ -38,7 +47,7 @@ class ResearchSearchPlanner:
         if max_actions < 1:
             raise ValueError("max_actions must be positive")
 
-        core = _terms(objective)
+        core = _topic_terms(objective)
         if not core:
             raise ValueError("objective must contain searchable terms")
 
@@ -49,25 +58,24 @@ class ResearchSearchPlanner:
         lowered = objective.lower()
         facets: list[tuple[str, str, float]] = []
         if any(word in lowered for word in ("why", "how", "cause", "causes", "mechanism")):
-            facets.append(("mechanism causes explanation", "mechanism", 0.90))
+            facets.append(("mechanism causes", "mechanism", 0.90))
         if any(word in lowered for word in ("history", "historically", "origin", "origins", "changed", "change")):
-            facets.append(("history origin changes", "historical development", 0.88))
+            facets.append(("history development", "historical development", 0.88))
         if any(word in lowered for word in ("what", "define", "defined", "definition")):
-            facets.append(("definition measurement terminology", "definition", 0.86))
+            facets.append(("definition terminology", "definition", 0.86))
         if any(word in lowered for word in ("current", "today", "now", "latest")):
-            facets.append(("current status recent evidence", "current status", 0.84))
+            facets.append(("current recent", "current status", 0.84))
         if not facets:
             facets = [
-                ("definition measurement", "definition", 0.82),
-                ("history development", "historical context", 0.78),
-                ("independent evidence disagreement", "independent check", 0.74),
+                ("definition", "definition", 0.82),
+                ("history", "historical context", 0.78),
+                ("independent evidence", "independent check", 0.74),
             ]
 
         for suffix, purpose, priority in facets:
             terms = tuple(_dedupe((*core, *_terms(suffix))))
             actions.append(SearchAction(SearchQuery(objective=f"{base} {suffix}", terms=terms), purpose, priority))
 
-        # Never emit duplicate term sets; preserving order makes traces reproducible.
         unique: list[SearchAction] = []
         seen: set[tuple[str, ...]] = set()
         for action in sorted(actions, key=lambda item: (-item.priority, item.query.terms)):
@@ -81,7 +89,6 @@ class ResearchSearchPlanner:
 
     def follow_up(self, objective: str, *, observed_queries: Sequence[str], unresolved: bool,
                   contradiction: bool) -> SearchAction | None:
-        """Choose one next query without pretending the current landscape is settled."""
         if not unresolved and not contradiction:
             return None
         used = {query.lower().strip() for query in observed_queries}
@@ -93,6 +100,20 @@ class ResearchSearchPlanner:
         return None
 
 
+def _topic_terms(value: str) -> list[str]:
+    entities = [" ".join(match.group(0).split()) for match in _ENTITY.finditer(value)]
+    tokens = [token.lower() for token in _TOKEN.findall(value)]
+    topical = [token for token in tokens if len(token) > 2 and token not in _STOPWORDS]
+    result: list[str] = []
+    for entity in entities:
+        if entity.lower() not in {item.lower() for item in result}:
+            result.append(entity)
+    for token in topical:
+        if token not in {item.lower() for item in result}:
+            result.append(token)
+    return result
+
+
 def _terms(value: str) -> list[str]:
     return [token.lower() for token in _TOKEN.findall(value) if len(token) > 2]
 
@@ -101,7 +122,8 @@ def _dedupe(values: Sequence[str]) -> list[str]:
     seen: set[str] = set()
     result: list[str] = []
     for value in values:
-        if value not in seen:
-            seen.add(value)
+        key = value.lower()
+        if key not in seen:
+            seen.add(key)
             result.append(value)
     return result
