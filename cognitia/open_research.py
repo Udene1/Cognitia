@@ -60,6 +60,38 @@ class OpenResearchResult:
             return "thin_independent_evidence"
         return "candidate_evidence_landscape"
 
+    def augment(self, additional: "OpenResearchResult") -> "OpenResearchResult":
+        """Append an independently acquired research episode to this question.
+
+        The additional episode may use a challenge query rather than the
+        original wording. Its searches, documents and claims remain visible as
+        a distinct round so later inspection can tell exactly what new evidence
+        entered the belief state.
+        """
+        if not additional.rounds:
+            return self
+        rounds = self.rounds + additional.rounds
+        claims = self.claims + additional.claims
+        documents = tuple(document for research_round in rounds for document in research_round.documents)
+        clusters = _cluster_claims(claims, self.identity_for_augmentation())
+        genealogy_builder = EvidenceGenealogyBuilder()
+        genealogy = genealogy_builder.assess(documents, claims)
+        unresolved = _unresolved_questions(self.question, rounds, clusters, genealogy)
+        return OpenResearchResult(
+            question=self.question,
+            rounds=rounds,
+            claims=claims,
+            clusters=clusters,
+            unresolved=tuple(unresolved),
+            genealogy=genealogy,
+            stop_reason=_stop_reason(rounds, genealogy),
+            answer_contract=self.answer_contract,
+        )
+
+    def identity_for_augmentation(self) -> ClaimIdentityMatcher:
+        """Return a fresh matcher for deterministic recomputation of clusters."""
+        return ClaimIdentityMatcher()
+
 
 class OpenEndedResearch:
     """Run bounded, real-web research while preserving evidence genealogy."""
