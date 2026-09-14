@@ -1,25 +1,25 @@
-"""Cross-domain structural pattern transfer.
+"""Cross-domain structural pattern transfer using roles and relations.
 
-Transfer is treated as a hypothesis. Cognitia may recognize a structural
-pattern from one artifact and adapt it to a new problem, but recognition never
-constitutes an answer. The adapted candidate must survive verification in the
-new environment before it can be promoted.
+Surface-feature overlap remains a fallback for legacy patterns, but new patterns
+carry a relational signature so transfer is driven by structure rather than
+vocabulary. Recognition remains a hypothesis and target verification is mandatory.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
+from ..logic_ir import LogicModel, LogicTransferCandidate as IRTransferCandidate, LogicTransferEngine
+
 
 @dataclass(frozen=True)
 class StructuralPattern:
-    """Language/domain-neutral structure extracted from an artifact."""
-
     name: str
     features: tuple[str, ...]
     source: str
     epistemic_status: str = "inference"
     confidence: float = 0.0
+    logic: LogicModel | None = None
 
     def feature_set(self) -> frozenset[str]:
         return frozenset(self.features)
@@ -32,6 +32,7 @@ class TransferCandidate:
     similarity: float
     adaptation: tuple[str, ...]
     status: str = "candidate"
+    logic_candidate: IRTransferCandidate | None = None
 
 
 @dataclass(frozen=True)
@@ -43,62 +44,45 @@ class TransferVerification:
 
 
 class StructuralTransferEngine:
-    """Find, adapt and verify structural analogies without treating analogy as truth."""
+    """Find, adapt and verify structural analogies without analogy-as-truth."""
 
     def __init__(self, patterns: Sequence[StructuralPattern] = ()) -> None:
         self._patterns = tuple(patterns)
+        self._logic_engine = LogicTransferEngine()
 
     @property
     def patterns(self) -> tuple[StructuralPattern, ...]:
         return self._patterns
 
     def register(self, pattern: StructuralPattern) -> None:
-        """Register a pattern only if it has a non-empty structural signature."""
-        if not pattern.features:
-            raise ValueError("pattern must contain at least one structural feature")
+        if not pattern.features and pattern.logic is None:
+            raise ValueError("pattern must contain structural features or a logic model")
         self._patterns = tuple((*self._patterns, pattern))
 
-    def retrieve(
-        self,
-        target_features: Sequence[str],
-        *,
-        minimum_similarity: float = 0.35,
-        limit: int = 5,
-    ) -> tuple[TransferCandidate, ...]:
-        """Retrieve candidate analogies by structural overlap, not vocabulary."""
-        if not target_features:
+    def retrieve(self, target_features: Sequence[str], *, minimum_similarity: float = 0.35, limit: int = 5,
+                 target_logic: LogicModel | None = None) -> tuple[TransferCandidate, ...]:
+        if not target_features and target_logic is None:
             return ()
         target = frozenset(target_features)
         candidates: list[TransferCandidate] = []
         for pattern in self._patterns:
-            similarity = _jaccard(target, pattern.feature_set())
+            logic_candidate = None
+            if pattern.logic is not None and target_logic is not None:
+                logic_candidate = self._logic_engine.compare(pattern.logic, target_logic)
+                similarity = logic_candidate.structural_score
+                adaptation = logic_candidate.adaptations
+            else:
+                similarity = _structural_feature_score(target, pattern.feature_set())
+                adaptation = _adaptation(pattern.feature_set(), target)
             if similarity < minimum_similarity:
                 continue
-            adaptation = _adaptation(pattern.feature_set(), target)
-            candidates.append(
-                TransferCandidate(
-                    pattern=pattern,
-                    target_features=tuple(target_features),
-                    similarity=similarity,
-                    adaptation=adaptation,
-                )
-            )
+            candidates.append(TransferCandidate(pattern, tuple(target_features), similarity, tuple(adaptation), logic_candidate=logic_candidate))
         candidates.sort(key=lambda item: (-item.similarity, -item.pattern.confidence, item.pattern.name))
         return tuple(candidates[:limit])
 
-    def verify(
-        self,
-        candidate: TransferCandidate,
-        observations: Sequence[Mapping[str, object]],
-    ) -> TransferVerification:
-        """Verify a transfer against observations supplied by the target environment.
-
-        Each observation must explicitly state whether the adapted prediction
-        held. Missing verdicts are not treated as success.
-        """
+    def verify(self, candidate: TransferCandidate, observations: Sequence[Mapping[str, object]]) -> TransferVerification:
         if not observations:
             return TransferVerification(candidate, False, (), "no target observations")
-
         normalized: list[str] = []
         verdicts: list[bool] = []
         for observation in observations:
@@ -106,7 +90,6 @@ class StructuralTransferEngine:
             normalized.append(str(observation.get("description", observation)))
             if isinstance(verdict, bool):
                 verdicts.append(verdict)
-
         if not verdicts:
             return TransferVerification(candidate, False, tuple(normalized), "observations contain no explicit verification verdict")
         if all(verdicts):
@@ -114,13 +97,27 @@ class StructuralTransferEngine:
         return TransferVerification(candidate, False, tuple(normalized), "at least one supplied target observation falsified the transfer")
 
 
+def _structural_feature_score(left: frozenset[str], right: frozenset[str]) -> float:
+    """Category-aware fallback; untyped legacy signatures retain Jaccard behavior."""
+    if not left or not right:
+        return 0.0
+    exact = _jaccard(left, right)
+    left_categories = {item.split(":", 1)[0] for item in left if ":" in item}
+    right_categories = {item.split(":", 1)[0] for item in right if ":" in item}
+    shared_categories = left_categories & right_categories
+    if not left_categories or not right_categories or not shared_categories:
+        return exact
+    category_score = len(shared_categories) / max(1, len(left_categories | right_categories))
+    return 0.7 * exact + 0.3 * category_score
+
+
 def _jaccard(left: frozenset[str], right: frozenset[str]) -> float:
+    """Compatibility helper for callers that used the legacy metric directly."""
     union = left | right
     return len(left & right) / len(union) if union else 0.0
 
 
 def _adaptation(source: frozenset[str], target: frozenset[str]) -> tuple[str, ...]:
-    """Describe structural mismatches that must be adapted and tested."""
     missing = sorted(target - source)
     obsolete = sorted(source - target)
     adaptation: list[str] = []
@@ -128,6 +125,4 @@ def _adaptation(source: frozenset[str], target: frozenset[str]) -> tuple[str, ..
         adaptation.append("introduce target structure: " + ", ".join(missing))
     if obsolete:
         adaptation.append("remove or reinterpret source structure: " + ", ".join(obsolete))
-    if not adaptation:
-        adaptation.append("direct structural mapping")
-    return tuple(adaptation)
+    return tuple(adaptation or ["direct structural mapping"])

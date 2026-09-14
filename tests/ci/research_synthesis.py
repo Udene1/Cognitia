@@ -1,54 +1,38 @@
-from cognitia.document_claims import DocumentClaimExtractor
-from cognitia.environment import EnvironmentObservation
-from cognitia.open_research import OpenResearchResult
+from cognitia.open_research import OpenEndedResearch
 from cognitia.research_synthesis import ResearchSynthesisEngine
 
 
-def main() -> None:
-    observations = (
-        EnvironmentObservation(
-            "doc:1", "web:history:a",
-            "Political instability weakened the Roman Empire through repeated civil conflict.",
-            metadata=(("origin_id", "origin:a"),),
-        ),
-        EnvironmentObservation(
-            "doc:2", "web:history:b",
-            "Frontier pressure contributed to the decline of the Roman Empire by weakening its armed forces.",
-            metadata=(("origin_id", "origin:b"),),
-        ),
-        EnvironmentObservation(
-            "doc:3", "web:history:c",
-            "Fiscal strain contributed to the decline because tax revenue became less reliable.",
-            metadata=(("origin_id", "origin:c"),),
-        ),
-    )
-    extractor = DocumentClaimExtractor()
-    claims = tuple(c for doc in observations for c in extractor.extract(doc))
-    assert len(claims) == 3, claims
+QUESTION = "Why did the Roman Empire decline, and what evidence distinguishes the competing explanations?"
 
-    genealogy = __import__("cognitia.evidence.genealogy", fromlist=["EvidenceGenealogyBuilder"]).EvidenceGenealogyBuilder()
-    assessment = genealogy.assess(observations, claims)
-    result = OpenResearchResult(
-        question="Why did the Roman Empire decline?",
-        rounds=(),
-        claims=claims,
-        clusters=(),
-        unresolved=(),
-        genealogy=assessment,
-        stop_reason="test_fixture",
+
+def main() -> None:
+    # This benchmark intentionally contains no hand-authored political,
+    # military, or economic factors. The evidence landscape must be acquired
+    # and extracted by Cognitia itself.
+    result = OpenEndedResearch().investigate(
+        QUESTION,
+        max_rounds=4,
+        search_results=5,
+        documents_per_round=3,
+        claims_per_document=20,
     )
     synthesis = ResearchSynthesisEngine().synthesize(result)
 
-    assert synthesis.status == "candidate_multi_factor_synthesis"
-    assert len(synthesis.factors) == 3
-    assert synthesis.complementary_domains == ("political", "military", "economic")
-    assert synthesis.competing_explanations == ()
-    assert len(synthesis.distinguishing_evidence) >= 2
+    assert result.rounds, "no search actions were selected"
+    assert result.claims, "no claims were acquired from the live evidence layer"
+    assert synthesis.factors, "no explanatory factors were formed from acquired evidence"
+    assert synthesis.status in {
+        "candidate_multi_factor_synthesis",
+        "thin_evidence_multi_factor_synthesis",
+    }
+    assert len(synthesis.distinguishing_evidence) >= 1
     assert "multiple potentially complementary contributing factors" in synthesis.thesis
     assert all("candidate" in factor.confidence for factor in synthesis.factors)
 
     print("RESEARCH_SYNTHESIS_SUCCESS")
     print(f"STATUS={synthesis.status}")
+    print(f"SEARCH_ROUNDS={len(result.rounds)}")
+    print(f"CLAIMS={len(result.claims)}")
     print(f"FACTORS={len(synthesis.factors)}")
     print(f"COMPLEMENTARY_DOMAINS={synthesis.complementary_domains}")
     print(f"COMPETING_EXPLANATIONS={len(synthesis.competing_explanations)}")

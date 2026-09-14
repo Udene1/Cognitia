@@ -41,6 +41,8 @@ jobs:
         run: python tests/ci/structural_transfer.py
       - name: Exercise executable artifact structural transfer
         run: python tests/ci/artifact_transfer.py
+      - name: Exercise unified representation-neutral logic substrate
+        run: python tests/ci/unified_logic_substrate.py
       - name: Exercise question-driven research control
         run: python tests/ci/research_controller.py
       - name: Learn from Git-discovered repository source
@@ -117,3 +119,14 @@ jobs:
         run: python tests/ci/language_representation.py
       - name: Exercise semantic language and answer contracts
         run: python tests/ci/language_cognition.py
+      - name: Diagnose answer construction state
+        if: always()
+        run: python tests/ci/answering_diagnostics.py
+      - name: Exercise answer construction, epistemic boundaries, and revision
+        run: python tests/ci/answering_core.py
+      - name: Upload answer-core diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: answering-core-diagnostics
+          path: .ci/answering-diagnostics.txt
