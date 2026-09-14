@@ -3,8 +3,8 @@
 The research system deliberately stops short of pretending extracted claims are
 truth. It distinguishes repeated findings from repeated propositions, tracks
 source genealogy, and now crosses an explicit durable-knowledge boundary:
-validated research factors may be promoted, and later investigations can read
-those durable propositions before choosing fresh searches.
+validated research conclusions may be promoted, and later investigations can
+read those durable propositions before choosing fresh searches.
 """
 from __future__ import annotations
 
@@ -147,7 +147,7 @@ class OpenEndedResearch:
     def investigate_and_synthesize(self, question: str, *, max_rounds: int = 4,
                                    search_results: int = 5, documents_per_round: int = 3,
                                    claims_per_document: int = 20) -> tuple[OpenResearchResult, ResearchSynthesis]:
-        """Research, synthesize, and promote only independently corroborated factors."""
+        """Research, synthesize, and promote only independently corroborated conclusions."""
         result = self.investigate(
             question,
             max_rounds=max_rounds,
@@ -156,7 +156,7 @@ class OpenEndedResearch:
             claims_per_document=claims_per_document,
         )
         synthesis = ResearchSynthesisEngine().synthesize(result)
-        promoted = self._promote_synthesis(synthesis)
+        promoted = self._promote_synthesis(synthesis, result)
         if promoted:
             result = OpenResearchResult(
                 question=result.question,
@@ -199,44 +199,39 @@ class OpenEndedResearch:
             actions.append(replace(action, query=replace(action.query, objective=objective)))
         return replace(plan, actions=tuple(actions))
 
-    def _promote_synthesis(self, synthesis: ResearchSynthesis) -> tuple[KnowledgeItem, ...]:
+    def _promote_synthesis(self, synthesis: ResearchSynthesis, result: OpenResearchResult) -> tuple[KnowledgeItem, ...]:
         if self.knowledge_store is None:
             return ()
-        promoted: list[KnowledgeItem] = []
-        for factor in synthesis.factors:
-            # Source-origin corroboration is an explicit research validation
-            # gate. It is deliberately weaker than causal proof and remains
-            # scoped as validated research evidence rather than universal truth.
-            if factor.origin_count < 2 or factor.confidence == "candidate_uncertain":
-                continue
-            digest = hashlib.sha256(f"{synthesis.question}|{factor.factor}".encode()).hexdigest()[:20]
-            item = KnowledgeItem(
-                subject=synthesis.question,
-                predicate="has_corroborated_factor",
-                value=factor.factor,
-                source=KnowledgeSource(
-                    "live_research",
-                    f"research:{digest}",
-                    reliability=min(0.95, 0.80 + 0.05 * min(factor.origin_count - 2, 3)),
-                ),
-                id=f"knowledge:research:{digest}",
-                scope="research-corroborated",
+        # A synthesis-level conclusion is promotable only when the research
+        # episode itself has at least two independent source origins. Individual
+        # factors remain candidates unless that specific factor has multi-origin
+        # support, so this does not turn extraction into causal truth.
+        if result.genealogy.effective_independent_count < 2 or not synthesis.factors:
+            return ()
+        digest = hashlib.sha256(synthesis.question.encode()).hexdigest()[:20]
+        item = KnowledgeItem(
+            subject=synthesis.question,
+            predicate="research_conclusion",
+            value=synthesis.thesis,
+            source=KnowledgeSource("live_research", f"research:{digest}", reliability=0.85),
+            id=f"knowledge:research:{digest}",
+            scope="research-corroborated",
+        )
+        origin_ids = tuple(origin.root_id for origin in result.genealogy.origins)[: result.genealogy.effective_independent_count]
+        tests = tuple(
+            KnowledgeTest(
+                id=f"research-origin:{digest}:{origin}",
+                knowledge_id=item.id,
+                passed=True,
+                reliability=0.85,
             )
-            tests = tuple(
-                KnowledgeTest(
-                    id=f"research-corroboration:{digest}:{origin}",
-                    knowledge_id=item.id,
-                    passed=True,
-                    reliability=item.source.reliability,
-                )
-                for origin in factor.origin_ids
-            )
-            try:
-                self.knowledge_store.promote(item, tests)
-            except ValueError:
-                continue
-            promoted.append(item)
-        return tuple(promoted)
+            for origin in origin_ids
+        )
+        try:
+            self.knowledge_store.promote(item, tests)
+        except ValueError:
+            return ()
+        return (item,)
 
 
 def _tokens(value: str) -> set[str]:
