@@ -3,6 +3,7 @@
 from .representation import (
     AnswerContract,
     EntityMention,
+    EventMention,
     LanguageFrame,
     RelationMention,
     SemanticProposition,
@@ -14,6 +15,7 @@ from .question import QuestionAnalysis, analyze_question
 __all__ = [
     "AnswerContract",
     "EntityMention",
+    "EventMention",
     "LanguageFrame",
     "RelationMention",
     "SemanticProposition",
