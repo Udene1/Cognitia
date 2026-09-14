@@ -87,9 +87,16 @@ with SQLiteCognitiveJournal(root / "cognition.sqlite") as journal:
         )
     )
     ledger = DurableCognitiveLedger(journal)
-    ledger.record_candidate(candidate_record)
-    ledger.record_evaluation(evaluation)
-    ledger.record_build(build)
+
+    # Re-running a workflow/job must not turn the same durable lifecycle
+    # records into duplicates. This is important once the previous runner's
+    # SQLite state has been restored before this process starts.
+    if not any(item.get("candidate_id") == candidate_record.candidate_id for item in ledger.candidate_snapshots()):
+        ledger.record_candidate(candidate_record)
+    if not any(item.get("candidate_id") == evaluation.candidate_id for item in ledger.evaluations()):
+        ledger.record_evaluation(evaluation)
+    if not any(item.get("build_id") == build.build_id for item in ledger.builds()):
+        ledger.record_build(build)
 
 print(f"CI_STATE_RUN_RECORDED: {run_id}")
 print("PERSISTENCE_WRITE_SUCCESS")
