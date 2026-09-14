@@ -21,6 +21,7 @@ def main() -> None:
     extractor = DocumentClaimExtractor()
     claims = tuple(c for doc in observations for c in extractor.extract(doc))
     assert len(claims) == 2, claims
+    assert {claim.polarity for claim in claims} == {"positive", "negative"}
     assessment = EvidenceGenealogyBuilder().assess(observations, claims)
     result = OpenResearchResult(
         question="Did fiscal strain contribute to the decline of the Roman Empire?",
