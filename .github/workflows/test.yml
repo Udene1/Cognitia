@@ -96,3 +96,5 @@ jobs:
           python tests/ci/knowledge_guided_routing.py
       - name: Exercise adaptive search strategy
         run: python tests/ci/adaptive_search_strategy.py
+      - name: Exercise deterministic document claim extraction
+        run: python tests/ci/document_claim_extraction.py
