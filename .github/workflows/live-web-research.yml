@@ -27,3 +27,13 @@ jobs:
         run: python tests/ci/live_open_ended_research.py
       - name: Prove live research crosses the durable-memory boundary
         run: python tests/ci/live_research_memory_loop.py
+      - name: Run open-ended research through answer construction
+        run: python tests/ci/live_open_ended_answer.py
+      - name: Run Roman Empire complete cognition trace and revision
+        run: python tests/ci/roman_empire_trace.py
+      - name: Upload Roman Empire cognition trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roman-empire-cognition-trace
+          path: .ci/roman-empire-trace.json
