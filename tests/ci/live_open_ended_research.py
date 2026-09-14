@@ -1,7 +1,8 @@
 """Run an actually open-ended Cognitia research experiment against the live web.
 
 No answer is embedded here. The question is intentionally broad; CI records the
-searches, retrieved documents, extracted claims, conflicts, and unresolved gaps.
+searches, why each action was chosen, retrieved documents, extracted claims,
+conflicts, and unresolved gaps.
 """
 from cognitia.open_research import OpenEndedResearch
 
@@ -21,9 +22,12 @@ def main() -> None:
     print("OPEN_ENDED_LIVE_RESEARCH")
     print(f"question={result.question}")
     print(f"status={result.status}")
+    print(f"stop_reason={result.stop_reason}")
     print(f"rounds={len(result.rounds)} claims={len(result.claims)} clusters={len(result.clusters)}")
     for index, research_round in enumerate(result.rounds, start=1):
         print(f"ROUND {index}: purpose={research_round.action.purpose} query={research_round.action.query.objective}")
+        print(f"  rationale={research_round.decision_rationale}")
+        print(f"  expected_information_gain={research_round.expected_information_gain}")
         print(f"  search_observations={len(research_round.search_observations)} documents={len(research_round.documents)} claims={len(research_round.claims)}")
         for cluster in research_round.clusters[:5]:
             print(f"  CLAIM: {cluster.representative.proposition}")
@@ -36,6 +40,8 @@ def main() -> None:
         raise AssertionError("live research produced no rounds")
     if not any(round.search_observations for round in result.rounds):
         raise AssertionError("live research produced no search observations")
+    if not any(round.decision_rationale for round in result.rounds):
+        raise AssertionError("live research did not expose action-selection reasoning")
     print("LIVE_OPEN_ENDED_RESEARCH_SUCCESS")
 
 
