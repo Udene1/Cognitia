@@ -26,6 +26,7 @@ class FactorExplanation:
     origin_count: int
     confidence: str
     domain: str
+    origin_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -83,11 +84,6 @@ class ResearchSynthesisEngine:
     _OUTCOME_TERMS = ("decline", "declined", "fall", "fell", "collapse", "collapsed", "end", "ended", "crisis", "weakened", "threatened")
     _PRONOUN_FACTORS = re.compile(r"^(?:this|that|it|he|she|they|these|those)\b", re.I)
     _HISTORIOGRAPHY = re.compile(r"\b(?:historians?|gibbon|theory|theories|historiography|speculat|account of the event)\b", re.I)
-    _NON_EXPLANATORY = re.compile(
-        r"\b(?:human societies are complex systems|some common factors that may contribute|under the older view|older view|" 
-        r"factors? such as .* might be contributory factors|events including .* invasions? and .* death)\b",
-        re.I,
-    )
     _DOMAIN_TERMS = {
         "military": ("army", "armed", "military", "soldier", "frontier", "force", "war", "invasion", "goth", "goths"),
         "political": ("political", "instability", "emperor", "succession", "civil", "governance", "administr", "central rule"),
@@ -151,11 +147,12 @@ class ResearchSynthesisEngine:
                 origin_count=len(origin_ids),
                 confidence="candidate_uncertain" if any(claim.confidence == "uncertain" for claim in members) else "candidate",
                 domain=self._domain(factor_text),
+                origin_ids=tuple(sorted(origin_ids)),
             ))
         return factors
 
     def _factor_text(self, text: str) -> str:
-        if self._HISTORIOGRAPHY.search(text) or self._NON_EXPLANATORY.search(text):
+        if self._HISTORIOGRAPHY.search(text):
             return ""
         lowered = text.lower()
         for pattern in self._CAUSE_PATTERNS:
@@ -239,6 +236,5 @@ def _normalize(value: str) -> str:
 
 
 def _trim_factor(value: str) -> str:
-    value = re.sub(r"\[[^\]]*\]\s*", "", value)
     value = re.sub(r"^(according to|some historians|most historians|the traditional view)\s+", "", value, flags=re.I)
     return value.strip(" ,;:.")[:220]
