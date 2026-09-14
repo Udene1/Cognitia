@@ -1,0 +1,25 @@
+name: research-synthesis
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthesis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Cognitia
+        run: python -m pip install -e .
+      - name: Exercise complementary multi-factor synthesis
+        run: python tests/ci/research_synthesis.py
+      - name: Exercise explicit competing explanations
+        run: python tests/ci/research_synthesis_competition.py

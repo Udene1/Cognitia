@@ -8,6 +8,7 @@ from .persistent_solutions import PersistentSolutionPatternLearner
 from .reasoning_patterns import ReasoningPattern, ReasoningPatternLearner
 from .scientific import Hypothesis, ScientificEvaluator, TestResult
 from .solution_patterns import SolutionPattern, SolutionPatternLearner
+from .structural_transfer import StructuralPattern, StructuralTransferEngine, TransferCandidate, TransferVerification
 
 __all__ = [
     "ConditionalPattern",
@@ -26,4 +27,8 @@ __all__ = [
     "RevisionAction",
     "RevisionDecision",
     "revise_hypothesis",
+    "StructuralPattern",
+    "StructuralTransferEngine",
+    "TransferCandidate",
+    "TransferVerification",
 ]

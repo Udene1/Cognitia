@@ -135,11 +135,55 @@ A hypothesis can now be paired with a condition, expected outcome, and explicit 
 
 ### Discriminating experiment selection
 
-Cognitia can select a test when competing hypotheses make different predictions under the same condition. A test is therefore selected for its discriminatory value, not merely because a test exists.
+Cognitia can select a test when competing hypotheses make different predictions under the same condition. Information gain is derived from the prior entropy of the competing hypotheses rather than a fixed placeholder.
 
-### CI research experiment
+### Bounded structural search and research artifacts
 
-The discovery CI experiment constructs multiple alternatives from a baseline model, creates two competing hypotheses, derives conflicting predictions, and selects a discriminating experiment. The experiment explicitly reports that it has made **no novelty claim**.
+Cognitia now has a canonical structural discovery IR plus a bounded search engine over structural alternatives. The IR removes model-specific identifiers from comparison and produces stable fingerprints; similarity remains evidence rather than semantic equivalence.
+
+The search engine now supports bounded multi-step transformation paths with deterministic deduplication, explicit derivation traces, learned transformation utility, and learned failure pressure. Search depth and candidate count remain hard budgets. Multi-step candidates remain hypotheses until independently tested.
+
+### Behavioral verification
+
+Independent code representations can now be followed by held-out behavioral verification. Structural similarity remains an inference; agreement across held-out cases upgrades the epistemic status to `verified-on-held-out-cases`, while mismatches explicitly challenge the structural inference.
+
+### Discovery investigation and web boundary
+
+Cognitia now has an environment/evidence boundary. A search provider can supply observations, while Cognitia retains responsibility for interpretation and hypothesis revision. Evidence is deduplicated, provenance-preserving, reliability-gated, and temporally qualified before investigation uses it. There is still no built-in live crawler or LLM dependency.
+
+### Failure-driven search learning
+
+Discovery failures can be classified using the existing failure-analysis taxonomy and accumulated as evidence about search transformations. Failed investigations penalize future search utility rather than deleting the failed hypothesis or pretending the failure proves the underlying proposition false.
+
+### Durable discovery lifecycle
+
+Discovery artifacts can now survive process restart with links to observations, models, hypotheses, predictions, experiments, outcomes, epistemic status, and reproduction status. Persistence is an evidence record, not a truth claim.
+
+### Validated-knowledge persistence invariant
+
+This is now a hard architectural rule:
+
+> **Cognitia may remember candidates, observations, experiences, hypotheses, and failures freely. It promotes something to durable knowledge only after it has survived explicit tests meeting the validation policy, and it persists that validated knowledge with its provenance and test identities.**
+
+A failed test cannot be promoted. A restart cannot strengthen a proposition. Persistence records what survived the test process; it does not make an untested proposition true.
+
+The durable knowledge path is:
+
+```text
+candidate / observation
+        ↓
+      test
+        ↓
+  pass + reliability
+        ↓
+validation gate
+        ↓
+persisted knowledge
+        ↓
+restart / replay
+        ↓
+usable prior knowledge
+```
 
 ## Current architectural consequence
 
@@ -149,9 +193,7 @@ In particular, durable cognitive state must be replayable into active cognition.
 
 ## Next research attack
 
-The next difficult step is not adding more hand-written transformations. We need to investigate whether Cognitia can learn **which transformations are useful** from failed and successful investigations, while preserving provenance and avoiding a growing list of domain-specific rules.
-
-That means moving toward a representation in which assumptions, variables, dependencies, constraints, predictions, and outcomes are first-class objects. The search mechanism should then operate over that representation and be evaluated by transfer and held-out evidence.
+The next difficult step is to remove more hand-written transformation mappings and make the canonical representation itself richer enough that useful transformations can operate on assumptions, variables, dependencies, constraints, predictions, and outcomes generically. Search should learn which transformations are useful from consequences, while behavioral verification and independent reproduction protect against seductive but wrong abstractions.
 
 The progression is:
 
@@ -164,9 +206,10 @@ explicit model
 → observed result
 → hypothesis revision
 → learned search strategy
+→ durable validated knowledge
 ```
 
-The key research question is whether the final arrow can become learned cognition rather than a collection of manually encoded heuristics.
+The key research question is whether the final arrows can become learned cognition rather than a collection of manually encoded heuristics.
 
 ## Non-goals
 
@@ -189,6 +232,7 @@ unexplained observation
 → result
 → belief revision
 → independent reproduction
+→ durable knowledge
 ```
 
 Only then should Cognitia claim that it has demonstrated a meaningful form of machine discovery.

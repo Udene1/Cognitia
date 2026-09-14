@@ -32,40 +32,43 @@ jobs:
           mkdir -p .ci
           COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/learn_solution.py
       - name: New-process code-to-problem transfer
-        run: |
-          COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/apply_learned_solution.py
+        run: COGNITIA_CI_KNOWLEDGE=.ci/cognitia-knowledge.json python tests/ci/apply_learned_solution.py
       - name: Compare independently written implementations
         run: python tests/ci/compare_implementations.py
+      - name: Exercise multi-language computational abstraction
+        run: python tests/ci/multilanguage_computation.py
+      - name: Exercise structural transfer as a testable hypothesis
+        run: python tests/ci/structural_transfer.py
+      - name: Exercise executable artifact structural transfer
+        run: python tests/ci/artifact_transfer.py
+      - name: Exercise question-driven research control
+        run: python tests/ci/research_controller.py
       - name: Learn from Git-discovered repository source
         run: |
           mkdir -p .ci
           COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/learn_from_git.py
       - name: Solve using persisted Git-derived knowledge in a new process
-        run: |
-          COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/apply_git_learned_solution.py
+        run: COGNITIA_CI_GIT_KNOWLEDGE=.ci/git-cognitia-knowledge.json python tests/ci/apply_git_learned_solution.py
       - name: Learn engineering balancing from Git source
         run: |
           mkdir -p .ci
           COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/learn_engine_balance_from_git.py
       - name: Apply engineering abstraction to economics in a new process
-        run: |
-          COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/apply_cross_domain_learning.py
+        run: COGNITIA_CI_CROSS_DOMAIN_KNOWLEDGE=.ci/cross-domain-knowledge.json python tests/ci/apply_cross_domain_learning.py
       - name: Write durable cognitive state
         run: |
           rm -rf .ci/persistence
           mkdir -p .ci/persistence
           COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_writer.py
       - name: Recover durable cognitive state in a fresh process
-        run: |
-          COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_reader.py
+        run: COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/persistence_reader.py
       - name: Replay durable cognitive state into active cognition
         run: |
           rm -rf .ci/replay
           mkdir -p .ci/replay
           COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_writer.py
       - name: Use recovered cognitive state in a new process
-        run: |
-          COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_reader.py
+        run: COGNITIA_REPLAY_ROOT=.ci/replay python tests/ci/replay_reader.py
       - name: Identify an explanatory gap
         run: python tests/ci/discovery_gap.py
       - name: Construct and discriminate hypothesis space
@@ -74,3 +77,43 @@ jobs:
         run: python tests/ci/learn_hypothesis_search.py
       - name: Construct structural hypothesis space
         run: python tests/ci/structural_hypothesis_space.py
+      - name: Exercise bounded discovery search engine
+        run: python tests/ci/discovery_search_engine.py
+      - name: Exercise full discovery research batch
+        run: python tests/ci/discovery_research_batch.py
+      - name: Exercise parallel multi-environment investigation
+        run: python tests/ci/parallel_investigation.py
+      - name: Exercise evidence convergence and model checks
+        run: python tests/ci/evidence_convergence.py
+      - name: Exercise real evidence reasoning problem-solving
+        run: python tests/ci/evidence_reasoning_problem.py
+      - name: Exercise discriminating experiment problem-solving
+        run: python tests/ci/decision_experiment_problem.py
+      - name: Exercise integrated evidence-to-experiment investigation
+        run: python tests/ci/investigation_loop.py
+      - name: Exercise validated-knowledge persistence
+        run: |
+          rm -rf .ci/validated-knowledge
+          COGNITIA_VALIDATED_KNOWLEDGE_ROOT=.ci/validated-knowledge python tests/ci/validated_knowledge_persistence.py
+      - name: Exercise knowledge-guided research routing
+        run: |
+          mkdir -p .ci
+          python tests/ci/knowledge_guided_routing.py
+      - name: Exercise adaptive search strategy
+        run: python tests/ci/adaptive_search_strategy.py
+      - name: Exercise deterministic document claim extraction
+        run: python tests/ci/document_claim_extraction.py
+      - name: Exercise claim identity matching
+        run: python tests/ci/claim_identity.py
+      - name: Exercise evidence-driven research action control
+        run: python tests/ci/research_action_control.py
+      - name: Exercise evidence-to-decision utility
+        run: python tests/ci/evidence_utility_problem.py
+      - name: Exercise evidence genealogy
+        run: python tests/ci/evidence_genealogy.py
+      - name: Exercise multi-factor research synthesis
+        run: python tests/ci/research_synthesis.py
+      - name: Exercise structured language representation
+        run: python tests/ci/language_representation.py
+      - name: Exercise semantic language and answer contracts
+        run: python tests/ci/language_cognition.py

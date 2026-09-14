@@ -1,0 +1,27 @@
+name: live-web-research
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"
+
+jobs:
+  live-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install --upgrade pip && pip install -e .
+      - name: Acquire unscripted web observations
+        run: python tests/ci/live_web_access.py
+      - name: Search and fetch real source documents
+        run: python tests/ci/live_web_research.py
+      - name: Run open-ended research experiment on live web
+        run: python tests/ci/live_open_ended_research.py
