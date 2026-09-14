@@ -1,18 +1,17 @@
 """Open-ended research orchestration with evidence-origin accounting.
 
 The research system deliberately stops short of pretending extracted claims are
-truth. It now also measures the genealogy of those findings so repeated
-reporting is not mistaken for independent evidence.
+truth. It also distinguishes repeated findings from repeated propositions and
+tracks source genealogy before evidence is allowed to influence conclusions.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from difflib import SequenceMatcher
-import re
 from typing import Sequence
 
 from .document_claims import DocumentClaimExtractor, ExtractedClaim
 from .environment import EnvironmentObservation
+from .evidence.claim_identity import ClaimIdentityMatcher
 from .evidence.genealogy import EvidenceGenealogyBuilder, GenealogyAssessment
 from .research_search import ResearchSearchPlanner, SearchAction
 from .web_research import LiveWebResearchSession
@@ -24,6 +23,8 @@ class ClaimCluster:
     members: tuple[ExtractedClaim, ...]
     source_ids: tuple[str, ...]
     conflict: bool
+    identity_confidence: float
+    identity_basis: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -64,11 +65,13 @@ class OpenEndedResearch:
     def __init__(self, *, web: LiveWebResearchSession | None = None,
                  planner: ResearchSearchPlanner | None = None,
                  extractor: DocumentClaimExtractor | None = None,
-                 genealogy: EvidenceGenealogyBuilder | None = None) -> None:
+                 genealogy: EvidenceGenealogyBuilder | None = None,
+                 identity: ClaimIdentityMatcher | None = None) -> None:
         self.web = web or LiveWebResearchSession()
         self.planner = planner or ResearchSearchPlanner()
         self.extractor = extractor or DocumentClaimExtractor()
         self.genealogy = genealogy or EvidenceGenealogyBuilder()
+        self.identity = identity or ClaimIdentityMatcher()
 
     def investigate(self, question: str, *, max_rounds: int = 4,
                     search_results: int = 5, documents_per_round: int = 3,
@@ -92,7 +95,7 @@ class OpenEndedResearch:
             claims = self.extractor.extract_many(documents, limit_per_document=claims_per_document)
             all_claims.extend(claims)
             all_documents.extend(documents)
-            clusters = _cluster_claims(claims)
+            clusters = _cluster_claims(claims, self.identity)
             rounds.append(
                 OpenResearchRound(
                     action=action,
@@ -105,7 +108,7 @@ class OpenEndedResearch:
                 )
             )
 
-        clusters = _cluster_claims(all_claims)
+        clusters = _cluster_claims(all_claims, self.identity)
         genealogy = self.genealogy.assess(all_documents, all_claims)
         unresolved = _unresolved_questions(question, rounds, clusters, genealogy)
         stop_reason = _stop_reason(rounds, genealogy)
@@ -120,36 +123,22 @@ class OpenEndedResearch:
         )
 
 
-def _normalize(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r"\b(?:is|are|was|were|the|a|an|of|to|in|on|for|and)\b", " ", text)
-    return " ".join(re.findall(r"[a-z0-9]+", text))
-
-
-def _cluster_claims(claims: Sequence[ExtractedClaim]) -> tuple[ClaimCluster, ...]:
-    clusters: list[list[ExtractedClaim]] = []
-    for claim in claims:
-        key = _normalize(claim.proposition)
-        placed = False
-        for cluster in clusters:
-            similarity = SequenceMatcher(None, key, _normalize(cluster[0].proposition)).ratio()
-            if similarity >= 0.72:
-                cluster.append(claim)
-                placed = True
-                break
-        if not placed:
-            clusters.append([claim])
-
+def _cluster_claims(claims: Sequence[ExtractedClaim], matcher: ClaimIdentityMatcher) -> tuple[ClaimCluster, ...]:
+    identities = matcher.match(claims)
+    by_id = {claim.id: claim for claim in claims}
     result: list[ClaimCluster] = []
-    for members in clusters:
+    for identity in identities:
+        members = tuple(by_id[claim_id] for claim_id in identity.matched_claim_ids)
         polarities = {_polarity(member.proposition) for member in members}
         polarities.discard("unknown")
         result.append(
             ClaimCluster(
                 representative=members[0],
-                members=tuple(members),
+                members=members,
                 source_ids=tuple(dict.fromkeys(member.source for member in members)),
                 conflict=len(polarities) > 1,
+                identity_confidence=identity.confidence,
+                identity_basis=identity.basis,
             )
         )
     return tuple(result)
@@ -157,8 +146,7 @@ def _cluster_claims(claims: Sequence[ExtractedClaim]) -> tuple[ClaimCluster, ...
 
 def _polarity(text: str) -> str:
     lowered = text.lower()
-    negation = re.search(r"\b(?:not|no|never|without|cannot|can't|didn't|doesn't|isn't|wasn't)\b", lowered)
-    return "negative" if negation else "positive"
+    return "negative" if any(token in lowered.split() for token in ("not", "no", "never", "without", "cannot", "can't", "didn't", "doesn't", "isn't", "wasn't")) else "positive"
 
 
 def _unresolved_questions(question: str, rounds: Sequence[OpenResearchRound],
@@ -171,7 +159,7 @@ def _unresolved_questions(question: str, rounds: Sequence[OpenResearchRound],
     if not clusters:
         gaps.append("No candidate claims were extracted from acquired documents.")
     if any(cluster.conflict for cluster in clusters):
-        gaps.append("At least one claim cluster contains lexical polarity conflict; independent verification is required.")
+        gaps.append("At least one claim identity group contains lexical polarity conflict; independent verification is required.")
     if genealogy.finding_count > genealogy.observed_origin_count:
         gaps.append(
             f"{genealogy.finding_count} findings came from {genealogy.observed_origin_count} observed origins; "
