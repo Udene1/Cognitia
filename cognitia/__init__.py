@@ -35,7 +35,7 @@ from .git_knowledge import GitKnowledgeIngestor
 from .learning.transfer import TransferAssessment, assess_transfer
 from .knowledge.model import KnowledgeItem, KnowledgeSource
 from .knowledge.validated import KnowledgeTest, ValidatedKnowledgeStore
-from .language import AnswerContract, EntityMention, LanguageFrame, QuestionAnalysis, RelationMention, Proposition as SemanticProposition, TextToken, analyze_question, build_language_frame
+from .language import AnswerContract, EntityMention, LanguageFrame, QuestionAnalysis, RelationMention, SemanticProposition, TextToken, analyze_question, build_language_frame
 from .answer_contract import AnswerAssessment, AnswerContractPlanner, AnswerPlan, plan_answer
 from .promotion import CognitivePromotionOrchestrator, PromotionEvaluation
 from .replay import CognitiveStateReplayer, RecoveredCognitiveState
