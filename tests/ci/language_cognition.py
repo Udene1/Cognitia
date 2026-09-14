@@ -35,11 +35,15 @@ def main() -> None:
     assert yes_no.contract.needs_evidence
     assert not yes_no.contract.bare_answer_sufficient
     assert yes_no.frame.answer_contract == yes_no.contract
+    assert yes_no.cognitive is not None
+    assert "classify_proposition" in tuple(goal.operation for goal in yes_no.cognitive.goals)
+    assert "direct answer" in yes_no.cognitive.required_answer_elements
 
     simple_yes_no = analyze_question("Is water liquid at room temperature?")
     assert simple_yes_no.question_type == "yes_no"
     assert simple_yes_no.contract.requested_length == "short"
     assert simple_yes_no.contract.bare_answer_sufficient
+    assert simple_yes_no.cognitive is not None
 
     why = analyze_question("Why did the Roman Empire decline, and what evidence distinguishes the competing explanations?")
     assert why.question_type == "explanation_or_cause"
@@ -50,6 +54,9 @@ def main() -> None:
     assert "compare_explanations" in why.requested_operations
     assert "satisfy_all_subquestions" in why.requested_operations
     assert len(why.subquestions) >= 2
+    assert why.cognitive is not None
+    assert "construct_explanation" in tuple(goal.operation for goal in why.cognitive.goals)
+    assert "causal explanation" in why.cognitive.required_answer_elements
 
     short_why = analyze_question("Why did the Roman Empire decline?")
     assert short_why.contract.needs_explanation
@@ -81,6 +88,7 @@ def main() -> None:
     print("LANGUAGE_COGNITION_SUCCESS")
     print(f"semantic_relations={len(frame.relations)} causal_relations={len(frame.causal_relations)} events={len(frame.events)}")
     print(f"answer_plan={plan}")
+    print(f"cognitive_goals={tuple(goal.operation for goal in why.cognitive.goals)}")
 
 
 if __name__ == "__main__":
