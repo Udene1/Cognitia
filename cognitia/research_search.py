@@ -61,8 +61,12 @@ class ResearchSearchPlanner:
             facets.append(("mechanism causes", "mechanism", 0.90))
         if any(word in lowered for word in ("history", "historically", "origin", "origins", "changed", "change")):
             facets.append(("history development", "historical development", 0.88))
-        if any(word in lowered for word in ("what", "define", "defined", "definition")):
+        # "what evidence" is a request for evidentiary discrimination, not a
+        # definition request. The previous planner mistook it for "what is".
+        if any(word in lowered for word in ("define", "defined", "definition")) and "what evidence" not in lowered:
             facets.append(("definition terminology", "definition", 0.86))
+        if "what evidence" in lowered or "distinguish" in lowered or "competing" in lowered:
+            facets.append(("independent evidence competing causes", "independent check", 0.87))
         if any(word in lowered for word in ("current", "today", "now", "latest")):
             facets.append(("current recent", "current status", 0.84))
         if not facets:
@@ -102,13 +106,13 @@ class ResearchSearchPlanner:
 
 def _topic_terms(value: str) -> list[str]:
     entities = [" ".join(match.group(0).split()) for match in _ENTITY.finditer(value)]
-    tokens = [token.lower() for token in _TOKEN.findall(value)]
     result: list[str] = []
+    covered: set[str] = set()
     for entity in entities:
-        if entity.lower() not in {item.lower() for item in result}:
-            result.append(entity)
-    for token in tokens:
-        if len(token) <= 2 or token in _STOPWORDS:
+        result.append(f'"{entity}"')
+        covered.update(entity.lower().split())
+    for token in [token.lower() for token in _TOKEN.findall(value)]:
+        if len(token) <= 2 or token in _STOPWORDS or token in covered:
             continue
         if token not in {item.lower() for item in result}:
             result.append(token)
