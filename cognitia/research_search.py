@@ -14,7 +14,7 @@ from typing import Sequence
 from .web_search import SearchQuery
 
 _TOKEN = re.compile(r"[A-Za-z0-9_]+")
-_ENTITY = re.compile(r"\b(?:[A-Z][A-Za-z0-9-]*)(?:\s+[A-Z][A-Za-z0-9-]*){0,4}\b")
+_ENTITY = re.compile(r"\b[A-Z][a-z0-9-]+(?:\s+[A-Z][a-z0-9-]+)+\b")
 _STOPWORDS = {
     "why", "what", "when", "where", "who", "which", "how", "did", "does", "do",
     "is", "are", "was", "were", "the", "a", "an", "of", "to", "in", "on", "for",
@@ -103,12 +103,13 @@ class ResearchSearchPlanner:
 def _topic_terms(value: str) -> list[str]:
     entities = [" ".join(match.group(0).split()) for match in _ENTITY.finditer(value)]
     tokens = [token.lower() for token in _TOKEN.findall(value)]
-    topical = [token for token in tokens if len(token) > 2 and token not in _STOPWORDS]
     result: list[str] = []
     for entity in entities:
         if entity.lower() not in {item.lower() for item in result}:
             result.append(entity)
-    for token in topical:
+    for token in tokens:
+        if len(token) <= 2 or token in _STOPWORDS:
+            continue
         if token not in {item.lower() for item in result}:
             result.append(token)
     return result
