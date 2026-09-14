@@ -1,8 +1,8 @@
-"""Open-ended research experiment orchestration.
+"""Open-ended research orchestration with evidence-origin accounting.
 
-The experiment deliberately asks Cognitia to produce a structured evidence
-landscape rather than a fabricated natural-language answer. Search, document
-acquisition, claim extraction, and contradiction signals remain inspectable.
+The research system deliberately stops short of pretending extracted claims are
+truth. It now also measures the genealogy of those findings so repeated
+reporting is not mistaken for independent evidence.
 """
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from difflib import SequenceMatcher
 import re
 from typing import Sequence
 
-from .adaptive_web_research import AdaptiveWebResearch
 from .document_claims import DocumentClaimExtractor, ExtractedClaim
 from .environment import EnvironmentObservation
+from .evidence.genealogy import EvidenceGenealogyBuilder, GenealogyAssessment
 from .research_search import ResearchSearchPlanner, SearchAction
-from .web_research import LiveWebResearchSession, WebResearchBundle
+from .web_research import LiveWebResearchSession
 
 
 @dataclass(frozen=True)
@@ -33,6 +33,8 @@ class OpenResearchRound:
     documents: tuple[EnvironmentObservation, ...]
     claims: tuple[ExtractedClaim, ...]
     clusters: tuple[ClaimCluster, ...]
+    decision_rationale: str
+    expected_information_gain: float
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,8 @@ class OpenResearchResult:
     claims: tuple[ExtractedClaim, ...]
     clusters: tuple[ClaimCluster, ...]
     unresolved: tuple[str, ...]
+    genealogy: GenealogyAssessment
+    stop_reason: str
 
     @property
     def status(self) -> str:
@@ -49,20 +53,22 @@ class OpenResearchResult:
             return "no_candidate_claims"
         if any(cluster.conflict for cluster in self.clusters):
             return "conflicted"
-        if len(self.claims) < 2:
-            return "thin_evidence"
+        if self.genealogy.effective_independent_count < 2:
+            return "thin_independent_evidence"
         return "candidate_evidence_landscape"
 
 
 class OpenEndedResearch:
-    """Run a bounded, real-web experiment on an unseen question."""
+    """Run bounded, real-web research while preserving evidence genealogy."""
 
     def __init__(self, *, web: LiveWebResearchSession | None = None,
                  planner: ResearchSearchPlanner | None = None,
-                 extractor: DocumentClaimExtractor | None = None) -> None:
+                 extractor: DocumentClaimExtractor | None = None,
+                 genealogy: EvidenceGenealogyBuilder | None = None) -> None:
         self.web = web or LiveWebResearchSession()
         self.planner = planner or ResearchSearchPlanner()
         self.extractor = extractor or DocumentClaimExtractor()
+        self.genealogy = genealogy or EvidenceGenealogyBuilder()
 
     def investigate(self, question: str, *, max_rounds: int = 4,
                     search_results: int = 5, documents_per_round: int = 3,
@@ -72,6 +78,7 @@ class OpenEndedResearch:
         plan = self.planner.plan(question, max_actions=max_rounds)
         rounds: list[OpenResearchRound] = []
         all_claims: list[ExtractedClaim] = []
+        all_documents: list[EnvironmentObservation] = []
         seen_documents: set[str] = set()
 
         for action in plan.actions:
@@ -84,12 +91,33 @@ class OpenEndedResearch:
             seen_documents.update(doc.id for doc in documents)
             claims = self.extractor.extract_many(documents, limit_per_document=claims_per_document)
             all_claims.extend(claims)
+            all_documents.extend(documents)
             clusters = _cluster_claims(claims)
-            rounds.append(OpenResearchRound(action, bundle.search_observations, documents, claims, clusters))
+            rounds.append(
+                OpenResearchRound(
+                    action=action,
+                    search_observations=bundle.search_observations,
+                    documents=documents,
+                    claims=claims,
+                    clusters=clusters,
+                    decision_rationale=f"selected for {action.purpose} (priority={action.priority:.2f})",
+                    expected_information_gain=round(action.priority, 3),
+                )
+            )
 
         clusters = _cluster_claims(all_claims)
-        unresolved = _unresolved_questions(question, rounds, clusters)
-        return OpenResearchResult(question, tuple(rounds), tuple(all_claims), clusters, tuple(unresolved))
+        genealogy = self.genealogy.assess(all_documents, all_claims)
+        unresolved = _unresolved_questions(question, rounds, clusters, genealogy)
+        stop_reason = _stop_reason(rounds, genealogy)
+        return OpenResearchResult(
+            question=question,
+            rounds=tuple(rounds),
+            claims=tuple(all_claims),
+            clusters=clusters,
+            unresolved=tuple(unresolved),
+            genealogy=genealogy,
+            stop_reason=stop_reason,
+        )
 
 
 def _normalize(text: str) -> str:
@@ -116,13 +144,12 @@ def _cluster_claims(claims: Sequence[ExtractedClaim]) -> tuple[ClaimCluster, ...
     for members in clusters:
         polarities = {_polarity(member.proposition) for member in members}
         polarities.discard("unknown")
-        conflict = len(polarities) > 1
         result.append(
             ClaimCluster(
                 representative=members[0],
                 members=tuple(members),
                 source_ids=tuple(dict.fromkeys(member.source for member in members)),
-                conflict=conflict,
+                conflict=len(polarities) > 1,
             )
         )
     return tuple(result)
@@ -134,17 +161,31 @@ def _polarity(text: str) -> str:
     return "negative" if negation else "positive"
 
 
-def _unresolved_questions(question: str, rounds: Sequence[OpenResearchRound], clusters: Sequence[ClaimCluster]) -> list[str]:
+def _unresolved_questions(question: str, rounds: Sequence[OpenResearchRound],
+                          clusters: Sequence[ClaimCluster], genealogy: GenealogyAssessment) -> list[str]:
     gaps: list[str] = []
     if not rounds:
         gaps.append("No search round produced observations.")
-    if not any(round.documents for round in rounds):
+    if not any(research_round.documents for research_round in rounds):
         gaps.append("No source documents were retrieved; search snippets are insufficient for deeper interpretation.")
     if not clusters:
         gaps.append("No candidate claims were extracted from acquired documents.")
     if any(cluster.conflict for cluster in clusters):
         gaps.append("At least one claim cluster contains lexical polarity conflict; independent verification is required.")
-    if len({claim.source for cluster in clusters for claim in cluster.members}) < 2:
-        gaps.append("Evidence diversity is weak because fewer than two source kinds were observed.")
+    if genealogy.finding_count > genealogy.observed_origin_count:
+        gaps.append(
+            f"{genealogy.finding_count} findings came from {genealogy.observed_origin_count} observed origins; "
+            "finding count must not be interpreted as independent-source count."
+        )
+    if genealogy.effective_independent_count < 2:
+        gaps.append("Fewer than two candidate independent origins are available; corroboration remains weak.")
     gaps.append(f"The current result is an evidence landscape for: {question}")
     return gaps
+
+
+def _stop_reason(rounds: Sequence[OpenResearchRound], genealogy: GenealogyAssessment) -> str:
+    if not rounds:
+        return "no_search_rounds"
+    if genealogy.effective_independent_count < 2:
+        return "independent_evidence_budget_exhausted"
+    return "bounded_search_budget_exhausted"
