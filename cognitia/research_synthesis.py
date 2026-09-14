@@ -74,6 +74,7 @@ class ResearchSynthesisEngine:
     )
     _OUTCOME_TERMS = ("decline", "declined", "fall", "fell", "collapse", "collapsed", "end", "ended", "crisis", "weakened", "threatened")
     _PRONOUN_FACTORS = re.compile(r"^(?:this|that|it|he|she|they|these|those)\b", re.I)
+    _HISTORIOGRAPHY = re.compile(r"\b(?:historians?|gibbon|theory|theories|historiography|speculat|account of the event)\b", re.I)
     _DOMAIN_TERMS = {
         "military": ("army", "armed", "military", "soldier", "frontier", "force", "war", "invasion", "goth", "goths"),
         "political": ("political", "instability", "emperor", "succession", "civil", "governance", "administr", "central rule"),
@@ -82,6 +83,7 @@ class ResearchSynthesisEngine:
         "environmental": ("climate", "drought", "famine", "environment", "volcan", "temperature"),
         "religious": ("christian", "christianity", "pagan", "religion", "church"),
         "external": ("goth", "vandals", "huns", "barbar", "invasion", "external", "migrat", "frontier pressure"),
+        "systemic": ("internal", "external", "institution", "imperial system", "combination of factors"),
     }
 
     def synthesize(self, result: "OpenResearchResult", *, max_factors: int = 8) -> ResearchSynthesis:
@@ -138,6 +140,8 @@ class ResearchSynthesisEngine:
 
     def _factor_text(self, text: str) -> str:
         lowered = text.lower()
+        if self._HISTORIOGRAPHY.search(text):
+            return ""
         for pattern in self._CAUSE_PATTERNS:
             match = pattern.search(text)
             if not match:
@@ -151,6 +155,8 @@ class ResearchSynthesisEngine:
             if self._PRONOUN_FACTORS.search(factor):
                 continue
             if len(factor.split()) < 2:
+                continue
+            if self._domain(factor) == "other":
                 continue
             return factor
         return ""
