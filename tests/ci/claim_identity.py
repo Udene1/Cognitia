@@ -12,7 +12,7 @@ def main() -> None:
     )
     claims = tuple(c for doc in docs for c in extractor.extract(doc))
     matcher = ClaimIdentityMatcher()
-    identities = matcher.match(claims, threshold=0.60)
+    identities = matcher.match(claims, threshold=0.70)
     assert len(claims) == 3, claims
     assert any(len(identity.matched_claim_ids) == 2 for identity in identities)
     score, basis = matcher.score(claims[0], claims[2])
