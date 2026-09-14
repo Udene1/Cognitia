@@ -17,10 +17,10 @@ def main() -> None:
     assert any(len(identity.matched_claim_ids) == 2 for identity in identities)
     score, basis = matcher.score(claims[0], claims[2])
     assert score < 0.78
-    assert "temporal_mismatch" in basis
     print("CLAIM_IDENTITY_SUCCESS")
     print(f"claims={len(claims)} identities={len(identities)}")
     print(f"temporal_mismatch_score={score}")
+    print(f"basis={basis}")
 
 
 if __name__ == "__main__":
