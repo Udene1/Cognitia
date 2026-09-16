@@ -1,5 +1,11 @@
 # Experience Loop and Structural Transfer
 
+## Status
+
+**Protocol implemented; structural-transfer CI observation pending.**
+
+This status is intentionally not a capability claim. The experiment must be executed and its artifact inspected before interpretation.
+
 ## Purpose
 
 Cognitia's research frontier is no longer the existence of isolated capabilities. The question is whether state produced by one capability can causally alter another capability's behavior, persist as experience, generalize to a new problem, and eventually improve future behavior.
