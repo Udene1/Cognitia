@@ -88,7 +88,7 @@ def test_recipient_context_is_recorded_without_changing_cognitive_state():
 def test_surface_representations_preserve_the_same_communication_contract():
     state = unresolved_failure_state()
     decision = select_communicative_act(state, InteractionContext("operator", CommunicativeObjective.INFORM, recipient_role=RecipientRole.OPERATOR))
-    representations = (CommunicationRepresentation.STRUCTURED, CommunicationRepresentation.CONCISE, CommunicationRepresentation.EXPLANATORY)
+    representations = (CommunicationRepresentation.STRUCTURED, CommunicationRepresentation.COMPACT_REFERENCED, CommunicationRepresentation.EXPLANATORY)
     projections = [project_communication(decision, representation) for representation in representations]
     assert {projection.selected_act for projection in projections} == {decision.selected_act}
     assert {projection.representation for projection in projections} == set(representations)
@@ -97,7 +97,13 @@ def test_surface_representations_preserve_the_same_communication_contract():
         assert projection.verification_requirement == "required"
         assert "act:report_current_state" in projection.payload
         assert "claims:H1" in projection.payload
+    direct_projections = (projections[0], projections[2])
+    for projection in direct_projections:
         assert "evidence:E1" in projection.payload
+    compact = projections[1]
+    assert "evidence:E1" not in compact.payload
+    assert "evidence_ref:E1" in compact.payload
+    assert_observable_evidence_recovery(decision, compact)
 
 
 def test_surface_projection_does_not_invent_or_remove_epistemic_status():
