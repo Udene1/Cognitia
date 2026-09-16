@@ -29,6 +29,10 @@ class ResearchTrajectoryStep:
     conflict_count: int
     source_origins: tuple[str, ...]
 
+    @property
+    def unresolved_information_needs(self) -> tuple[str, ...]:
+        return (self.information_need,) if self.information_need else ()
+
 
 @dataclass(frozen=True)
 class ResearchTrajectory:
