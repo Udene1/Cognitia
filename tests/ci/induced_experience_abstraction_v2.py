@@ -38,6 +38,7 @@ def main() -> None:
     contradiction = make("contradiction", "The database outage caused the reporting queue to stop.", EpistemicOutcome.REFUTED)
     revised = engine.revise(induced, contradiction)
     revised_best = revised[0]
+    original_after = next(item for item in revised if item.features == best.features)
 
     records = {
         "training": [
@@ -59,10 +60,14 @@ def main() -> None:
             "consistency": best.consistency,
         },
         "after_contradiction": {
-            "features": list(revised_best.features),
-            "positive": revised_best.positive,
-            "negative": revised_best.negative,
-            "consistency": revised_best.consistency,
+            "selected_features": list(revised_best.features),
+            "selected_positive": revised_best.positive,
+            "selected_negative": revised_best.negative,
+            "selected_consistency": revised_best.consistency,
+            "original_features": list(original_after.features),
+            "original_positive": original_after.positive,
+            "original_negative": original_after.negative,
+            "original_consistency": original_after.consistency,
         },
     }
     artifact = {
@@ -79,7 +84,9 @@ def main() -> None:
             "top_is_causal": "causal" in best.features,
             "held_out_transfer": records["held_out"]["relevant_to_top"],
             "specificity_control": not records["unrelated"]["relevant_to_top"],
-            "contradiction_changes_support": revised_best.consistency != best.consistency,
+            "original_abstraction_support_changed": original_after.consistency != best.consistency,
+            "selected_abstraction_changed": revised_best.features != best.features,
+            "contradiction_causes_narrowing": revised_best.features != best.features and set(best.features).issubset(set(revised_best.features)),
             "structural_ids_absent": True,
         },
         "interpretation_boundary": "This tests a deterministic abstraction mechanism over candidate language representations; it does not establish semantic understanding or truth of causal claims.",
