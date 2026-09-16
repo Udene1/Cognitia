@@ -96,9 +96,10 @@ def main() -> None:
         "Resource exhaustion caused the service failure.",
     )
 
-    # Harness integrity: the first action/question and controller limits are
-    # held constant. Only the first acquired evidence differs between A/B.
-    assert resource["calls"] == dependency["calls"] == control["calls"]
+    # Harness integrity: the first search/action is held constant. We do not
+    # require the full call sequence to remain equal because a changed second
+    # query is itself one of the observations this experiment is measuring.
+    assert resource["calls"][0] == dependency["calls"][0] == control["calls"][0]
     assert resource["question"] == dependency["question"] == control["question"] == QUESTION
     assert resource["first_evidence"] == control["first_evidence"]
     assert resource["first_evidence"] != dependency["first_evidence"]
@@ -122,6 +123,7 @@ def main() -> None:
         == dependency["rounds"][0]["objective"]
         == control["rounds"][0]["objective"],
         "first_evidence_changed": resource["first_evidence"] != dependency["first_evidence"],
+        "second_search_query_changed": resource["calls"][1] != dependency["calls"][1],
         "second_information_need_changed": resource_second["information_need"]
         != dependency_second["information_need"],
         "second_objective_changed": resource_second["objective"] != dependency_second["objective"],
@@ -131,6 +133,8 @@ def main() -> None:
         == control_second["information_need"],
         "same_evidence_control_reproduced_objective": resource_second["objective"]
         == control_second["objective"],
+        "same_evidence_control_reproduced_second_search_query": resource["calls"][1]
+        == control["calls"][1],
     }
 
     record = {
