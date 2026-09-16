@@ -8,7 +8,6 @@ It does not alter the underlying epistemic state.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
 
 from .communicative_cognition import (
     CommunicativeAct,
@@ -88,9 +87,9 @@ class CommunicationPolicy:
         self._scores[key] = self._scores.get(key, 0.0) + consequence.signal
         revision = tuple(
             sorted(
-                (act, self._scores.get(act, 0.0) - before.get(act, 0.0))
-                for act in self._scores
-                if self._scores.get(act, 0.0) != before.get(act, 0.0)
+                (key, self._scores.get(key, 0.0) - before.get(key, 0.0))
+                for key in self._scores
+                if self._scores.get(key, 0.0) != before.get(key, 0.0)
             )
         )
         experience = CommunicationExperience(
@@ -108,15 +107,21 @@ class CommunicationPolicy:
         return experience
 
     def select(self, decision: CommunicativeDecision) -> CommunicativeDecision:
-        """Apply learned preference only among the decision's existing acts."""
+        """Apply learned preference only when experience exists for this context."""
         candidates = decision.candidate_acts
         if not candidates:
             return decision
         objective = decision.objective.value
         recipient_role = decision.recipient_role.value if decision.recipient_role else None
+        context_scores = {
+            act: self._scores.get(_policy_key(objective, recipient_role, act), 0.0)
+            for act in candidates
+        }
+        if not any(_policy_key(objective, recipient_role, act) in self._scores for act in candidates):
+            return decision
         selected = max(
             candidates,
-            key=lambda act: (self._scores.get(_policy_key(objective, recipient_role, act), 0.0), -candidates.index(act)),
+            key=lambda act: (context_scores[act], -candidates.index(act)),
         )
         if selected is decision.selected_act:
             return decision
