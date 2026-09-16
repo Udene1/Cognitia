@@ -107,6 +107,11 @@ def main() -> None:
     adversarial_path = Path(".ci/abstraction-adversarial-stability.json")
     artifact["abstraction_adversarial_stability"] = json.loads(adversarial_path.read_text(encoding="utf-8"))
 
+    loop_namespace = runpy.run_path("tests/ci/experience_abstraction_consequence_loop.py")
+    loop_namespace["main"]()
+    loop_path = Path(".ci/experience-abstraction-consequence-loop.json")
+    artifact["experience_abstraction_consequence_loop"] = json.loads(loop_path.read_text(encoding="utf-8"))
+
     output = Path(".ci/action-space-reduction-research.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(artifact, indent=2, sort_keys=True), encoding="utf-8")
