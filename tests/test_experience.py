@@ -1,36 +1,40 @@
-from cognitia.memory import Experience, ExperienceStore, Outcome
+from cognitia.experience import (
+    CognitiveState,
+    EpistemicOutcome,
+    ExpectedConsequence,
+    Experience,
+    ExperienceLedger,
+    ObservedConsequence,
+)
 
 
-def test_every_outcome_is_recorded_including_failure() -> None:
-    store = ExperienceStore()
-
-    store.record(
-        Experience(
-            context={"goal": "reduce latency"},
-            action="inspect_postgres_locks",
-            observation={"waiting_queries": 42},
-            outcome=Outcome(
-                kind="positive",
-                description="Found the likely bottleneck",
-                value=0.8,
-            ),
-        )
-    )
-    store.record(
-        Experience(
-            context={"goal": "reduce latency"},
-            action="restart_worker",
-            observation={"latency_ms": 1200},
-            outcome=Outcome(
-                kind="negative",
-                description="Restart did not reduce latency",
-                value=-0.2,
-            ),
-        )
+def make_experience(experience_id: str, action: str = "investigate") -> Experience:
+    prior = CognitiveState("explain failure", evidence_ids=("e1",), hypothesis_ids=("h1",), goal="explain")
+    return Experience(
+        experience_id=experience_id,
+        prior_state=prior,
+        action=action,
+        rationale="Current evidence is insufficient.",
+        expected=ExpectedConsequence("new evidence resolves the cause"),
+        observed=ObservedConsequence("new evidence resolves the cause", EpistemicOutcome.CONFIRMED, ("e2",)),
+        state_update=CognitiveState("explain failure", evidence_ids=("e1", "e2"), hypothesis_ids=("h1",), goal="explain"),
+        provenance=("test",),
     )
 
-    experiences = store.all()
 
-    assert len(experiences) == 2
-    assert experiences[0].outcome.kind == "positive"
-    assert experiences[1].outcome.kind == "negative"
+def test_experience_ledger_retains_causal_episode():
+    experience = make_experience("e-1")
+    ledger = ExperienceLedger((experience,))
+    assert ledger.all() == (experience,)
+    assert ledger.relevant_to(evidence_ids=("e1",)) == (experience,)
+
+
+def test_experience_duplicate_ids_are_not_overwritten():
+    experience = make_experience("e-1")
+    ledger = ExperienceLedger((experience,))
+    try:
+        ledger.record(experience)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("duplicate experience ID was silently overwritten")
