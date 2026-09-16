@@ -63,8 +63,8 @@ def test_recorded_consequence_changes_policy_and_future_decision():
 
     after = policy.state
     assert policy_state_delta(before, after) == (
-        (CommunicativeAct.EXPLAIN_UNCERTAINTY.value, 1.0),
-        (CommunicativeAct.REPORT_CURRENT_STATE.value, -1.0),
+        ("act|EXPLAIN_UNCERTAINTY|objective:inform|recipient:operator", 1.0),
+        ("act|REPORT_CURRENT_STATE|objective:inform|recipient:operator", -1.0),
     )
 
     future = policy.select(baseline)
