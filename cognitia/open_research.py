@@ -37,6 +37,14 @@ class OpenResearchRound:
     clusters: tuple[ClaimCluster, ...]
     decision_rationale: str
     expected_information_gain: float
+    information_need: str | None = None
+    information_need_source_claim_ids: tuple[str, ...] = ()
+    information_need_source_document_ids: tuple[str, ...] = ()
+    parent_action_id: str | None = None
+
+    @property
+    def action_id(self) -> str:
+        return f"{self.action.purpose}:{self.action.query.objective.strip().lower()}"
 
 
 @dataclass(frozen=True)

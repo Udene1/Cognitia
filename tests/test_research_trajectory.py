@@ -38,6 +38,11 @@ def test_trajectory_step_count_matches_executed_rounds():
         conflict = False
 
     class ResearchRound:
+        action_id = "action:1"
+        parent_action_id = None
+        information_need = None
+        information_need_source_claim_ids = ()
+        information_need_source_document_ids = ()
         action = Action()
         search_observations = (Observation(),)
         documents = (Document(),)
@@ -51,6 +56,8 @@ def test_trajectory_step_count_matches_executed_rounds():
     assert trajectory.action_count == 1
     assert trajectory.observed_document_count == 1
     assert trajectory.observed_claim_count == 1
+    assert trajectory.step(0).action_id == "action:1"
+    assert trajectory.step(0).parent_action_id is None
     assert trajectory.step(0).search_observation_ids == ("search:1",)
     assert trajectory.step(0).document_ids == ("document:1",)
     assert trajectory.step(0).claim_ids == ("claim:1",)
