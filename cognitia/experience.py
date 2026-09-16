@@ -70,7 +70,11 @@ class Experience:
 
     @property
     def discrepancy(self) -> bool:
-        return self.expected.description.strip().lower() != self.observed.description.strip().lower()
+        """Whether the observation contradicts the expected epistemic result."""
+        return (
+            self.expected.description.strip().lower() != self.observed.description.strip().lower()
+            or self.observed.outcome is EpistemicOutcome.REFUTED
+        )
 
 
 class ExperienceLedger:
