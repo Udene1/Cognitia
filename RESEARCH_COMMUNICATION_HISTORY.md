@@ -100,11 +100,7 @@ The controlled question is:
 
 > Given one selected communicative act, can Cognitia express that act through different representations without changing claims, evidence, uncertainty, epistemic status, or verification requirements?
 
-The implementation introduces `CommunicationProjection` and three explicit representations:
-
-- `STRUCTURED`;
-- `CONCISE`;
-- `EXPLANATORY`.
+The implementation introduces `CommunicationProjection` and explicit representations including `STRUCTURED`, `CONCISE`, and `EXPLANATORY`.
 
 The representation layer does not choose a new communicative act. It receives an already-selected decision and carries its semantic contract into a different payload organization.
 
@@ -175,7 +171,27 @@ Before repairing the implementation blindly, determine whether the preservation 
 
 ---
 
-## 6. Provenance rule
+## 6. Experiment 3A: preservation boundary
+
+Experiment 3A was derived directly from the Experiment 3 failure rather than from a desire to make the failing test green.
+
+The competing hypotheses are:
+
+- **H3A-direct:** every communication surface must directly expose evidence identity;
+- **H3A-recoverable:** evidence may be compressed out of the top-level payload when the same surface contains a deterministic, machine-observable reference from which the exact evidence identity can be recovered;
+- **H3A-lossy:** evidence may be silently omitted as long as claims and uncertainty remain unchanged.
+
+The implementation now adds `COMPACT_REFERENCED` and `assert_observable_evidence_recovery`.
+
+The controlled tests hold the cognitive state, recipient, objective, selected act, claims, epistemic status, evidence identity, uncertainty, and verification requirement constant while varying only evidence encoding. The new boundary tests therefore distinguish direct evidence, explicitly referenced evidence, and the existing silent-omission negative control.
+
+Importantly, the original `CONCISE` behavior remains unchanged. It is not repaired in place. It continues to omit `evidence:E1`, and the new preservation invariant explicitly rejects it because no recovery reference exists.
+
+At this point the implementation establishes a **candidate experimental boundary**, not a validated research result. The next CI execution is the observation needed to determine whether lossless reference is sufficient or whether evidence must remain directly visible on every surface.
+
+---
+
+## 7. Provenance rule
 
 Every future communication milestone must preserve:
 
