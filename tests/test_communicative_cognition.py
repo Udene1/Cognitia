@@ -5,6 +5,7 @@ from cognitia.communicative_cognition import (
     EpistemicPreservationError,
     HypothesisState,
     InteractionContext,
+    RecipientRole,
     assert_epistemic_preservation,
     select_communicative_act,
 )
@@ -87,3 +88,51 @@ def test_preservation_rejects_candidate_to_fact_upgrade():
     except EpistemicPreservationError:
         return
     raise AssertionError("candidate-to-fact upgrade was not rejected")
+
+
+def test_same_state_and_objective_changes_act_with_recipient_role():
+    state = unresolved_failure_state()
+    objective = CommunicativeObjective.INFORM
+    decisions = {
+        role: select_communicative_act(
+            state,
+            InteractionContext("recipient", objective, recipient_role=role),
+        )
+        for role in RecipientRole
+    }
+
+    assert decisions[RecipientRole.OPERATOR].selected_act is CommunicativeAct.REPORT_CURRENT_STATE
+    assert decisions[RecipientRole.DECISION_MAKER].selected_act is CommunicativeAct.SUPPORT_DECISION_UNDER_UNCERTAINTY
+    assert decisions[RecipientRole.LEARNER].selected_act is CommunicativeAct.EXPLAIN_UNCERTAINTY
+    assert len({decision.selected_act for decision in decisions.values()}) == 3
+
+
+def test_recipient_adaptation_preserves_epistemic_warrant():
+    state = unresolved_failure_state()
+    objective = CommunicativeObjective.INFORM
+    for role in RecipientRole:
+        decision = select_communicative_act(
+            state,
+            InteractionContext("recipient", objective, recipient_role=role),
+        )
+        assert all(status != "established" for _, status in decision.epistemic_status)
+        assert_epistemic_preservation(state, decision)
+        assert decision.state_id == state.state_id
+        assert decision.objective is objective
+
+
+def test_recipient_context_is_recorded_without_changing_cognitive_state():
+    state = unresolved_failure_state()
+    decision = select_communicative_act(
+        state,
+        InteractionContext(
+            "decision-maker",
+            CommunicativeObjective.INFORM,
+            recipient_role=RecipientRole.DECISION_MAKER,
+            interaction_constraints=("brief", "action-oriented"),
+        ),
+    )
+    assert decision.recipient_role is RecipientRole.DECISION_MAKER
+    assert decision.state_id == state.state_id
+    assert decision.uncertainty == state.uncertainty
+    assert decision.verification_requirement == "required"
