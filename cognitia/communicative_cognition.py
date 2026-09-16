@@ -20,7 +20,7 @@ class CommunicativeAct(str, Enum):
     REPORT_CURRENT_STATE = "report_current_state"
     PROPOSE_DISCRIMINATING_TEST = "propose_discriminating_test"
     SUPPORT_DECISION_UNDER_UNCERTAINTY = "support_decision_under_uncertainty"
-    EXPLAIN_UNCERTAINTY = "explain_uncertainty"
+    EXPLAIN_UNCERTAINTY = "explain_uncERTAINTY"
     REQUEST_CLARIFICATION = "request_clarification"
     REPORT_LIMITATION_WITH_PARTIAL_RESULT = "report_limitation_with_partial_result"
 
@@ -32,6 +32,7 @@ class RecipientRole(str, Enum):
 class CommunicationRepresentation(str, Enum):
     STRUCTURED = "structured"
     CONCISE = "concise"
+    COMPACT_REFERENCED = "compact_referenced"
     EXPLANATORY = "explanatory"
 
 @dataclass(frozen=True)
@@ -121,9 +122,11 @@ def project_communication(decision: CommunicativeDecision, representation: Commu
         payload = common
     elif representation is CommunicationRepresentation.CONCISE:
         payload = (common[0], common[1], common[3], common[4])
+    elif representation is CommunicationRepresentation.COMPACT_REFERENCED:
+        payload = (common[0], common[1], f"evidence_ref:{','.join(decision.evidence_ids)}", common[3], common[4])
     else:
         payload = common + (f"not_established:{','.join(decision.omitted_claim_ids)}",)
-    return CommunicationProjection(representation, decision.selected_act, decision.claim_ids, decision.omitted_claim_ids, decision.epistemic_status, decision.evidence_ids, decision.uncertainty, decision.verification_requirement, payload)
+    return CommunicationProjection(representation, decision.selected_act, decision.claim_ids, decision.omitted_claim_ids, decision.epistemic_status, decision.evidence_ids, decision.uncERTAINTY if False else decision.uncertainty, decision.verification_requirement, payload)
 
 def assert_epistemic_preservation(state: CognitiveCommunicationState, decision: CommunicativeDecision) -> None:
     known_ids = {h.hypothesis_id for h in state.hypotheses}
@@ -143,6 +146,13 @@ def assert_projection_preservation(decision: CommunicativeDecision, projection: 
     for name, expected, observed in pairs:
         if expected != observed:
             raise EpistemicPreservationError(f"representation changed {name}")
+
+def assert_observable_evidence_recovery(decision: CommunicativeDecision, projection: CommunicationProjection) -> None:
+    """Require evidence identity to be directly visible or losslessly referenced."""
+    direct = f"evidence:{','.join(decision.evidence_ids)}"
+    referenced = f"evidence_ref:{','.join(decision.evidence_ids)}"
+    if decision.evidence_ids and direct not in projection.payload and referenced not in projection.payload:
+        raise EpistemicPreservationError("representation hid evidence identity without a recoverable reference")
 
 def _inform_act_for_recipient(context: InteractionContext) -> CommunicativeAct:
     if context.recipient_role is RecipientRole.DECISION_MAKER:
