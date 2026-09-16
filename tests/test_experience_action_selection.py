@@ -10,10 +10,10 @@ OPERATIONS = (
 )
 
 
-def make_experience(outcome: EpistemicOutcome) -> Experience:
+def make_experience(item_id: str, outcome: EpistemicOutcome) -> Experience:
     state = CognitiveState("database outage", hypothesis_ids=("cause",), uncertainty=("cause",))
     return Experience(
-        experience_id=outcome.value,
+        experience_id=item_id,
         prior_state=state,
         action="search",
         rationale="test",
@@ -31,17 +31,18 @@ def select(state, ledger):
 def test_confirmed_experience_can_influence_generated_action_selection():
     state = CognitiveState("new surface", hypothesis_ids=("cause",), uncertainty=("cause",))
     assert select(state, ExperienceLedger()) == "compute"
-    assert select(state, ExperienceLedger((make_experience(EpistemicOutcome.CONFIRMED),))) == "search"
+    assert select(state, ExperienceLedger((make_experience("confirmed", EpistemicOutcome.CONFIRMED),))) == "search"
 
 
 def test_refutation_can_defeat_prior_experience():
     state = CognitiveState("new surface", hypothesis_ids=("cause",), uncertainty=("cause",))
-    ledger = ExperienceLedger((make_experience(EpistemicOutcome.CONFIRMED), make_experience(EpistemicOutcome.REFUTED)))
-    # duplicate IDs are intentionally prevented by the ledger; this assertion is
-    # replaced by a distinct-id fixture in the research runner.
-    assert select(state, ExperienceLedger((make_experience(EpistemicOutcome.REFUTED),))) == "compute"
+    ledger = ExperienceLedger((
+        make_experience("confirmed", EpistemicOutcome.CONFIRMED),
+        make_experience("refuted", EpistemicOutcome.REFUTED),
+    ))
+    assert select(state, ledger) == "compute"
 
 
 def test_unrelated_structural_state_does_not_inherit_experience():
     state = CognitiveState("new material", hypothesis_ids=("material",), uncertainty=("material",))
-    assert select(state, ExperienceLedger((make_experience(EpistemicOutcome.REFUTED),))) == "compute"
+    assert select(state, ExperienceLedger((make_experience("refuted", EpistemicOutcome.REFUTED),))) == "compute"
