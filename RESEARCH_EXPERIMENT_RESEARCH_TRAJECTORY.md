@@ -2,9 +2,9 @@
 
 ## Status
 
-**Differential trajectory experiment — protocol implemented; observation pending.**
+**Differential trajectory experiment — observed; interpretation recorded; generalization remains unresolved.**
 
-No claim has been promoted that Cognitia can adapt its research trajectory. This phase is designed to let the observed trajectory determine whether a controlled evidence perturbation changes what happens next.
+No claim has been promoted that Cognitia can learn or generally adapt its research trajectory. The controlled experiment established that the current researcher-authored adaptive controller changes its next research objective/information need when the first evidence state is changed. The same-evidence control reproduced the corresponding trajectory. The next question is whether this relationship survives changed questions and evidence structures without question-specific routing.
 
 ## Why this experiment exists
 
@@ -158,11 +158,34 @@ CI does **not** assert that A and B must diverge.
 
 ### What the observation means
 
-If the second trajectories differ, the observation supports the narrower statement that the implemented controller is sensitive to this changed evidence state.
+The CI artifact from 2026-09-16 recorded the following:
 
-If the second trajectories do not differ, the observation shows that this particular evidence perturbation did not change the subsequent trajectory.
+- the initial question and action were identical across A, B, and the same-evidence control;
+- the first acquired evidence differed between A and B;
+- the same-evidence control reproduced A's information need, objective, and second search query;
+- after the evidence perturbation, the second information need changed;
+- the second research objective changed;
+- the second search query changed;
+- the source-claim references feeding the second action changed;
+- the second-round document itself was the same controlled follow-up content in this harness, so the observed difference is specifically in the action selected after the first evidence state, not a difference in the second acquired document.
 
-Neither outcome establishes learned cognition. The current adaptive controller contains researcher-authored deterministic routing rules. Therefore the observed result is evidence about the implemented research mechanism, not evidence of an independently learned research policy.
+Thus the narrower experimental observation is:
+
+> Under this controlled implementation, changing the first evidence state changed the subsequent research action state, while repeating the same evidence reproduced the corresponding action state.
+
+This is evidence that the implemented `AdaptiveOpenResearch` controller is sensitive to the changed evidence state.
+
+It is **not** evidence that Cognitia learned the relationship. The controller contains researcher-authored deterministic routing rules that inspect the current evidence structures and choose an action. The experiment therefore establishes an implementation-level evidence-conditioned transition, not learned cognition.
+
+## CI malfunction discovered during analysis
+
+The dedicated differential-research workflow completed successfully and produced the research artifact. The ordinary `test` workflow for the same PR failed with **190 passed, 1 failed, 1 warning**.
+
+The failing test was `tests/test_adaptive_open_research.py::test_differential_experiment_harness_preserves_controls`. Its control assertion incorrectly required the complete web-call sequence for Conditions A and B to be identical. That assertion contradicted the experimental question because the second call is itself the trajectory variable being observed.
+
+The failure exposed a test-harness malfunction, not a failed Cognitia research result. The corrected test now asserts that the initial question/action is controlled, while allowing the second call to differ and continuing to assert provenance, parent linkage, and same-evidence reproducibility.
+
+This distinction is important: a red CI result can be evidence about the research instrumentation or implementation, but it must not be silently treated as evidence about cognition.
 
 ## CI and research-record method
 
@@ -195,7 +218,7 @@ We should be able to reconstruct a research episode and answer:
 - What information remains unobservable?
 - Did the controlled evidence perturbation alter the next trajectory?
 
-The last question is deliberately open.
+The last question is deliberately open for each future perturbation.
 
 ## What would support HRT-1
 
@@ -215,11 +238,24 @@ The controlled runs produce a reproducible record showing whether and how the su
 
 The result is useful whether the trajectories diverge or remain equal, provided the perturbation and controls are valid and the observation is preserved.
 
-## What would be a stronger future result
+## Next discriminator: structural transfer of evidence-conditioned research
 
-A later experiment would need to vary the question and/or evidence structure without changing the researcher-authored routing rules. The purpose would be to determine whether the observed evidence-to-action relationship survives outside the exact scenario used here.
+The observed effect is currently tied to a small controlled scenario and a deterministic controller. The next experiment must therefore change the surface problem while preserving the underlying experimental mechanism.
 
-Only after such transfer/generalization evidence should we consider whether the implemented mechanism is expressing a broader research capability. Learning would require an additional discriminator showing that experience changes future behavior and that the change transfers beyond the exact experience that produced it.
+Do not replace the current strings with another hand-authored pair and call that generalization.
+
+The next discriminator should use multiple held-out questions and structurally different evidence states, including at least:
+
+- an evidence state with a supported claim;
+- an evidence state with competing/conflicting claims;
+- an evidence state with weak or uncertain support;
+- an evidence state where no usable claim is extracted.
+
+The controller and acquisition budget should remain fixed. The experiment should record the complete pre-action evidence state and the selected next action, then compare whether the action is systematically conditioned on the structural state across held-out questions.
+
+The interpretation boundary remains strict: successful transfer would establish that the implemented mechanism generalizes its evidence-conditioned routing beyond the original scenario. It would still not establish learning.
+
+A subsequent learning experiment would need an explicit experience-to-policy mechanism and a held-out evaluation showing that experience changes future behavior and that the change transfers beyond the cases that produced the experience.
 
 ## Research record
 
@@ -244,10 +280,18 @@ After comparing it with the communication experiment's method, the protocol was 
 - the CI artifact records the actual relationship between the changed evidence and subsequent trajectory;
 - the research history is updated only after the observation exists.
 
-Current interpretation remains **unknown pending CI observation**.
+### 2026-09-16 — differential experiment observed
+
+The dedicated workflow completed successfully and produced the raw trajectory artifact. The controlled observation showed that changing the first evidence changed the second information need, objective, and search query, while the same-evidence control reproduced A. The second-round follow-up document was held constant, so the observed divergence occurred at the action-selection boundary.
+
+Current interpretation: **the implemented adaptive controller is evidence-state sensitive in this controlled case; there is insufficient evidence for learned or general adaptive research.**
+
+### 2026-09-16 — regression/test harness malfunction identified
+
+The ordinary test workflow reported 190 passing tests and one failure. Inspection showed that the failing assertion required A and B's complete search-call sequences to remain identical, which conflicts with the experiment's purpose of observing whether the second action changes. The test was corrected to constrain only the intended controls. This is an engineering/instrumentation correction, not a cognitive result.
 
 ## Relationship to communication research
 
 Communication research remains active and unresolved. Its current supported boundary is that communication experience can transfer a consequence across structurally related held-out states while preserving epistemic commitments, but the abstraction used for that transfer remains researcher-specified.
 
-We are pausing that route at this boundary while making Cognitia's research/evidence trajectory observable. We will return to communication when the cognitive/evidence state is sufficiently explicit to test whether representation rearrangement can itself be discovered rather than supplied.
+We are pausing that route at this boundary while making Cognitia's research/evidence state explicit enough to run stronger experiments. We will return to communication when the cognitive/evidence state is sufficiently explicit to test whether representation rearrangement can itself be discovered rather than supplied.
