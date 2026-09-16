@@ -46,11 +46,11 @@ def episode(experience_id: str, *, evidence=("e1",), outcome=EpistemicOutcome.CO
     )
 
 
-def test_experience_keeps_observation_separate_from_expectation():
+def test_experience_marks_epistemic_refutation_as_discrepancy():
     item = episode("x1", outcome=EpistemicOutcome.REFUTED)
     assert item.expected.description != ""
     assert item.observed.outcome is EpistemicOutcome.REFUTED
-    assert item.discrepancy is False
+    assert item.discrepancy is True
 
 
 def test_conflicting_outcome_remains_available_to_future_reasoning():
