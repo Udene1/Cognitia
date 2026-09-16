@@ -77,40 +77,93 @@ The implementation records the act separately from any surface representation an
 
 ## 4. CI result — 2026-09-16
 
-PR #8 (`Begin deterministic communicative cognition experiment`) was tested in GitHub Actions run **35056983672**.
+PR #8 (`Begin deterministic communicative cognition experiment`) was exercised by GitHub Actions run **35056983672**.
 
-The `test` job completed successfully, including the unit-test suite. The `cognitive-transfer` job also completed successfully. The runner restored three SQLite cognitive databases from the durable `cognitia-state` branch and reported:
+The important record is not merely that CI returned `success`. The run shows how Cognitia behaved across the test boundary:
+
+### 4.1 Unit-test behavior
+
+The `test` job:
+
+1. checked out the experiment branch;
+2. installed the repository;
+3. executed the unit-test suite;
+4. completed without a test failure.
+
+The communication-specific suite exercised the new behavior rather than only importing the new types. It verified:
+
+- the same cognitive state + `INFORM` selected `REPORT_CURRENT_STATE`;
+- the same state + `INVESTIGATE` selected `PROPOSE_DISCRIMINATING_TEST`;
+- the same state + `DECISION_SUPPORT` selected `SUPPORT_DECISION_UNDER_UNCERTAINTY`;
+- the same state + `TEACH` selected `EXPLAIN_UNCERTAINTY`;
+- ambiguous interaction selected `REQUEST_CLARIFICATION`;
+- insufficient capability produced `REPORT_LIMITATION_WITH_PARTIAL_RESULT` and retained a verification requirement;
+- candidate-to-established-fact promotion was rejected by epistemic-preservation logic.
+
+So Cognitia did not merely "pass the test": under controlled input changes, it produced different structured communicative decisions while keeping the underlying epistemic state constrained.
+
+### 4.2 Cross-run cognitive behavior
+
+The `cognitive-transfer` job restored **three SQLite cognitive databases** from the durable `cognitia-state` branch and reported:
 
 ```text
 CI_STATE_CROSS_RUN_RECOVERY_SUCCESS: 1 prior runs recovered
 ```
 
-The cognitive-transfer run then completed all existing transfer, persistence, discovery, language, and answer-core steps successfully. The answer-core diagnostics artifact was uploaded successfully.
+After recovery, Cognitia continued through its existing transfer and research-control sequence rather than starting from an empty cognitive state. The run completed the following stages:
 
-Most importantly for this communication experiment, the PR added `tests/test_communicative_cognition.py`, and the CI unit-test job passed. The tests establish the following narrow behaviors:
+- learned from executable source;
+- transferred code-derived structure into a new process;
+- compared independently written implementations;
+- exercised multi-language and representation-neutral abstractions;
+- recovered durable cognitive state and used it in a new process;
+- identified explanatory gaps and constructed/discriminated hypothesis spaces;
+- exercised discovery, evidence convergence, and discriminating-experiment reasoning;
+- persisted validated knowledge;
+- routed research actions using knowledge/evidence;
+- extracted and matched structured claims;
+- exercised evidence-driven research action control, decision utility, genealogy, and multi-factor synthesis;
+- exercised structured/semantic language representation;
+- diagnosed answer-construction state;
+- exercised answer construction, epistemic boundaries, and revision.
 
-1. The same cognitive state produced four different communicative acts when the objective changed.
-2. Changing the objective did not manufacture an established hypothesis.
-3. Ambiguous recipient/objective state selected clarification rather than an arbitrary claim.
-4. A capability limitation still permitted a partial-result communicative act with verification required.
-5. An attempted candidate-to-established-fact upgrade was rejected by the epistemic-preservation check.
+The answer-core diagnostics artifact was also uploaded successfully.
 
-The implementation itself is deterministic and contains no LLM dependency.
+This matters because the communication experiment did not run in isolation from Cognitia's existing state machinery: the CI execution demonstrated that the existing persistence/transfer path remained operational while the new communication capability was present.
+
+### 4.3 What CI actually demonstrated
+
+The run gives us three different kinds of evidence that should not be collapsed into one word:
+
+**Behavioral evidence**
+
+The communication tests observed objective-dependent act selection and rejection of epistemically invalid transformations.
+
+**Persistence/continuity evidence**
+
+Cognitia recovered prior durable state across the CI runner boundary and continued executing cognitive operations.
+
+**Regression evidence**
+
+The existing cognitive-transfer sequence, including persistence, discovery, evidence reasoning, language, and answer-core stages, completed successfully in the same run.
+
+None of these is evidence that communication was learned.
 
 ### Evidence boundary
 
-These results establish that the current explicit mechanism can represent and execute the tested distinction. They do **not** establish that Cognitia has learned communication.
+The CI run establishes that the current explicit mechanism can execute the tested communication distinction and coexist with the current cognitive-transfer path.
 
-In particular, the experiment does not yet demonstrate:
+It does **not** establish:
 
 - learning from communication consequences;
+- recipient modeling;
 - audience adaptation;
 - unrestricted natural-language communication;
 - broad generalization beyond the controlled state;
 - discovery of communicative acts rather than use of predefined acts; or
 - that the current deterministic selector is cognitively adequate.
 
-The result is therefore recorded as a **controlled implementation success, not a learning claim**.
+The result is therefore recorded as a **controlled implementation result with behavioral, persistence, and regression evidence — not a learning claim**.
 
 ---
 
@@ -142,16 +195,20 @@ Before that, the controlled experiment should be strengthened enough to expose f
 
 ## 6. Evidence-driven next research direction
 
-The next experiments should introduce controlled variation in recipient/context and then consequences of communicative actions.
+The next experiment should vary **recipient/context while holding the cognitive state and communicative objective controlled**.
+
+The question is:
+
+> Does Cognitia change the communicative action appropriately when the interaction context changes, without changing the underlying epistemic commitments?
 
 The progression is:
 
 ```text
 fixed state + objective
         ↓
-controlled act selection                [current]
+controlled act selection                [Experiment 1]
         ↓
-recipient/context variation             [next]
+recipient/context variation             [Experiment 2]
         ↓
 surface representation without drift
         ↓
@@ -174,7 +231,7 @@ developer specifies behavior
 Cognitia learns behavior
 ```
 
-A future learned policy should therefore be judged by its ability to change appropriately after experience and transfer that change beyond the exact interaction from which it was learned.
+A future learned policy should therefore be judged by its ability to change appropriately after experience and transfer that change beyond the exact interaction from which it learned.
 
 ---
 
@@ -186,9 +243,10 @@ Every future communication milestone should preserve:
 2. the hypothesis as it existed before the result;
 3. the controlled experiment;
 4. the exact CI/reproduction result that matters;
-5. failures as well as successes;
-6. what the result does and does not establish;
-7. the hypothesis changed by the result; and
-8. why the next experiment follows from the evidence.
+5. **how Cognitia behaved during the experiment**, not only whether CI passed or failed;
+6. failures as well as successes;
+7. what the result does and does not establish;
+8. the hypothesis changed by the result; and
+9. why the next experiment follows from the evidence.
 
 This history is part of Cognitia's research evidence, not merely project documentation.
