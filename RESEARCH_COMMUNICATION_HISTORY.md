@@ -1,7 +1,5 @@
 # Communication Research History
 
-## Purpose
-
 This document preserves the evidence trail by which Cognitia's communication research direction was reached. It records observations, hypotheses, experiments, results, and the reasoning for subsequent changes. It is intentionally historical: later architecture must not be written backward as though it was known in advance.
 
 ---
@@ -10,12 +8,7 @@ This document preserves the evidence trail by which Cognitia's communication res
 
 Cognitia's earlier Roman Empire answer exposed a weakness in answer behavior. The problem was not treated simply as poor wording.
 
-The observed answer mixed candidate contributing factors, competing explanations, evidence, uncertainty, and unresolved discrimination requirements without a sufficiently controlled communicative structure. In particular, it did not clearly separate:
-
-- what the system had evidence for;
-- what remained a competing explanation;
-- what evidence would distinguish the alternatives; and
-- what the system was actually committing itself to.
+The observed answer mixed candidate contributing factors, competing explanations, evidence, uncertainty, and unresolved discrimination requirements without a sufficiently controlled communicative structure. In particular, it did not clearly separate what the system had evidence for, what remained a competing explanation, what evidence would distinguish alternatives, and what the system was actually committing itself to.
 
 This produced the research hypothesis that Cognitia could possess useful problem-solving and epistemic machinery while lacking an explicit capability for deciding how to act communicatively on that state.
 
@@ -23,44 +16,25 @@ The resulting question became:
 
 > Can communication be treated as a cognitive action-selection problem rather than as a prose-generation problem?
 
-This observation led to `RESEARCH_COMMUNICATIVE_COGNITION.md` and then to the controlled Experiment 1.
-
 ---
 
 ## 2. Methodological decision: no LLM
 
 Before implementing the experiment, the research method was constrained so that an LLM would not perform the very capability being measured.
 
-For the foreseeable research horizon, Cognitia does not use an LLM for:
+For the foreseeable research horizon, Cognitia does not use an LLM for cognition, communicative-act selection, epistemic assignment, experiment evaluation, training-label manufacture from surface answers, or silent repair of failed communicative decisions.
 
-- cognition;
-- communicative-act selection;
-- epistemic assignment;
-- experiment evaluation;
-- training-label manufacture from surface answers; or
-- silent repair of failed communicative decisions.
-
-The reason is experimental identifiability. A fluent language model could conceal whether Cognitia itself learned what it knows, what the interaction is trying to accomplish, which action is warranted, and whether epistemic status was preserved.
-
-The early experiment therefore uses deterministic, inspectable mechanisms. This is not evidence that a deterministic mechanism is the final architecture. It is a way to expose the capability so that future experiments can determine what should replace it, if anything.
+The early experiments therefore use deterministic, inspectable mechanisms. This exposes capabilities for measurement; it is not evidence that deterministic mechanisms are the final architecture.
 
 ---
 
-## 3. Experiment 1 implementation
+## 3. Experiment 1: objective-conditioned act selection
 
-The first controlled experiment holds the underlying cognitive state constant and changes only the communicative objective.
+The first controlled experiment held the underlying cognitive state and recipient constant while changing communicative objective.
 
-The fixed state contains:
+The fixed state contained H1 resource exhaustion with strong evidence, H2 dependency failure with weak evidence, H3 configuration error with no evidence, no established root cause, and unresolved discriminating evidence.
 
-- H1: resource exhaustion — strong evidence;
-- H2: dependency failure — weak evidence;
-- H3: configuration error — no evidence;
-- no established root cause;
-- unresolved discriminating evidence.
-
-The recipient is held constant as an operator.
-
-The tested objectives are:
+The observed mappings were:
 
 | Objective | Selected act |
 |---|---|
@@ -69,249 +43,227 @@ The tested objectives are:
 | Decision support | Support decision under uncertainty |
 | Teach | Explain uncertainty |
 
-Additional tests cover ambiguous interaction and insufficient capability.
+Additional tests covered ambiguous interaction, insufficient capability, and rejection of candidate-to-established-fact promotion.
 
-The implementation records the act separately from any surface representation and includes an epistemic-preservation check.
+### CI result — 2026-09-16
 
----
+PR #8 (`Begin deterministic communicative cognition experiment`) was exercised by run **35056983672**. The important result was behavioral: controlled objective changes produced different structured communicative decisions while epistemic-preservation tests rejected unsupported upgrades. The cognitive-transfer job also recovered durable state across the runner boundary and continued the existing transfer, discovery, evidence, language, and answer-core sequence.
 
-## 4. CI result — 2026-09-16
-
-PR #8 (`Begin deterministic communicative cognition experiment`) was exercised by GitHub Actions run **35056983672**.
-
-The important record is not merely that CI returned `success`. The run shows how Cognitia behaved across the test boundary:
-
-### 4.1 Unit-test behavior
-
-The `test` job:
-
-1. checked out the experiment branch;
-2. installed the repository;
-3. executed the unit-test suite;
-4. completed without a test failure.
-
-The communication-specific suite exercised the new behavior rather than only importing the new types. It verified:
-
-- the same cognitive state + `INFORM` selected `REPORT_CURRENT_STATE`;
-- the same state + `INVESTIGATE` selected `PROPOSE_DISCRIMINATING_TEST`;
-- the same state + `DECISION_SUPPORT` selected `SUPPORT_DECISION_UNDER_UNCERTAINTY`;
-- the same state + `TEACH` selected `EXPLAIN_UNCERTAINTY`;
-- ambiguous interaction selected `REQUEST_CLARIFICATION`;
-- insufficient capability produced `REPORT_LIMITATION_WITH_PARTIAL_RESULT` and retained a verification requirement;
-- candidate-to-established-fact promotion was rejected by epistemic-preservation logic.
-
-So Cognitia did not merely "pass the test": under controlled input changes, it produced different structured communicative decisions while keeping the underlying epistemic state constrained.
-
-### 4.2 Cross-run cognitive behavior
-
-The `cognitive-transfer` job restored **three SQLite cognitive databases** from the durable `cognitia-state` branch and reported:
-
-```text
-CI_STATE_CROSS_RUN_RECOVERY_SUCCESS: 1 prior runs recovered
-```
-
-After recovery, Cognitia continued through its existing transfer and research-control sequence rather than starting from an empty cognitive state. The run completed the following stages:
-
-- learned from executable source;
-- transferred code-derived structure into a new process;
-- compared independently written implementations;
-- exercised multi-language and representation-neutral abstractions;
-- recovered durable cognitive state and used it in a new process;
-- identified explanatory gaps and constructed/discriminated hypothesis spaces;
-- exercised discovery, evidence convergence, and discriminating-experiment reasoning;
-- persisted validated knowledge;
-- routed research actions using knowledge/evidence;
-- extracted and matched structured claims;
-- exercised evidence-driven research action control, decision utility, genealogy, and multi-factor synthesis;
-- exercised structured/semantic language representation;
-- diagnosed answer-construction state;
-- exercised answer construction, epistemic boundaries, and revision.
-
-The answer-core diagnostics artifact was also uploaded successfully.
-
-This matters because the communication experiment did not run in isolation from Cognitia's existing state machinery: the CI execution demonstrated that the existing persistence/transfer path remained operational while the new communication capability was present.
-
-### 4.3 What CI actually demonstrated
-
-The run gives us three different kinds of evidence that should not be collapsed into one word:
-
-**Behavioral evidence**
-
-The communication tests observed objective-dependent act selection and rejection of epistemically invalid transformations.
-
-**Persistence/continuity evidence**
-
-Cognitia recovered prior durable state across the CI runner boundary and continued executing cognitive operations.
-
-**Regression evidence**
-
-The existing cognitive-transfer sequence, including persistence, discovery, evidence reasoning, language, and answer-core stages, completed successfully in the same run.
-
-None of these is evidence that communication was learned.
-
-### Evidence boundary
-
-The CI run establishes that the current explicit mechanism can execute the tested communication distinction and coexist with the current cognitive-transfer path.
-
-It does **not** establish:
-
-- learning from communication consequences;
-- recipient modeling;
-- audience adaptation;
-- unrestricted natural-language communication;
-- broad generalization beyond the controlled state;
-- discovery of communicative acts rather than use of predefined acts; or
-- that the current deterministic selector is cognitively adequate.
-
-The result is therefore recorded as a **controlled implementation result with behavioral, persistence, and regression evidence — not a learning claim**.
+The result established a controlled implementation capability, not learned communication.
 
 ---
 
-## 5. What the result changes
+## 4. Experiment 2: recipient/context variation
 
-The first experiment provides evidence for a separation that was previously only a hypothesis:
+Experiment 2 held the unresolved cognitive state and `INFORM` objective constant while varying recipient role.
 
-```text
-underlying cognitive state
-        ↓
-communicative objective
-        ↓
-communicative act
-```
-
-can be represented and tested independently of prose generation.
-
-It also provides a concrete invariant:
-
-> Communication may reorganize or select what is communicated, but it must not increase epistemic warrant.
-
-However, the current selector is explicitly hand-specified. Therefore the next research question is not "how do we add more acts?" It is:
-
-> Can Cognitia learn a communicative policy from observed interaction consequences, rather than having the appropriate mapping permanently specified by the developer?
-
-Before that, the controlled experiment should be strengthened enough to expose failures in the current explicit mechanism rather than merely expanding its taxonomy.
-
----
-
-## 6. Experiment 2: recipient/context variation
-
-Experiment 2 holds the unresolved cognitive state and communicative objective (`INFORM`) constant while varying a controlled recipient role.
-
-The implementation adds an explicit `RecipientRole` to `InteractionContext` and tests:
+The tested behavior was:
 
 ```text
-same state + INFORM + OPERATOR
+OPERATOR + INFORM
     → REPORT_CURRENT_STATE
 
-same state + INFORM + DECISION_MAKER
+DECISION_MAKER + INFORM
     → SUPPORT_DECISION_UNDER_UNCERTAINTY
 
-same state + INFORM + LEARNER
+LEARNER + INFORM
     → EXPLAIN_UNCERTAINTY
 ```
 
-The test also verifies that recipient adaptation does not change the state identity, uncertainty, or verification requirement, and that epistemic-preservation checks continue to reject unsupported upgrades.
+### CI result — 2026-09-16
 
-### 6.1 CI result — 2026-09-16
+PR #9 (`Experiment 2: recipient-context-conditioned communication`) was exercised by run **35058177100**.
 
-PR #9 (`Experiment 2: recipient-context-conditioned communication`) was exercised by GitHub Actions run **35058177100**.
-
-The `test` job collected **195 tests**. The communication test module executed **8 tests**, all of which passed. The full suite ended with:
+The `test` job collected **195 tests** and the communication module executed **8 tests**. The full suite ended with:
 
 ```text
 195 passed, 1 warning in 0.97s
 ```
 
-The warning was an existing `PytestCollectionWarning` for `TestResult` in `cognitia/learning/scientific.py`; it did not fail the run.
+The warning was an existing `PytestCollectionWarning` for `TestResult` in `cognitia/learning/scientific.py`.
 
-The new recipient-context tests observed the predicted structured behavior:
+### What Cognitia did
 
-- `OPERATOR` + `INFORM` → `REPORT_CURRENT_STATE`;
-- `DECISION_MAKER` + `INFORM` → `SUPPORT_DECISION_UNDER_UNCERTAINTY`;
-- `LEARNER` + `INFORM` → `EXPLAIN_UNCERTAINTY`.
+The significant observation was not the word `passed`. With cognitive state and objective held fixed, changing recipient role caused Cognitia to change the **structured communicative action**. The same state identity, uncertainty, evidence relationships, and verification requirement remained present; recipient change did not promote an unresolved hypothesis to an established fact.
 
-The same state identity and uncertainty were retained, no hypothesis was upgraded to established, and the unresolved state continued to require verification.
+The cognitive-transfer job also restored prior durable cognitive state and continued through its existing transfer, persistence, discovery, evidence, language, and answer-construction stages. Thus the new communication behavior coexisted with the existing cognitive-state machinery in the same CI run.
 
-The `cognitive-transfer` job also completed successfully. Its execution restored prior cognitive state, continued through transfer, persistence, discovery, evidence reasoning, language, and answer-construction stages, and successfully uploaded the answer-core diagnostics artifact. The durable-state recovery and subsequent stages therefore remained operational with Experiment 2 present.
-
-### 6.2 What Cognitia did during the test
-
-The meaningful observation is not simply that the 195 tests passed. Under a fixed cognitive state and fixed `INFORM` objective, Cognitia changed the **communicative action** when recipient role changed:
-
-```text
-OPERATOR
-    → operational state reporting
-
-DECISION_MAKER
-    → uncertainty-aware decision support
-
-LEARNER
-    → uncertainty explanation
-```
-
-The adaptation occurred before prose/surface realization and was represented in the structured `CommunicativeDecision`. The underlying epistemic state was not promoted merely because the recipient changed.
-
-This is evidence that the current communication layer can condition action selection on an explicit interaction-context variable. It is not evidence that Cognitia learned a recipient model.
-
-### 6.3 Evidence boundary
-
-Experiment 2 establishes the narrower proposition:
-
-> In the tested controlled state, communicative objective alone is not the only represented determinant of communicative action; an explicit recipient-role variable can also change act selection while epistemic commitments remain preserved.
-
-It does **not** establish:
-
-- learned recipient modeling;
-- general audience adaptation;
-- adaptation to arbitrary real-world context;
-- natural-language surface adaptation;
-- consequence-based communication learning; or
-- that three hand-defined recipient roles constitute a general communication model.
-
-The deterministic role mapping remains an experimental scaffold.
+The evidence boundary remained narrow: this demonstrated explicit recipient-conditioned action selection, not learned recipient modeling or general audience adaptation.
 
 ---
 
-## 7. Evidence-driven next research direction
+## 5. Experiment 3: representation-preserving communication
 
-The next experiment should hold the selected communicative act fixed and vary the **representation/surface** used to express it.
+Experiment 3 follows because an action-selection layer is not enough if changing the representation used to communicate can silently change the epistemic content.
 
-The question becomes:
+The controlled question is:
 
-> Can Cognitia express the same communicative act through different representations without changing claims, evidence, uncertainty, or epistemic warrant?
+> Given one selected communicative act, can Cognitia express that act through different representations without changing claims, evidence, uncertainty, epistemic status, or verification requirements?
 
-The progression is now:
+The implementation introduces `CommunicationProjection` and explicit representations including `STRUCTURED`, `CONCISE`, and `EXPLANATORY`.
+
+The representation layer does not choose a new communicative act. It receives an already-selected decision and carries its semantic contract into a different payload organization.
+
+A deterministic `assert_projection_preservation` check compares the projection against the original decision for:
+
+- selected act;
+- claim identities;
+- omitted claim identities;
+- epistemic status;
+- evidence identities;
+- uncertainty;
+- verification requirement.
+
+No LLM is involved in projection or preservation evaluation.
+
+### CI result — 2026-09-16
+
+PR #10 (`Experiment 3: representation-preserving communication`) was exercised by workflow run **35058802223**. The ordinary `test` job collected **197 tests** and finished with **196 passed, 1 failed, 1 warning**.
+
+The failure is a **communication-research failure**, not a syntax/build/infrastructure failure. The failing test was:
 
 ```text
-fixed state + objective
-        ↓
-objective-conditioned act selection       [Experiment 1]
-        ↓
-recipient/context-conditioned selection  [Experiment 2]
-        ↓
-surface representation without drift    [next]
-        ↓
-observed recipient/environment outcome
-        ↓
-communication experience
-        ↓
-policy/model revision
-        ↓
-held-out interaction
-        ↓
-transfer and validation
+test_surface_representations_preserve_the_same_communication_contract
 ```
 
-Only after representation preservation is experimentally exposed should communication consequences become the learning signal.
+The test selected `REPORT_CURRENT_STATE` for an unresolved state and projected the same decision into `STRUCTURED`, `CONCISE`, and `EXPLANATORY` representations. The projection contract required each representation to preserve the same selected act, claims, evidence, uncertainty, and verification requirement.
+
+The observed concise projection payload was:
+
+```text
+act:report_current_state
+claims:H1
+uncertainty:no root cause is established;H1 and H2 remain discriminable candidates
+verification:required
+```
+
+It omitted:
+
+```text
+evidence:E1
+```
+
+The assertion therefore failed on the concrete observation:
+
+```text
+AssertionError: assert 'evidence:E1' in (...)
+```
+
+This is behaviorally meaningful because the representation surface changed the observable communication contract: the underlying decision contained evidence identity `E1`, but the concise representation did not expose it. The preservation checker did not silently repair the projection; CI exposed the loss.
+
+The cognitive-transfer job in the same workflow completed successfully across the existing durable-state, transfer, discovery, evidence, language, and answer-construction stages. Therefore this result does **not** show that Cognitia's broader cognitive-transfer system failed. It isolates the observed failure to Experiment 3's communication representation layer.
+
+### Research interpretation
+
+Experiment 3 currently **fails its preservation hypothesis** for the tested concise representation.
+
+The result does not establish that concise communication is impossible. It establishes that the current concise projection implementation cannot be considered representation-preserving under the contract we defined. In particular, shortening the payload currently removes evidence identity even though evidence is part of the contract that the experiment explicitly requires to survive representation changes.
+
+This failure must remain visible as research evidence until the hypothesis is revised and a subsequent experiment demonstrates what actually changes. The failing test should not be weakened merely to make CI green.
+
+### Evidence boundary
+
+The result is narrow. It demonstrates one concrete semantic-loss mode in one explicit representation pipeline. It does not establish general natural-language communication failure, learned communication failure, or failure of the broader cognitive architecture.
+
+### Next research question
+
+Before repairing the implementation blindly, determine whether the preservation contract is correctly defined for all three representation classes. If evidence identity is a required commitment across surfaces, the next implementation hypothesis is that every representation must retain a machine-observable evidence reference even when its human-facing organization is concise. A subsequent CI run must then test whether that revised hypothesis preserves the contract without silently dropping or inventing evidence.
 
 ---
 
-## 8. Provenance rule for future work
+## 6. Experiment 3A: preservation boundary
 
-Every future communication milestone should preserve:
+Experiment 3A was derived directly from the Experiment 3 failure rather than from a desire to make the failing test green.
+
+The competing hypotheses were:
+
+- **H3A-direct:** every communication surface must directly expose evidence identity;
+- **H3A-recoverable:** evidence may be compressed out of the top-level payload when the same surface contains a deterministic, machine-observable reference from which the exact evidence identity can be recovered;
+- **H3A-lossy:** evidence may be silently omitted as long as claims and uncertainty remain unchanged.
+
+The implementation added `COMPACT_REFERENCED` and `assert_observable_evidence_recovery`.
+
+The controlled tests held the cognitive state, recipient, objective, selected act, claims, epistemic status, evidence identity, uncertainty, and verification requirement constant while varying only evidence encoding. The boundary tests therefore distinguished direct evidence, explicitly referenced evidence, and the existing silent-omission negative control.
+
+Importantly, the original `CONCISE` behavior remained unchanged. It was not repaired in place. It continued to omit `evidence:E1`, and the preservation invariant rejected it because no recovery reference existed.
+
+### CI result — 2026-09-16
+
+Workflow run **35062596958** completed with **199 tests passed, 1 warning, 0 failures**. The communication module's tests completed **12/12** successfully, and the cognitive-transfer job also completed successfully.
+
+### What Cognitia did
+
+The important behavior was:
+
+- `STRUCTURED` preserved `evidence:E1` directly;
+- `EXPLANATORY` preserved `evidence:E1` directly;
+- `COMPACT_REFERENCED` omitted the direct evidence field but exposed `evidence_ref:E1`, and deterministic recovery returned the exact evidence identity;
+- `CONCISE` remained the negative control and was rejected because it silently omitted evidence without a recovery reference.
+
+### Research interpretation
+
+The controlled result **supports H3A-recoverable** for the tested case and **rejects H3A-lossy** for the tested case. The experiment does not establish that direct evidence exposure is always necessary; the observed boundary is that epistemically relevant evidence must remain losslessly recoverable from the observable communication surface.
+
+This is still a controlled implementation result, not evidence of learned communication. The earlier Experiment 3 failure remains historical evidence that exposed the boundary.
+
+---
+
+## 7. Observation during communication research: Cognitia constructed an English synthesis surface
+
+While inspecting the broader CI run, the Roman Empire research synthesis produced a complete English-language answer in the CI output. This was recorded as an observation during the communication experiment, not as evidence that the communication problem had already been solved.
+
+The exact path was inspected on the CI checkout:
+
+1. `tests/ci/research_synthesis.py` runs `OpenEndedResearch().investigate(...)`, passes the acquired result into `ResearchSynthesisEngine().synthesize(result)`, and prints `synthesis.render()`. The benchmark itself contains no hand-authored Roman Empire factors; the evidence landscape is acquired and extracted by Cognitia.
+2. `DocumentClaimExtractor` deterministically splits acquired documents into candidate sentences and retains each as an `ExtractedClaim` with source observation, proposition, confidence, uncertainty, attribution, polarity, and other metadata. It explicitly states that it extracts claims without an LLM and does not promote them to truth.
+3. `ResearchSynthesisEngine` deterministically factorizes causal claims using regular-expression patterns, classifies domains from keyword scores, constructs a cautious thesis, identifies contrary claims, generates distinguishing evidence, caveats, and next actions, and then `ResearchSynthesis.render()` assembles those structured fields into the English output.
+
+The observed English answer therefore was **constructed by Cognitia's deterministic synthesis/rendering path**, rather than written by the assistant after the CI run. The source-derived contribution sentences are carried from extracted claims, while the connective thesis, headings, caveats, and next-action language are generated by the synthesis engine's deterministic templates.
+
+This distinction matters. The observation demonstrates that Cognitia can currently transform a structured evidence/synthesis state into a coherent English communication surface without an LLM performing the rendering. It does **not** yet demonstrate learned natural-language communication, general language understanding, or representation-independent communication. It is evidence that an existing cognitive/evidence pipeline already has a nontrivial deterministic communication surface that our communication research can now interrogate.
+
+### Research consequence
+
+The observation strengthens the reason for continuing the communication route: Cognitia already has an English surface produced from internal structured state, so we can test whether that surface preserves the same communicative contract as the underlying state, whether alternative surfaces can express the same act without semantic loss, and whether interaction consequences can later influence act selection.
+
+The English synthesis observation is therefore preserved as part of the historical evidence trail rather than treated as a completed milestone.
+
+---
+
+## 8. Experiment 4: communicative consequence and adaptation — design entered
+
+The roadmap now advances from one-shot communication decisions toward a closed interaction loop. This does **not** replace the broader Cognitia roadmap; it tests one missing link within it.
+
+The research question is:
+
+> Can Cognitia record the consequence of a communicative action and use that experience to change a future communicative decision without changing the epistemic state merely to obtain a better outcome?
+
+The experiment explicitly distinguishes three levels that must not be conflated:
+
+1. **experience recording** — the consequence is durably represented;
+2. **policy revision** — the recorded experience changes an inspectable policy/model state;
+3. **future adaptation** — the revised state changes a later decision.
+
+A hard-coded rule such as `if previous_result == "stalled": choose EXPLAIN_UNCERTAINTY` is explicitly excluded as evidence of learning. The proposed experiment instead records outcome signals and measures whether those records alter policy state and subsequent act selection.
+
+The implementation adds `CommunicationConsequence`, `CommunicationExperience`, `CommunicationPolicyState`, and a small inspectable `CommunicationPolicy`. The policy is intentionally deterministic and stateful so the experiment can expose exactly what changed. It does not use an LLM.
+
+The experiment includes a fresh-policy control, direct adaptation checks, and epistemic-preservation checks. A held-out transfer check is specified separately and must not be assumed from shared code.
+
+### Evidence boundary before execution
+
+At the time this design was recorded, no CI result had yet established that the policy actually adapts from communication experience. The implementation is therefore a **testable hypothesis**, not a claimed learning result.
+
+The required evidence is the actual execution trace: initial policy, recorded experiences, policy delta, baseline decision, adapted decision, and epistemic commitments before and after adaptation.
+
+---
+
+## 9. Provenance rule
+
+Every future communication milestone must preserve:
 
 1. the observation that motivated the hypothesis;
-2. the hypothesis as it existed before the result;
+2. the hypothesis before the result;
 3. the controlled experiment;
 4. the exact CI/reproduction result that matters;
 5. **how Cognitia behaved during the experiment**, not only whether CI passed or failed;
