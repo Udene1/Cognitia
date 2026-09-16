@@ -193,24 +193,103 @@ Before that, the controlled experiment should be strengthened enough to expose f
 
 ---
 
-## 6. Evidence-driven next research direction
+## 6. Experiment 2: recipient/context variation
 
-The next experiment should vary **recipient/context while holding the cognitive state and communicative objective controlled**.
+Experiment 2 holds the unresolved cognitive state and communicative objective (`INFORM`) constant while varying a controlled recipient role.
 
-The question is:
+The implementation adds an explicit `RecipientRole` to `InteractionContext` and tests:
 
-> Does Cognitia change the communicative action appropriately when the interaction context changes, without changing the underlying epistemic commitments?
+```text
+same state + INFORM + OPERATOR
+    → REPORT_CURRENT_STATE
 
-The progression is:
+same state + INFORM + DECISION_MAKER
+    → SUPPORT_DECISION_UNDER_UNCERTAINTY
+
+same state + INFORM + LEARNER
+    → EXPLAIN_UNCERTAINTY
+```
+
+The test also verifies that recipient adaptation does not change the state identity, uncertainty, or verification requirement, and that epistemic-preservation checks continue to reject unsupported upgrades.
+
+### 6.1 CI result — 2026-09-16
+
+PR #9 (`Experiment 2: recipient-context-conditioned communication`) was exercised by GitHub Actions run **35058177100**.
+
+The `test` job collected **195 tests**. The communication test module executed **8 tests**, all of which passed. The full suite ended with:
+
+```text
+195 passed, 1 warning in 0.97s
+```
+
+The warning was an existing `PytestCollectionWarning` for `TestResult` in `cognitia/learning/scientific.py`; it did not fail the run.
+
+The new recipient-context tests observed the predicted structured behavior:
+
+- `OPERATOR` + `INFORM` → `REPORT_CURRENT_STATE`;
+- `DECISION_MAKER` + `INFORM` → `SUPPORT_DECISION_UNDER_UNCERTAINTY`;
+- `LEARNER` + `INFORM` → `EXPLAIN_UNCERTAINTY`.
+
+The same state identity and uncertainty were retained, no hypothesis was upgraded to established, and the unresolved state continued to require verification.
+
+The `cognitive-transfer` job also completed successfully. Its execution restored prior cognitive state, continued through transfer, persistence, discovery, evidence reasoning, language, and answer-construction stages, and successfully uploaded the answer-core diagnostics artifact. The durable-state recovery and subsequent stages therefore remained operational with Experiment 2 present.
+
+### 6.2 What Cognitia did during the test
+
+The meaningful observation is not simply that the 195 tests passed. Under a fixed cognitive state and fixed `INFORM` objective, Cognitia changed the **communicative action** when recipient role changed:
+
+```text
+OPERATOR
+    → operational state reporting
+
+DECISION_MAKER
+    → uncertainty-aware decision support
+
+LEARNER
+    → uncertainty explanation
+```
+
+The adaptation occurred before prose/surface realization and was represented in the structured `CommunicativeDecision`. The underlying epistemic state was not promoted merely because the recipient changed.
+
+This is evidence that the current communication layer can condition action selection on an explicit interaction-context variable. It is not evidence that Cognitia learned a recipient model.
+
+### 6.3 Evidence boundary
+
+Experiment 2 establishes the narrower proposition:
+
+> In the tested controlled state, communicative objective alone is not the only represented determinant of communicative action; an explicit recipient-role variable can also change act selection while epistemic commitments remain preserved.
+
+It does **not** establish:
+
+- learned recipient modeling;
+- general audience adaptation;
+- adaptation to arbitrary real-world context;
+- natural-language surface adaptation;
+- consequence-based communication learning; or
+- that three hand-defined recipient roles constitute a general communication model.
+
+The deterministic role mapping remains an experimental scaffold.
+
+---
+
+## 7. Evidence-driven next research direction
+
+The next experiment should hold the selected communicative act fixed and vary the **representation/surface** used to express it.
+
+The question becomes:
+
+> Can Cognitia express the same communicative act through different representations without changing claims, evidence, uncertainty, or epistemic warrant?
+
+The progression is now:
 
 ```text
 fixed state + objective
         ↓
-controlled act selection                [Experiment 1]
+objective-conditioned act selection       [Experiment 1]
         ↓
-recipient/context variation             [Experiment 2]
+recipient/context-conditioned selection  [Experiment 2]
         ↓
-surface representation without drift
+surface representation without drift    [next]
         ↓
 observed recipient/environment outcome
         ↓
@@ -223,19 +302,11 @@ held-out interaction
 transfer and validation
 ```
 
-The crucial distinction remains:
-
-```text
-developer specifies behavior
-        ≠
-Cognitia learns behavior
-```
-
-A future learned policy should therefore be judged by its ability to change appropriately after experience and transfer that change beyond the exact interaction from which it learned.
+Only after representation preservation is experimentally exposed should communication consequences become the learning signal.
 
 ---
 
-## 7. Provenance rule for future work
+## 8. Provenance rule for future work
 
 Every future communication milestone should preserve:
 
