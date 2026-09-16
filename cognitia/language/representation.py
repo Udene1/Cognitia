@@ -137,6 +137,7 @@ def _entities(text: str) -> tuple[EntityMention, ...]:
 def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], negation: tuple[str, ...], attribution: tuple[str, ...]) -> tuple[RelationMention, ...]:
     result: list[RelationMention] = []
     stripped = text.strip()
+    causal_question = bool(re.match(r"\s*(?:why did|what caused)\b", stripped, re.I))
 
     causal_patterns: Sequence[tuple[str, str, str]] = (
         (r"Why did (?P<effect>.+?)\s+(?:stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s+(?:after|following)\s+(?P<cause>.+?)[?!.]?$", "caused", "why-after"),
@@ -145,6 +146,8 @@ def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], 
         (r"(?P<cause>.+?)\s+(?:caused|led to|resulted in|triggered)\s+(?P<effect>.+?)[?!.]?$", "caused", "explicit-causal"),
     )
     for pattern, predicate, construction in causal_patterns:
+        if causal_question and construction == "explicit-causal":
+            continue
         for match in re.finditer(pattern, text, re.I):
             effect = match.group("effect").strip(" ,.")
             cause = match.groupdict().get("cause")
@@ -163,9 +166,7 @@ def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], 
                 attribution=attribution[-1] if attribution else None,
             ))
 
-    # Generic patterns are useful for non-question statements. Causal questions
-    # are already normalized above; parsing them again creates false duplicate edges.
-    if not re.match(r"\s*(?:why did|what caused)\b", stripped, re.I):
+    if not causal_question:
         patterns: Sequence[tuple[str, str]] = (
             (r"(?P<s>.+?)\s+(?P<p>is|was|were|are|became|changed|depends on)\s+(?P<o>.+)", "state"),
             (r"(?P<s>.+?)\s+(?P<p>caused|causes|contributed to|led to|resulted in|weakened|undermined|destabilized|reduced|increased|affected|influenced|triggered|prevented|enabled|limited|strengthened)\s+(?P<o>.+)", "causal"),
