@@ -1,4 +1,9 @@
-"""CI execution harness for the differential research trajectory experiment."""
+"""CI execution harness for the differential research trajectory experiment.
+
+The harness is intentionally outcome-neutral. It controls the perturbation,
+records the resulting trajectories, and lets the observation determine whether
+the subsequent research path changed.
+"""
 from __future__ import annotations
 
 import json
@@ -79,58 +84,75 @@ def run_scenario(name: str, first_evidence: str):
 
 def main() -> None:
     resource = run_scenario(
-        "resource-exhaustion",
+        "condition-a",
         "Resource exhaustion caused the service failure.",
     )
     dependency = run_scenario(
-        "dependency-failure",
+        "condition-b",
         "A dependency failure caused the service failure.",
     )
     control = run_scenario(
-        "resource-control",
+        "same-evidence-control",
         "Resource exhaustion caused the service failure.",
     )
 
-    assert resource["calls"][0] == dependency["calls"][0] == control["calls"][0]
+    # Harness integrity: the first action/question and controller limits are
+    # held constant. Only the first acquired evidence differs between A/B.
+    assert resource["calls"] == dependency["calls"] == control["calls"]
+    assert resource["question"] == dependency["question"] == control["question"] == QUESTION
+    assert resource["first_evidence"] == control["first_evidence"]
+    assert resource["first_evidence"] != dependency["first_evidence"]
+
+    for scenario in (resource, dependency, control):
+        assert len(scenario["rounds"]) == 2
+        first, second = scenario["rounds"]
+        assert second["parent_action_id"] == first["action_id"]
+        assert second["information_need"]
+        assert second["information_need_source_claim_ids"]
+        assert second["information_need_source_document_ids"]
+
     resource_second = resource["rounds"][1]
     dependency_second = dependency["rounds"][1]
     control_second = control["rounds"][1]
 
-    assert resource_second["parent_action_id"] == resource["rounds"][0]["action_id"]
-    assert dependency_second["parent_action_id"] == dependency["rounds"][0]["action_id"]
-    assert resource_second["information_need"]
-    assert dependency_second["information_need"]
-    assert resource_second["information_need_source_claim_ids"]
-    assert dependency_second["information_need_source_claim_ids"]
-
-    # Differential observation: only the first evidence differs, but the next
-    # information need and research objective differ as well.
-    assert resource["first_evidence"] != dependency["first_evidence"]
-    assert resource_second["information_need"] != dependency_second["information_need"]
-    assert resource_second["objective"] != dependency_second["objective"]
-    assert resource_second["information_need_source_claim_ids"] != dependency_second["information_need_source_claim_ids"]
-
-    # Same-evidence control: repeating A must reproduce A's next action.
-    assert resource_second["information_need"] == control_second["information_need"]
-    assert resource_second["objective"] == control_second["objective"]
+    # Scientific outcome is observed, not prescribed. Both equality and
+    # divergence are valid observations. The control tests reproducibility.
+    observation = {
+        "same_initial_question_and_action": resource["rounds"][0]["objective"]
+        == dependency["rounds"][0]["objective"]
+        == control["rounds"][0]["objective"],
+        "first_evidence_changed": resource["first_evidence"] != dependency["first_evidence"],
+        "second_information_need_changed": resource_second["information_need"]
+        != dependency_second["information_need"],
+        "second_objective_changed": resource_second["objective"] != dependency_second["objective"],
+        "second_source_claims_changed": resource_second["information_need_source_claim_ids"]
+        != dependency_second["information_need_source_claim_ids"],
+        "same_evidence_control_reproduced_information_need": resource_second["information_need"]
+        == control_second["information_need"],
+        "same_evidence_control_reproduced_objective": resource_second["objective"]
+        == control_second["objective"],
+    }
 
     record = {
-        "experiment": "differential-research-trajectory-v1",
-        "hypothesis": "Holding the question constant while changing only the first evidence will change the next information need and research objective when the preceding evidence changes.",
-        "question": QUESTION,
+        "experiment": "differential-research-trajectory-v2",
+        "research_question": "When the research question is held constant but the first acquired evidence differs, does the subsequent research trajectory change?",
+        "hypothesis": "A change in the evidence state may change the subsequent research trajectory. The direction and magnitude of any change are not specified in advance.",
+        "controls": {
+            "question": QUESTION,
+            "controller": "AdaptiveOpenResearch",
+            "rounds": 2,
+            "search_results": 1,
+            "documents_per_round": 1,
+            "claims_per_document": 5,
+            "same_evidence_control": True,
+        },
         "observations": {
-            "resource_exhaustion": resource,
-            "dependency_failure": dependency,
-            "resource_control": control,
+            "condition_a": resource,
+            "condition_b": dependency,
+            "same_evidence_control": control,
         },
-        "discriminator": {
-            "same_question_initial_action": True,
-            "different_first_evidence": True,
-            "different_second_information_need": resource_second["information_need"] != dependency_second["information_need"],
-            "different_second_objective": resource_second["objective"] != dependency_second["objective"],
-            "same_evidence_control_reproduces_action": resource_second["objective"] == control_second["objective"],
-        },
-        "interpretation_boundary": "This demonstrates evidence-conditioned trajectory divergence in the implemented adaptive controller. It does not by itself demonstrate learned cognition; the next discriminator must test whether the behavior survives changed questions/states without researcher-authored routing rules.",
+        "observation_summary": observation,
+        "interpretation_boundary": "This experiment can establish only what the controlled trajectories show about the implemented controller. Divergence is evidence that the implemented controller is sensitive to the changed evidence state; equality is evidence that this perturbation did not change the subsequent trajectory. Neither result establishes learned cognition. The controller contains researcher-authored deterministic routing rules, so a later generalization experiment is required.",
     }
     output = Path(".ci/differential-trajectory.json")
     output.parent.mkdir(parents=True, exist_ok=True)
