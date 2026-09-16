@@ -258,7 +258,43 @@ The required evidence is the actual execution trace: initial policy, recorded ex
 
 ---
 
-## 9. Provenance rule
+## 9. Experiment 4 execution infrastructure observation — 2026-09-16
+
+Workflow run **35064029103** was the first execution of the Experiment 4 test suite on the merged communication state.
+
+The `cognitive-transfer` job completed successfully, including durable-state recovery and the existing transfer, discovery, evidence, language, and answer-core sequence. The failure was isolated to the ordinary `test` job.
+
+The test job did **not** execute the Experiment 4 behavioral assertions. Pytest stopped during test-module collection after collecting **199 items / 1 error**.
+
+The exact error was:
+
+```text
+ERROR tests/test_communication_experience.py
+ImportError while importing test module
+ModuleNotFoundError: No module named 'tests'
+```
+
+The failing import was:
+
+```python
+from tests.test_communicative_cognition import unresolved_failure_state
+```
+
+The checkout, Python installation, package installation, and test invocation all succeeded. The failure occurred because the repository's `tests` directory was not importable as the `tests` package in this CI environment.
+
+### Research interpretation
+
+This is **not communication-research evidence** and must not be interpreted as evidence for or against Experiment 4's adaptation hypothesis. Cognitia never reached the consequence-recording or policy-adaptation assertions in this run.
+
+Per the research rule, the failure is therefore treated as an execution/integration defect rather than a behavioral research failure. The test infrastructure was corrected by adding the missing `tests/__init__.py` package marker on the dedicated `research/communication-experience` branch.
+
+The Experiment 4 hypothesis remains unresolved. No claim of learning or adaptation is made from run **35064029103**.
+
+The next valid result must come from an execution that actually reaches the Experiment 4 behavioral tests and exposes the initial policy, recorded experiences, policy delta, future decision, and epistemic-preservation behavior.
+
+---
+
+## 10. Provenance rule
 
 Every future communication milestone must preserve:
 
