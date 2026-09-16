@@ -22,19 +22,10 @@ with SQLiteCognitiveJournal(root / "cognition.sqlite") as journal:
     evaluations = ledger.evaluations()
     builds = ledger.builds()
 
-assert len(items) == 1
-assert items[0].id == "restart-proof-knowledge"
-assert items[0].value["family"] == "group_by_reduce"
-assert items[0].source.reference == "persistence_writer"
-assert len(episodes) == 1
-assert episodes[0].id == "restart-proof-experience"
-assert episodes[0].outcome.kind == "positive"
-assert len(events) == 1
-assert events[0].payload["knowledge_id"] == items[0].id
-
-# The durable journal is append-only and intentionally survives across CI
-# runs. Validate the restart-proof records specifically rather than assuming
-# the restored journal contains no older lifecycle records.
+# The durable stores are append-only and intentionally survive across CI
+# runs. The restart-proof identifiers are reused by the proof, so validate
+# the most recent matching lifecycle records rather than assuming historical
+# state contains only one occurrence.
 restart_candidates = tuple(
     item for item in candidates if item.get("candidate_id") == "restart-proof-candidate"
 )
@@ -45,16 +36,30 @@ restart_builds = tuple(
     item for item in builds if item.get("build_id") == "restart-proof-build"
 )
 
-assert len(restart_candidates) == 1
-assert restart_candidates[0]["state"] == "held"
-assert restart_candidates[0]["candidate"]["code_artifact"] == "restart-proof-artifact"
-assert restart_candidates[0]["candidate"]["executable_rehydration_required"] is True
-assert len(restart_evaluations) == 1
-assert restart_evaluations[0]["regression"] == 0.1
-assert restart_evaluations[0]["reason"] == "hold before promotion"
-assert len(restart_builds) == 1
-assert restart_builds[0]["build_id"] == "restart-proof-build"
-assert restart_builds[0]["capabilities"][0]["status"] == "held"
+assert items
+assert items[-1].id == "restart-proof-knowledge"
+assert items[-1].value["family"] == "group_by_reduce"
+assert items[-1].source.reference == "persistence_writer"
+assert episodes
+assert episodes[-1].id == "restart-proof-experience"
+assert episodes[-1].outcome.kind == "positive"
+assert events
+assert events[-1].payload["knowledge_id"] == items[-1].id
+assert restart_candidates
+assert restart_evaluations
+assert restart_builds
+
+candidate = restart_candidates[-1]
+evaluation = restart_evaluations[-1]
+build = restart_builds[-1]
+
+assert candidate["state"] == "held"
+assert candidate["candidate"]["code_artifact"] == "restart-proof-artifact"
+assert candidate["candidate"]["executable_rehydration_required"] is True
+assert evaluation["regression"] == 0.1
+assert evaluation["reason"] == "hold before promotion"
+assert build["build_id"] == "restart-proof-build"
+assert build["capabilities"][0]["status"] == "held"
 
 print("RECOVERED_KNOWLEDGE: group_by_reduce")
 print("RECOVERED_EXPERIENCE: persist_learning -> positive")
