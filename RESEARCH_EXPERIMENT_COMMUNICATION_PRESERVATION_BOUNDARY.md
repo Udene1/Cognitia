@@ -2,7 +2,7 @@
 
 ## Status
 
-**Designed after Experiment 3; implementation pending.**
+**Implemented; controlled boundary tests added; awaiting CI observation.**
 
 ## Why this experiment exists
 
@@ -59,6 +59,18 @@ In particular, the receiver must not be forced to guess:
 - whether a candidate is established or unresolved.
 
 This criterion distinguishes **compression** from **loss**. Compression is acceptable only when the compressed information remains recoverable.
+
+## Implementation
+
+The boundary experiment now has an explicit `COMPACT_REFERENCED` representation and a deterministic `assert_observable_evidence_recovery` invariant.
+
+The test suite contains three boundary observations:
+
+1. the existing direct representations preserve the decision contract;
+2. `COMPACT_REFERENCED` removes the direct `evidence:` field but carries an explicit `evidence_ref:` that exactly identifies the same evidence;
+3. the existing `CONCISE` representation remains a negative control and is rejected because it has neither direct evidence nor a recoverable evidence reference.
+
+The original Experiment 3 failure is therefore not erased or rewritten. The new implementation creates a discriminating experiment around that failure.
 
 ## Expected observations
 
