@@ -175,19 +175,36 @@ Before repairing the implementation blindly, determine whether the preservation 
 
 Experiment 3A was derived directly from the Experiment 3 failure rather than from a desire to make the failing test green.
 
-The competing hypotheses are:
+The competing hypotheses were:
 
 - **H3A-direct:** every communication surface must directly expose evidence identity;
 - **H3A-recoverable:** evidence may be compressed out of the top-level payload when the same surface contains a deterministic, machine-observable reference from which the exact evidence identity can be recovered;
 - **H3A-lossy:** evidence may be silently omitted as long as claims and uncertainty remain unchanged.
 
-The implementation now adds `COMPACT_REFERENCED` and `assert_observable_evidence_recovery`.
+The implementation added `COMPACT_REFERENCED` and `assert_observable_evidence_recovery`.
 
-The controlled tests hold the cognitive state, recipient, objective, selected act, claims, epistemic status, evidence identity, uncertainty, and verification requirement constant while varying only evidence encoding. The new boundary tests therefore distinguish direct evidence, explicitly referenced evidence, and the existing silent-omission negative control.
+The controlled tests held the cognitive state, recipient, objective, selected act, claims, epistemic status, evidence identity, uncertainty, and verification requirement constant while varying only evidence encoding. The boundary tests therefore distinguished direct evidence, explicitly referenced evidence, and the existing silent-omission negative control.
 
-Importantly, the original `CONCISE` behavior remains unchanged. It is not repaired in place. It continues to omit `evidence:E1`, and the new preservation invariant explicitly rejects it because no recovery reference exists.
+Importantly, the original `CONCISE` behavior remained unchanged. It was not repaired in place. It continued to omit `evidence:E1`, and the preservation invariant rejected it because no recovery reference existed.
 
-At this point the implementation establishes a **candidate experimental boundary**, not a validated research result. The next CI execution is the observation needed to determine whether lossless reference is sufficient or whether evidence must remain directly visible on every surface.
+### CI result — 2026-09-16
+
+Workflow run **35062596958** completed with **199 tests passed, 1 warning, 0 failures**. The communication module's tests completed **12/12** successfully, and the cognitive-transfer job also completed successfully.
+
+### What Cognitia did
+
+The important behavior was:
+
+- `STRUCTURED` preserved `evidence:E1` directly;
+- `EXPLANATORY` preserved `evidence:E1` directly;
+- `COMPACT_REFERENCED` omitted the direct evidence field but exposed `evidence_ref:E1`, and deterministic recovery returned the exact evidence identity;
+- `CONCISE` remained the negative control and was rejected because it silently omitted evidence without a recovery reference.
+
+### Research interpretation
+
+The controlled result **supports H3A-recoverable** for the tested case and **rejects H3A-lossy** for the tested case. The experiment does not establish that direct evidence exposure is always necessary; the observed boundary is that epistemically relevant evidence must remain losslessly recoverable from the observable communication surface.
+
+This is still a controlled implementation result, not evidence of learned communication. The earlier Experiment 3 failure remains historical evidence that exposed the boundary.
 
 ---
 
@@ -197,7 +214,7 @@ While inspecting the broader CI run, the Roman Empire research synthesis produce
 
 The exact path was inspected on the CI checkout:
 
-1. `tests/ci/research_synthesis.py` runs `OpenEndedResearch().investigate(...)`, passes the acquired result into `ResearchSynthesisEngine().synthesize(result)`, and prints `synthesis.render()`. The benchmark itself contains no hand-authored Roman Empire factors; the evidence landscape is acquired and extracted by Cognitia. 
+1. `tests/ci/research_synthesis.py` runs `OpenEndedResearch().investigate(...)`, passes the acquired result into `ResearchSynthesisEngine().synthesize(result)`, and prints `synthesis.render()`. The benchmark itself contains no hand-authored Roman Empire factors; the evidence landscape is acquired and extracted by Cognitia.
 2. `DocumentClaimExtractor` deterministically splits acquired documents into candidate sentences and retains each as an `ExtractedClaim` with source observation, proposition, confidence, uncertainty, attribution, polarity, and other metadata. It explicitly states that it extracts claims without an LLM and does not promote them to truth.
 3. `ResearchSynthesisEngine` deterministically factorizes causal claims using regular-expression patterns, classifies domains from keyword scores, constructs a cautious thesis, identifies contrary claims, generates distinguishing evidence, caveats, and next actions, and then `ResearchSynthesis.render()` assembles those structured fields into the English output.
 
@@ -213,7 +230,35 @@ The English synthesis observation is therefore preserved as part of the historic
 
 ---
 
-## 8. Provenance rule
+## 8. Experiment 4: communicative consequence and adaptation — design entered
+
+The roadmap now advances from one-shot communication decisions toward a closed interaction loop. This does **not** replace the broader Cognitia roadmap; it tests one missing link within it.
+
+The research question is:
+
+> Can Cognitia record the consequence of a communicative action and use that experience to change a future communicative decision without changing the epistemic state merely to obtain a better outcome?
+
+The experiment explicitly distinguishes three levels that must not be conflated:
+
+1. **experience recording** — the consequence is durably represented;
+2. **policy revision** — the recorded experience changes an inspectable policy/model state;
+3. **future adaptation** — the revised state changes a later decision.
+
+A hard-coded rule such as `if previous_result == "stalled": choose EXPLAIN_UNCERTAINTY` is explicitly excluded as evidence of learning. The proposed experiment instead records outcome signals and measures whether those records alter policy state and subsequent act selection.
+
+The implementation adds `CommunicationConsequence`, `CommunicationExperience`, `CommunicationPolicyState`, and a small inspectable `CommunicationPolicy`. The policy is intentionally deterministic and stateful so the experiment can expose exactly what changed. It does not use an LLM.
+
+The experiment includes a fresh-policy control, direct adaptation checks, and epistemic-preservation checks. A held-out transfer check is specified separately and must not be assumed from shared code.
+
+### Evidence boundary before execution
+
+At the time this design was recorded, no CI result had yet established that the policy actually adapts from communication experience. The implementation is therefore a **testable hypothesis**, not a claimed learning result.
+
+The required evidence is the actual execution trace: initial policy, recorded experiences, policy delta, baseline decision, adapted decision, and epistemic commitments before and after adaptation.
+
+---
+
+## 9. Provenance rule
 
 Every future communication milestone must preserve:
 
