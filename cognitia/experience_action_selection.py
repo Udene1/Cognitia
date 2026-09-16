@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-from .experience import EpistemicOutcome, Experience, ExperienceLedger, CognitiveState
+from .experience import EpistemicOutcome, ExperienceLedger, CognitiveState
 from .state_action_generation import GeneratedAction
 
 
@@ -78,22 +78,22 @@ class ExperienceGeneratedActionSelector:
 
 def _state_similarity(current: CognitiveState, prior: CognitiveState) -> float:
     """Compare structural state signals; problem wording is intentionally ignored."""
-    matches = 0
-    dimensions = 0
-    for left, right in (
+    dimensions: list[tuple[set[str], set[str]]] = [
         (set(current.evidence_ids), set(prior.evidence_ids)),
         (set(current.knowledge_ids), set(prior.knowledge_ids)),
         (set(current.hypothesis_ids), set(prior.hypothesis_ids)),
         (set(current.uncertainty), set(prior.uncertainty)),
-    ):
-        dimensions += 1
-        if left == right:
-            matches += 1
+    ]
     if current.goal is not None or prior.goal is not None:
-        dimensions += 1
-        if (current.goal or "").strip().lower() == (prior.goal or "").strip().lower():
-            matches += 1
-    return matches / dimensions if dimensions else 0.0
+        dimensions.append((
+            {(current.goal or "").strip().lower()} if current.goal else set(),
+            {(prior.goal or "").strip().lower()} if prior.goal else set(),
+        ))
+    informative = [(left, right) for left, right in dimensions if left or right]
+    if not informative:
+        return 0.0
+    matches = sum(left == right for left, right in informative)
+    return matches / len(informative)
 
 
 def _capability_overlap(capability: str, action: str) -> float:
