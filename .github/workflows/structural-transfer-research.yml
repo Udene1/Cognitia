@@ -1,0 +1,26 @@
+name: structural-transfer-research
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install --upgrade pip && pip install -e . pytest
+      - name: Run structural-transfer experiment
+        run: python tests/ci/structural_transfer_research.py
+      - name: Upload structural-transfer record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: structural-transfer-research
+          path: .ci/structural-transfer-research.json
+          if-no-files-found: error

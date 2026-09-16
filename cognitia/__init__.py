@@ -44,6 +44,7 @@ from .verification import VerificationOutcome, VerificationPlan, VerificationRes
 from .logic_ir import LogicModel, LogicNode, LogicRelation, LogicProvenance, LogicTransferCandidate, LogicTransferEngine, LogicTransferVerification, TransferMapping, model_from_parts
 from .logic_adapters import CodeLogicAdapter, LogicAdapterResult, MathLogicAdapter, TextLogicAdapter, UniversalLogicAdapter
 from .learning.concept_transfer import GenericLogicExtractor
+from .experience import CognitiveState, EpistemicOutcome, ExpectedConsequence, Experience, ExperienceLedger, ObservedConsequence, state_fingerprint, summarize_experience
 
 __version__ = "0.1.0"
 
@@ -59,5 +60,6 @@ __all__ = [
     "CognitiveStateReplayer", "RecoveredCognitiveState", "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy", "KnowledgeItem", "KnowledgeSource", "KnowledgeTest", "ValidatedKnowledgeStore",
     "TextToken", "EntityMention", "EventMention", "RelationMention", "LanguageFrame", "SemanticProposition", "QuestionAnalysis", "AnswerContract", "build_language_frame", "analyze_question", "AnswerAssessment", "AnswerContractPlanner", "AnswerPlan", "plan_answer",
     "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis", "TransferAssessment", "assess_transfer", "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan", "CandidateDisposition", "PromotionDecision", "RegressionFinding", "RegressionPolicy", "evaluate_promotion", "CognitivePromotionOrchestrator", "PromotionEvaluation",
-    "LogicModel", "LogicNode", "LogicRelation", "LogicProvenance", "LogicTransferCandidate", "LogicTransferEngine", "LogicTransferVerification", "TransferMapping", "model_from_parts", "LogicAdapterResult", "TextLogicAdapter", "CodeLogicAdapter", "MathLogicAdapter", "UniversalLogicAdapter", "GenericLogicExtractor", "__version__",
+    "LogicModel", "LogicNode", "LogicRelation", "LogicProvenance", "LogicTransferCandidate", "LogicTransferEngine", "LogicTransferVerification", "TransferMapping", "model_from_parts", "LogicAdapterResult", "TextLogicAdapter", "CodeLogicAdapter", "MathLogicAdapter", "UniversalLogicAdapter", "GenericLogicExtractor",
+    "CognitiveState", "EpistemicOutcome", "ExpectedConsequence", "Experience", "ExperienceLedger", "ObservedConsequence", "state_fingerprint", "summarize_experience", "__version__",
 ]
