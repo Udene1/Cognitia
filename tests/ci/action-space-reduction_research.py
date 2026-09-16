@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import runpy
 
 from cognitia.experience import (
     CognitiveState,
@@ -29,7 +30,6 @@ CONTRADICTED = "What caused archival jobs to resume after the storage-service in
 
 
 def candidates(problem: str) -> list[SearchAction]:
-    # The experiment deliberately destroys the planner's normal ordering.
     return list(reversed(ResearchSearchPlanner().plan(problem, max_actions=4).actions))
 
 
@@ -82,7 +82,6 @@ def main() -> None:
     confirmed = ExperienceLedger((exp(TRAIN, generated, EpistemicOutcome.CONFIRMED, "confirmed-1"),))
     held_out = run("weakly_related_held_out", HELD_OUT, confirmed)
 
-    # Contradiction arrives as a later observation of the same experience.
     revised = ExperienceLedger((exp(TRAIN, generated, EpistemicOutcome.REFUTED, "confirmed-1-revised"),))
     contradicted = run("after_late_contradiction", HELD_OUT, revised)
 
@@ -102,6 +101,12 @@ def main() -> None:
         "next_reduction": "Replace planner-authored search facets with actions generated from the current state, uncertainty, hypotheses, and observed consequences; the evaluator must not prescribe the intermediate action vocabulary.",
         "boundary": "No result here establishes general cognition, learning, or transfer. The experiment measures the current explicit mechanism under reduced experimental convenience.",
     }
+
+    namespace = runpy.run_path("tests/ci/abstraction_adversarial_stability.py")
+    namespace["main"]()
+    adversarial_path = Path(".ci/abstraction-adversarial-stability.json")
+    artifact["abstraction_adversarial_stability"] = json.loads(adversarial_path.read_text(encoding="utf-8"))
+
     output = Path(".ci/action-space-reduction-research.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(artifact, indent=2, sort_keys=True), encoding="utf-8")

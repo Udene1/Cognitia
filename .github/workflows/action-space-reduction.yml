@@ -43,3 +43,22 @@ jobs:
           name: induced-experience-abstraction-v2
           path: .ci/induced-experience-abstraction-v2.json
           if-no-files-found: error
+
+  abstraction-adversarial-stability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install --upgrade pip && pip install -e . pytest
+      - name: Run abstraction adversarial stability experiment
+        run: python tests/ci/abstraction_adversarial_stability.py
+      - name: Upload abstraction stability record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: abstraction-adversarial-stability
+          path: .ci/abstraction-adversarial-stability.json
+          if-no-files-found: error

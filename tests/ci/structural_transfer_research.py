@@ -140,10 +140,6 @@ def main() -> None:
     for record in records:
         by_class.setdefault(record["expected_structural_class"], []).append(record)
 
-    # The measured action category is the information-need kind produced by
-    # the controller, not SearchAction.purpose: planner purpose is often the
-    # generic label "direct evidence" and therefore cannot discriminate the
-    # adaptive transition.
     same_class_consistency = {
         key: len({item["second_action"]["information_need_kind"] for item in values}) == 1
         for key, values in by_class.items()
