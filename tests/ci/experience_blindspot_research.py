@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 from pathlib import Path
+import runpy
 
 from cognitia.experience import (
     CognitiveState,
@@ -121,6 +122,12 @@ def main() -> None:
         "observations": observation,
         "interpretation_boundary": "This experiment measures the behavior of the explicit experience-to-action mechanism. It does not establish general cognition or learning.",
     }
+
+    namespace = runpy.run_path("tests/ci/experience_abstraction_consequence_loop.py")
+    namespace["main"]()
+    loop_path = Path(".ci/experience-abstraction-consequence-loop.json")
+    artifact["experience_abstraction_consequence_loop"] = json.loads(loop_path.read_text(encoding="utf-8"))
+
     output = Path(".ci/experience-blindspot-research.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(artifact, indent=2, sort_keys=True), encoding="utf-8")
