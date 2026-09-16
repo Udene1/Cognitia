@@ -86,7 +86,7 @@ The warning was an existing `PytestCollectionWarning` for `TestResult` in `cogni
 
 The significant observation was not the word `passed`. With cognitive state and objective held fixed, changing recipient role caused Cognitia to change the **structured communicative action**. The same state identity, uncertainty, evidence relationships, and verification requirement remained present; recipient change did not promote an unresolved hypothesis to an established fact.
 
-The cognitive-transfer job also restored prior durable cognitive state and continued through its existing transfer, persistence, discovery, evidence, language, and answer-construction stages. Thus the new communication behavior coexisted with the existing cognitive-state machinery in the same CI run.
+The cognitive-transfer job also restored prior durable cognitive state and continued through its existing transfer, persistence, discovery, evidence, and answer-construction stages. Thus the new communication behavior coexisted with the existing cognitive-state machinery in the same CI run.
 
 The evidence boundary remained narrow: this demonstrated explicit recipient-conditioned action selection, not learned recipient modeling or general audience adaptation.
 
@@ -230,7 +230,7 @@ The English synthesis observation is therefore preserved as part of the historic
 
 ---
 
-## 8. Experiment 4: communicative consequence and adaptation — design entered
+## 8. Experiment 4: communicative consequence and adaptation
 
 The roadmap now advances from one-shot communication decisions toward a closed interaction loop. This does **not** replace the broader Cognitia roadmap; it tests one missing link within it.
 
@@ -244,17 +244,49 @@ The experiment explicitly distinguishes three levels that must not be conflated:
 2. **policy revision** — the recorded experience changes an inspectable policy/model state;
 3. **future adaptation** — the revised state changes a later decision.
 
-A hard-coded rule such as `if previous_result == "stalled": choose EXPLAIN_UNCERTAINTY` is explicitly excluded as evidence of learning. The proposed experiment instead records outcome signals and measures whether those records alter policy state and subsequent act selection.
+A hard-coded rule such as `if previous_result == "stalled": choose EXPLAIN_UNCERTAINTY` is explicitly excluded as evidence of learning. The experiment instead records outcome signals and measures whether those records alter policy state and subsequent act selection.
 
 The implementation adds `CommunicationConsequence`, `CommunicationExperience`, `CommunicationPolicyState`, and a small inspectable `CommunicationPolicy`. The policy is intentionally deterministic and stateful so the experiment can expose exactly what changed. It does not use an LLM.
 
 The experiment includes a fresh-policy control, direct adaptation checks, and epistemic-preservation checks. A held-out transfer check is specified separately and must not be assumed from shared code.
 
-### Evidence boundary before execution
+### CI result — 2026-09-16
 
-At the time this design was recorded, no CI result had yet established that the policy actually adapts from communication experience. The implementation is therefore a **testable hypothesis**, not a claimed learning result.
+The corrected execution was workflow run **35064708564**, commit **577a401f1b7ae823bb59c2d4fcea8e5cffe19adb**. The ordinary `test` job completed successfully with **203 tests passed, 1 warning, 0 failures**. The four Experiment 4 tests all executed and passed; the existing communication suite remained **12/12**. The warning was the pre-existing `PytestCollectionWarning` for `TestResult` in `cognitia/learning/scientific.py` and was unrelated to this experiment.
 
-The required evidence is the actual execution trace: initial policy, recorded experiences, policy delta, baseline decision, adapted decision, and epistemic commitments before and after adaptation.
+### What Cognitia actually did
+
+The four Experiment 4 tests establish the following concrete behavior:
+
+1. **Fresh control:** with no experience recorded, `CommunicationPolicy` left the baseline decision unchanged: `REPORT_CURRENT_STATE`, with the same claims and evidence.
+2. **Experience recording:** Cognitia accepted a consequence attached to a specific decision state and selected act, then stored a `CommunicationExperience` containing the decision state, objective, recipient role, selected act, outcome, signal, observation, and the policy revision produced by that experience.
+3. **Policy revision:** a negative `-1.0` consequence for `REPORT_CURRENT_STATE` changed its policy score by `-1.0`; a positive `+1.0` consequence for `EXPLAIN_UNCERTAINTY` changed its score by `+1.0`. The resulting policy delta was exactly:
+
+```text
+EXPLAIN_UNCERTAINTY: +1.0
+REPORT_CURRENT_STATE: -1.0
+```
+
+4. **Future adaptation:** when the original decision was presented again to the same policy, Cognitia selected `EXPLAIN_UNCERTAINTY` instead of the baseline `REPORT_CURRENT_STATE`. The fresh-policy control continued to select `REPORT_CURRENT_STATE`.
+5. **Epistemic preservation:** the adapted decision retained the original state identity, claim identities, evidence identities, uncertainty, epistemic status, and verification requirement. The adaptation changed the communicative act, not the underlying epistemic commitments.
+
+The mechanism is inspectable: `CommunicationPolicy.record()` updates an explicit score state from the recorded consequence signal, and `CommunicationPolicy.select()` uses that revised state when choosing among the decision's candidate acts. No LLM performs the update or selects the adapted act.
+
+### Research interpretation
+
+This is stronger than a mere green test: the execution demonstrates a complete **experience → policy-state change → future-decision change** path under controlled conditions, with a fresh-policy control and an epistemic-preservation check.
+
+However, it is **not yet evidence of general learned communication**. The policy is a deliberately small deterministic learner. The experiment does not yet establish that Cognitia discovered a reusable communication strategy, because the consequence signals are supplied by the test and the tested future case shares the same underlying decision structure. There is no held-out transfer case, recipient shift, representation shift, delayed consequence, or comparison against a learned alternative that would show the adaptation generalizes beyond this controlled state.
+
+Therefore the supported claim is narrower:
+
+> Cognitia can now represent communication consequences as experience, revise an inspectable policy from those experiences, and use the revised policy to change a later communicative act while preserving epistemic commitments.
+
+The stronger hypothesis — that Cognitia can **learn transferable communication policies from interaction consequences** — remains unresolved.
+
+### Research consequence / next question
+
+The next research target should therefore test **generalization of communication experience**, not simply add more hand-written act mappings. A valid next experiment should train/adapt the policy on one interaction and evaluate it on a structurally related but non-identical case, while varying at least one surface or interaction dimension and keeping the epistemic contract observable. The control must distinguish genuine experience-driven transfer from a selector that merely memorizes the tested state.
 
 ---
 
