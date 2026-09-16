@@ -24,3 +24,22 @@ jobs:
           name: structural-transfer-research
           path: .ci/structural-transfer-research.json
           if-no-files-found: error
+
+  induced-experience-abstraction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install --upgrade pip && pip install -e . pytest
+      - name: Run induced experience abstraction experiment
+        run: python tests/ci/induced_experience_abstraction.py
+      - name: Upload induced abstraction record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: induced-experience-abstraction
+          path: .ci/induced-experience-abstraction.json
+          if-no-files-found: error
