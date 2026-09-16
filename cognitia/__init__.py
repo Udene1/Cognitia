@@ -45,6 +45,9 @@ from .logic_ir import LogicModel, LogicNode, LogicRelation, LogicProvenance, Log
 from .logic_adapters import CodeLogicAdapter, LogicAdapterResult, MathLogicAdapter, TextLogicAdapter, UniversalLogicAdapter
 from .learning.concept_transfer import GenericLogicExtractor
 from .experience import CognitiveState, EpistemicOutcome, ExpectedConsequence, Experience, ExperienceLedger, ObservedConsequence, state_fingerprint, summarize_experience
+from .information_need import InformationNeed, InformationNeedDetector, InformationNeedKind
+from .operation_selection import OperationAssessment, OperationChoice, OperationOption, OperationSelector
+from .state_action_generation import AvailableOperation, GeneratedAction, StateActionGenerator
 
 __version__ = "0.1.0"
 
@@ -57,9 +60,9 @@ __all__ = [
     "ModelElement", "ModelRelation", "RelationKind", "StructuralAlternative", "StructuralHypothesisBuilder", "StructuralModel", "DiscoveryInvestigator", "InvestigationResult", "DiscoveryFailure", "DiscoveryFailureLearner", "DiscoveryKnowledgePromoter", "KnowledgePromotionDecision",
     "EnvironmentObservation", "EnvironmentSource", "NullEnvironmentSource", "InvestigationTask", "ParallelInvestigationResult", "ParallelInvestigator", "SearchQuery", "WebEnvironmentSource", "WebSearchProvider", "EvidenceAssessment", "WebEvidenceEvaluator",
     "Claim", "EvidenceRecord", "EvidenceSource", "SourceLineage", "EvidenceGraph", "EvidenceRelation", "EvidenceConvergenceEngine", "ConvergenceAssessment", "ModelConstraint", "ModelConsistencyChecker", "ModelCheckResult",
-    "CognitiveStateReplayer", "RecoveredCognitiveState", "GitCommitObservation", "GitEnvironmentError", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy", "KnowledgeItem", "KnowledgeSource", "KnowledgeTest", "ValidatedKnowledgeStore",
+    "CognitiveStateReplayer", "RecoveredCognitiveState", "GitCommitObservation", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy", "KnowledgeItem", "KnowledgeSource", "KnowledgeTest", "ValidatedKnowledgeStore",
     "TextToken", "EntityMention", "EventMention", "RelationMention", "LanguageFrame", "SemanticProposition", "QuestionAnalysis", "AnswerContract", "build_language_frame", "analyze_question", "AnswerAssessment", "AnswerContractPlanner", "AnswerPlan", "plan_answer",
-    "FailureClass", "FailureObservation", "FailureAnalyzer", "CapabilityGapDiagnosis", "TransferAssessment", "assess_transfer", "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan", "CandidateDisposition", "PromotionDecision", "RegressionFinding", "RegressionPolicy", "evaluate_promotion", "CognitivePromotionOrchestrator", "PromotionEvaluation",
+    "FailureClass", "FailureObservation", "CapabilityGapDiagnosis", "FailureAnalyzer", "TransferAssessment", "assess_transfer", "VerificationOutcome", "VerificationPlan", "VerificationResult", "VerificationStep", "execute_plan", "CandidateDisposition", "PromotionDecision", "RegressionFinding", "RegressionPolicy", "evaluate_promotion", "CognitivePromotionOrchestrator", "PromotionEvaluation",
     "LogicModel", "LogicNode", "LogicRelation", "LogicProvenance", "LogicTransferCandidate", "LogicTransferEngine", "LogicTransferVerification", "TransferMapping", "model_from_parts", "LogicAdapterResult", "TextLogicAdapter", "CodeLogicAdapter", "MathLogicAdapter", "UniversalLogicAdapter", "GenericLogicExtractor",
-    "CognitiveState", "EpistemicOutcome", "ExpectedConsequence", "Experience", "ExperienceLedger", "ObservedConsequence", "state_fingerprint", "summarize_experience", "__version__",
+    "CognitiveState", "EpistemicOutcome", "ExpectedConsequence", "Experience", "ExperienceLedger", "ObservedConsequence", "state_fingerprint", "summarize_experience", "InformationNeed", "InformationNeedDetector", "InformationNeedKind", "OperationAssessment", "OperationChoice", "OperationOption", "OperationSelector", "AvailableOperation", "GeneratedAction", "StateActionGenerator", "__version__",
 ]
