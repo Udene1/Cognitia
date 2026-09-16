@@ -2,9 +2,9 @@
 
 ## Status
 
-**Active research route — observability experiment in progress.**
+**Differential trajectory experiment — protocol implemented; observation pending.**
 
-No claim has been promoted that Cognitia can adapt its research trajectory. This phase records the behavior needed to test that claim without assuming the answer.
+No claim has been promoted that Cognitia can adapt its research trajectory. This phase is designed to let the observed trajectory determine whether a controlled evidence perturbation changes what happens next.
 
 ## Why this experiment exists
 
@@ -45,6 +45,8 @@ For research:
 A changing answer is not itself evidence of learning. We require an inspectable causal path from an observed state to a subsequent research action.
 
 Engineering failures are not research findings. They are fixed and excluded from the research history unless they reveal a property of Cognitia's research behavior itself.
+
+The differential experiment must not encode its expected scientific result into its assertions. CI assertions protect experimental integrity; the generated artifact records the actual outcome. Both divergence and non-divergence are informative observations.
 
 ## Experiment 1: trajectory reconstruction
 
@@ -92,6 +94,92 @@ Likewise, `decision_rationale` is recorded exactly as the existing system provid
 
 This is intentional. The experiment must show us what the system actually exposes before we claim more.
 
+## Experiment 2: differential trajectory observation
+
+This is the next experiment after trajectory observability. It is intentionally narrower than a claim of adaptive cognition.
+
+### Research question
+
+> When the research question is held constant but the first acquired evidence differs, does the subsequent research trajectory change?
+
+### Hypothesis
+
+A change in the evidence state **may** change the subsequent research trajectory. The direction, specific information need, and specific research objective are not specified in advance.
+
+This wording is deliberate. We are testing whether a difference emerges, not implementing a predetermined A → X and B → Y result.
+
+### Controlled conditions
+
+Three executions are run through the same `AdaptiveOpenResearch` controller:
+
+- **Condition A:** first evidence state contains one controlled service-failure observation;
+- **Condition B:** first evidence state contains a different controlled service-failure observation;
+- **Same-evidence control:** repeats Condition A exactly.
+
+Across all three:
+
+- the research question is identical;
+- the controller is identical;
+- the round limit is identical;
+- acquisition limits are identical;
+- the first search/action is identical;
+- only the first acquired evidence content differs between A and B.
+
+The control is not a scientific conclusion. It checks that repeating the same controlled input reproduces the same subsequent behavior under the deterministic implementation.
+
+### Required observations
+
+The CI artifact records the complete two-round trajectory for each condition, including:
+
+- question;
+- acquired first evidence;
+- action identity and parent action;
+- search objective;
+- information need;
+- source claim/document identifiers for the information need;
+- decision rationale;
+- claims and documents entering each step;
+- whether the second information need changed;
+- whether the second objective changed;
+- whether source-claim references changed;
+- whether the same-evidence control reproduced the result.
+
+### What CI is allowed to assert
+
+CI asserts experimental integrity only:
+
+- the controlled question and first action are equal;
+- A and B actually differ in first evidence;
+- each second step is linked to its own preceding action;
+- information need and provenance are present;
+- the same-evidence control reproduces the A trajectory under the deterministic implementation.
+
+CI does **not** assert that A and B must diverge.
+
+### What the observation means
+
+If the second trajectories differ, the observation supports the narrower statement that the implemented controller is sensitive to this changed evidence state.
+
+If the second trajectories do not differ, the observation shows that this particular evidence perturbation did not change the subsequent trajectory.
+
+Neither outcome establishes learned cognition. The current adaptive controller contains researcher-authored deterministic routing rules. Therefore the observed result is evidence about the implemented research mechanism, not evidence of an independently learned research policy.
+
+## CI and research-record method
+
+The communication experiment established the useful pattern we are reusing:
+
+1. define the research question before the result;
+2. encode the controlled experiment in executable code;
+3. run it through GitHub Actions;
+4. preserve the actual behavioral output as an artifact;
+5. update the research history from the observation;
+6. state the evidence boundary explicitly;
+7. derive the next experiment from what was observed rather than from a fixed roadmap.
+
+For the differential trajectory experiment, the dedicated workflow is `differential-research-trajectory`. It executes `tests/ci/differential_trajectory.py` and uploads `.ci/differential-trajectory.json` even when the experiment fails, so the research record is not reduced to a green/red status.
+
+This mirrors the communication record's distinction between behavioral evidence, persistence/continuity evidence, and regression evidence. CI success itself remains an implementation fact, not a cognitive finding.
+
 ## Expected observation
 
 We should be able to reconstruct a research episode and answer:
@@ -105,6 +193,9 @@ We should be able to reconstruct a research episode and answer:
 - What action did the planner select?
 - What rationale did the system actually record?
 - What information remains unobservable?
+- Did the controlled evidence perturbation alter the next trajectory?
+
+The last question is deliberately open.
 
 ## What would support HRT-1
 
@@ -118,17 +209,17 @@ The recorded trajectory is faithful to the executed research episode and does no
 - the same execution cannot be reproduced from the recorded state;
 - later adaptive experiments cannot identify the evidence state available before an action.
 
-## Next experiment — not yet started
+## What would support the narrower differential observation
 
-After trajectory reconstruction is validated, run a small controlled two-round experiment:
+The controlled runs produce a reproducible record showing whether and how the subsequent action changes when only the first evidence changes.
 
-**Round 1:** broad investigation.
+The result is useful whether the trajectories diverge or remain equal, provided the perturbation and controls are valid and the observation is preserved.
 
-**Round 2:** Cognitia must choose the next action from the actual Round-1 evidence state.
+## What would be a stronger future result
 
-Compare against a precomputed-plan control.
+A later experiment would need to vary the question and/or evidence structure without changing the researcher-authored routing rules. The purpose would be to determine whether the observed evidence-to-action relationship survives outside the exact scenario used here.
 
-The adaptive hypothesis is only supported if the next action is demonstrably generated from the preceding evidence state, its information need, contradiction, uncertainty, or evidence gap — and this behavior survives a changed question/state without question-specific hardcoding.
+Only after such transfer/generalization evidence should we consider whether the implemented mechanism is expressing a broader research capability. Learning would require an additional discriminator showing that experience changes future behavior and that the change transfers beyond the exact experience that produced it.
 
 ## Research record
 
@@ -142,7 +233,18 @@ A standalone trajectory reconstruction layer was added without changing search b
 
 Current interpretation: **insufficient evidence for adaptive research.**
 
-Next decision must be made from the trajectory experiment's observed behavior, not from the roadmap alone.
+### 2026-09-16 — differential experiment protocol corrected
+
+The first version of the differential experiment encoded the expected result into the test: resource-exhaustion evidence was expected to produce one second objective and dependency-failure evidence another. That was implementation-led rather than discovery-led.
+
+After comparing it with the communication experiment's method, the protocol was changed so that:
+
+- the hypothesis no longer names the expected second action;
+- CI protects controls and provenance rather than requiring divergence;
+- the CI artifact records the actual relationship between the changed evidence and subsequent trajectory;
+- the research history is updated only after the observation exists.
+
+Current interpretation remains **unknown pending CI observation**.
 
 ## Relationship to communication research
 
