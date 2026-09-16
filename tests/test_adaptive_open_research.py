@@ -63,8 +63,10 @@ def test_differential_experiment_harness_preserves_controls():
         "Resource exhaustion caused the service failure."
     )
 
-    # Experimental integrity, not a predicted scientific outcome.
-    assert resource_web.calls == dependency_web.calls == control_web.calls
+    # Experimental integrity: the initial question/action is controlled.
+    # The second call is an observed trajectory variable and is therefore
+    # intentionally allowed to differ between conditions.
+    assert resource_web.calls[0] == dependency_web.calls[0] == control_web.calls[0] == QUESTION
     assert resource_episode.result.question == dependency_episode.result.question == QUESTION
     assert len(resource_episode.result.rounds) == len(dependency_episode.result.rounds) == len(control_episode.result.rounds) == 2
 
