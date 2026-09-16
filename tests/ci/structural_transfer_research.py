@@ -8,8 +8,8 @@ question -> action mapping.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 from cognitia.adaptive_open_research import AdaptiveOpenResearch
 from cognitia.environment import EnvironmentObservation
@@ -72,6 +72,13 @@ def run(scenario: Scenario) -> dict[str, object]:
     )
     first, second = trajectory.steps
     first_round = episode.result.rounds[0]
+    need_kind = episode.information_needs[0].kind if episode.information_needs else None
+    structural_signature = (
+        len(first_round.claims),
+        tuple(sorted(claim.confidence for claim in first_round.claims)),
+        tuple(sorted(claim.polarity for claim in first_round.claims)),
+        any(cluster.conflict for cluster in first_round.clusters),
+    )
     return {
         "name": scenario.name,
         "question": scenario.question,
@@ -83,10 +90,12 @@ def run(scenario: Scenario) -> dict[str, object]:
             "claim_confidences": sorted(claim.confidence for claim in first_round.claims),
             "polarities": sorted(claim.polarity for claim in first_round.claims),
             "conflict": any(cluster.conflict for cluster in first_round.clusters),
+            "structural_signature": structural_signature,
         },
         "second_action": {
             "action_id": second.action_id,
             "purpose": second.purpose,
+            "information_need_kind": need_kind,
             "objective": second.objective,
             "information_need": second.information_need,
             "source_claim_ids": list(second.information_need_source_claim_ids),
@@ -110,8 +119,6 @@ def run(scenario: Scenario) -> dict[str, object]:
 
 
 def main() -> None:
-    # Each pair below has different surface wording but the same structural
-    # evidence condition. No expected action/query is encoded in the scenario.
     scenarios = (
         Scenario("supported-a", "Why did the payment service stop?", ("The payment service stopped because its database was unavailable.",), "supported"),
         Scenario("supported-b", "What caused the archive worker to stop?", ("The archive worker stopped because its database was unavailable.",), "supported"),
@@ -119,14 +126,11 @@ def main() -> None:
         Scenario("conflict-b", "Why did the billing gateway fail?", ("The billing gateway failed because the network was unavailable.", "The billing gateway did not fail because the network was unavailable."), "conflict"),
         Scenario("uncertain-a", "Why is the model output unstable?", ("The model output may be unstable because the input distribution changed.",), "uncertain"),
         Scenario("uncertain-b", "Why is the forecast changing?", ("The forecast may be changing because the input distribution changed.",), "uncertain"),
-        Scenario("empty-a", "Why did the cache miss?", ("No usable causal statement was observed in the available material.",), "empty"),
-        Scenario("empty-b", "Why did the queue stall?", ("The available material contained no usable causal statement.",), "empty"),
+        Scenario("empty-a", "Why did the cache miss?", ("No useful material.",), "empty"),
+        Scenario("empty-b", "Why did the queue stall?", ("Nothing usable was observed.",), "empty"),
     )
     records = [run(scenario) for scenario in scenarios]
 
-    # Integrity checks only: the controller is identical and every second
-    # action is causally linked to its own first state. We do not assert which
-    # concrete query the planner should produce.
     for record in records:
         assert len(record["calls"]) == 2
         assert record["second_action"]["parent_action_id"] == record["trajectory"][0]["action_id"]
@@ -136,30 +140,35 @@ def main() -> None:
     for record in records:
         by_class.setdefault(record["expected_structural_class"], []).append(record)
 
-    # The discriminator is deliberately at the abstract action-purpose level:
-    # equivalent structural states should preserve the controller's action
-    # category across held-out questions, while different states should not be
-    # silently collapsed into one category.
+    # The measured action category is the information-need kind produced by
+    # the controller, not SearchAction.purpose: planner purpose is often the
+    # generic label "direct evidence" and therefore cannot discriminate the
+    # adaptive transition.
     same_class_consistency = {
-        key: len({item["second_action"]["purpose"] for item in values}) == 1
+        key: len({item["second_action"]["information_need_kind"] for item in values}) == 1
         for key, values in by_class.items()
     }
-    structural_purposes = {
-        key: sorted({item["second_action"]["purpose"] for item in values})
+    observed_kinds = {
+        key: sorted({item["second_action"]["information_need_kind"] for item in values})
         for key, values in by_class.items()
     }
-    different_class_separation = len(set(tuple(value) for value in structural_purposes.values())) > 1
+    structural_signatures = {
+        key: sorted({repr(item["first_state"]["structural_signature"]) for item in values})
+        for key, values in by_class.items()
+    }
+    cross_class_collapse = len(set(tuple(value) for value in observed_kinds.values())) == 1
 
     observation = {
-        "same_structural_class_same_action_purpose": same_class_consistency,
-        "observed_action_purposes_by_class": structural_purposes,
-        "different_classes_show_more_than_one_action_purpose": different_class_separation,
+        "same_structural_class_same_information_need_kind": same_class_consistency,
+        "observed_information_need_kinds_by_class": observed_kinds,
+        "observed_structural_signatures_by_class": structural_signatures,
+        "all_classes_collapse_to_one_information_need_kind": cross_class_collapse,
     }
 
     record = {
-        "experiment": "structural-transfer-evidence-conditioned-research-v1",
+        "experiment": "structural-transfer-evidence-conditioned-research-v2",
         "research_question": "When surface questions change but evidence-state structure is held equivalent, does evidence-conditioned research behavior transfer without question-specific routing?",
-        "hypothesis": "Structurally equivalent evidence states may produce the same abstract next-action category across held-out questions, while structurally different states may produce different categories.",
+        "hypothesis": "Structurally equivalent evidence states may produce the same abstract information-need category across held-out questions. Structurally different states may or may not separate; that outcome is observed rather than prescribed.",
         "controller": "AdaptiveOpenResearch",
         "controls": {
             "same_controller": True,
@@ -171,7 +180,8 @@ def main() -> None:
         },
         "scenarios": records,
         "observation": observation,
-        "interpretation_boundary": "This experiment can establish only whether the existing researcher-authored evidence-conditioned controller generalizes an action category across changed questions. Even consistent transfer is not learned cognition: the routing rules remain explicitly implemented. A later experiment must expose experience and test whether consequences alter future behavior on held-out problems.",
+        "interpretation_boundary": "The experiment tests transfer of the existing evidence-conditioned mechanism, not learning. The controller still contains researcher-authored deterministic routing rules. If distinct structural states collapse to the same information-need kind, that is evidence about the current controller's resolution, not evidence that the states are cognitively equivalent.",
+        "next_discriminator": "Use the observed structural signatures to design an experience-conditioned experiment in which an actual consequence changes a later held-out action, with an experience-absent control and no scenario-specific routing rule.",
     }
     output = Path(".ci/structural-transfer-research.json")
     output.parent.mkdir(parents=True, exist_ok=True)
