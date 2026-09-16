@@ -101,7 +101,6 @@ def build_language_frame(text: str, *, question: bool | None = None) -> Language
     tokens = tuple(TextToken(m.group(0), m.start(), m.end()) for m in re.finditer(r"\S+", text))
     entities = _entities(text)
     modality = _markers(text, r"\b(?:may|might|could|can|must|should|would|possibly|likely|unlikely|probably|perhaps|maybe|reportedly|believed|estimated|alleged)\b")
-    # Support historical years such as 476 as well as modern four-digit years.
     temporal = _markers(text, r"\b(?:[1-9]\d{2,3})\b|\b(?:today|currently|historically|formerly|originally|before|after|during|since|until|by|later|earlier|now)\b")
     negation = _markers(text, r"\b(?:does not|did not|do not|is not|are not|was not|were not|has not|have not|had not|cannot|can't|isn't|wasn't|weren't|don't|doesn't|didn't|not|never|no|neither|without)\b")
     attribution = _markers(text, r"\b(?:according to|reported by|reported|believed by|argued by|claimed by|said by|historians? argue|researchers? report|scientists? report)\b")
@@ -136,12 +135,41 @@ def _entities(text: str) -> tuple[EntityMention, ...]:
 
 
 def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], negation: tuple[str, ...], attribution: tuple[str, ...]) -> tuple[RelationMention, ...]:
+    result: list[RelationMention] = []
+
+    # Candidate causal constructions are normalized to the same relation family.
+    # They remain confidence="candidate" because linguistic extraction is not truth.
+    causal_patterns: Sequence[tuple[str, str, str]] = (
+        (r"Why did (?P<effect>.+?)\s+(?:stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s+(?:after|following)\s+(?P<cause>.+?)[?!.]?$", "caused", "why-after"),
+        (r"What caused (?P<effect>.+?)\s+(?:to\s+)?(?P<verb>stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s*[?!.]?$", "caused", "what-caused"),
+        (r"(?P<effect>.+?)\s+(?:stalled|stopped|failed|changed|declined|rose|fell|collapsed)\s+because\s+(?P<cause>.+?)[?!.]?$", "caused", "because"),
+        (r"(?P<cause>.+?)\s+(?:caused|led to|resulted in|triggered)\s+(?P<effect>.+?)[?!.]?$", "caused", "explicit-causal"),
+    )
+    for pattern, predicate, _construction in causal_patterns:
+        for match in re.finditer(pattern, text, re.I):
+            effect = match.group("effect").strip(" ,.")
+            cause = match.group("cause").strip(" ,.")
+            # For explicit-causal wording the first capture is the cause; normalize
+            # all forms to cause -> effect regardless of surface order.
+            if _construction == "explicit-causal":
+                cause, effect = effect, cause
+            result.append(RelationMention(
+                subject=cause,
+                predicate=predicate,
+                object=effect,
+                kind="causal",
+                confidence="candidate",
+                polarity="negative" if negation else "positive",
+                modality="uncertain" if modality else "asserted",
+                temporal_markers=temporal,
+                attribution=attribution[-1] if attribution else None,
+            ))
+
     patterns: Sequence[tuple[str, str]] = (
         (r"(?P<s>.+?)\s+(?P<p>is|was|were|are|became|changed|depends on)\s+(?P<o>.+)", "state"),
         (r"(?P<s>.+?)\s+(?P<p>caused|causes|contributed to|led to|resulted in|weakened|undermined|destabilized|reduced|increased|affected|influenced|triggered|prevented|enabled|limited|strengthened)\s+(?P<o>.+)", "causal"),
         (r"(?P<s>.+?)\s+(?P<p>defined|redefined|measured|replaced|preceded|followed|supports|contradicts|explains|distinguishes)\s+(?P<o>.+)", "relational"),
     )
-    result: list[RelationMention] = []
     for pattern, kind in patterns:
         for match in re.finditer(pattern, text, re.I):
             result.append(RelationMention(
