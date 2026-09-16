@@ -1,8 +1,9 @@
 """Deterministic communicative cognition primitives.
 
-This module deliberately contains no language model dependency.  Experiment 1
+This module deliberately contains no language model dependency. Experiment 1
 asks whether the same epistemic state can lead to different communicative acts
-when the communicative objective changes.
+when the communicative objective changes. Experiment 2 holds the objective
+constant and varies controlled recipient context.
 """
 from __future__ import annotations
 
@@ -27,6 +28,12 @@ class CommunicativeAct(str, Enum):
     EXPLAIN_UNCERTAINTY = "explain_uncertainty"
     REQUEST_CLARIFICATION = "request_clarification"
     REPORT_LIMITATION_WITH_PARTIAL_RESULT = "report_limitation_with_partial_result"
+
+
+class RecipientRole(str, Enum):
+    OPERATOR = "operator"
+    DECISION_MAKER = "decision_maker"
+    LEARNER = "learner"
 
 
 @dataclass(frozen=True)
@@ -56,6 +63,8 @@ class CognitiveCommunicationState:
 class InteractionContext:
     recipient: str | None = None
     objective: CommunicativeObjective | None = None
+    recipient_role: RecipientRole | None = None
+    interaction_constraints: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -72,6 +81,7 @@ class CommunicativeDecision:
     uncertainty: tuple[str, ...]
     requested_action: str | None
     verification_requirement: str | None
+    recipient_role: RecipientRole | None = None
 
 
 class EpistemicPreservationError(AssertionError):
@@ -84,7 +94,7 @@ def select_communicative_act(
 ) -> CommunicativeDecision:
     """Select an act from cognitive + epistemic + interaction state only.
 
-    No prose generation occurs here.  The selector is intentionally explicit
+    No prose generation occurs here. The selector is intentionally explicit
     so that its behavior can be measured and later replaced by a learned
     mechanism if experiments justify one.
     """
@@ -93,10 +103,10 @@ def select_communicative_act(
         return _decision(state, context, CommunicativeAct.REQUEST_CLARIFICATION, (), (), None)
 
     if objective is CommunicativeObjective.INFORM:
-        selected = CommunicativeAct.REPORT_CURRENT_STATE
+        selected = _inform_act_for_recipient(context)
         claims = _supported_claims(state)
         omitted = tuple(h.hypothesis_id for h in state.hypotheses if h.hypothesis_id not in claims)
-        return _decision(state, context, selected, claims, omitted, None)
+        return _decision(state, context, selected, claims, omitted, _recipient_action(selected))
 
     if objective is CommunicativeObjective.INVESTIGATE:
         selected = CommunicativeAct.PROPOSE_DISCRIMINATING_TEST
@@ -137,6 +147,29 @@ def assert_epistemic_preservation(state: CognitiveCommunicationState, decision: 
             raise EpistemicPreservationError(f"supported claim {claim_id} was unnecessarily weakened to unknown")
 
 
+def _inform_act_for_recipient(context: InteractionContext) -> CommunicativeAct:
+    """Controlled recipient adaptation for Experiment 2.
+
+    The role is deliberately small and explicit. This exposes whether recipient
+    context can affect act selection before any learned recipient policy exists.
+    """
+    if context.recipient_role is RecipientRole.DECISION_MAKER:
+        return CommunicativeAct.SUPPORT_DECISION_UNDER_UNCERTAINTY
+    if context.recipient_role is RecipientRole.LEARNER:
+        return CommunicativeAct.EXPLAIN_UNCERTAINTY
+    return CommunicativeAct.REPORT_CURRENT_STATE
+
+
+def _recipient_action(act: CommunicativeAct) -> str | None:
+    if act is CommunicativeAct.REPORT_CURRENT_STATE:
+        return "review the current evidence and unresolved state"
+    if act is CommunicativeAct.SUPPORT_DECISION_UNDER_UNCERTAINTY:
+        return "choose a reversible mitigation or investigation while preserving uncertainty"
+    if act is CommunicativeAct.EXPLAIN_UNCERTAINTY:
+        return "explain why the evidence supports candidates without establishing a root cause"
+    return None
+
+
 def _supported_claims(state: CognitiveCommunicationState) -> tuple[str, ...]:
     return tuple(h.hypothesis_id for h in state.hypotheses if h.evidence_strength in {"strong", "moderate"})
 
@@ -174,6 +207,7 @@ def _decision(
         uncertainty=state.uncertainty,
         requested_action=requested_action,
         verification_requirement=verification,
+        recipient_role=context.recipient_role,
     )
 
 
