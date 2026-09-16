@@ -20,7 +20,7 @@ class CommunicativeAct(str, Enum):
     REPORT_CURRENT_STATE = "report_current_state"
     PROPOSE_DISCRIMINATING_TEST = "propose_discriminating_test"
     SUPPORT_DECISION_UNDER_UNCERTAINTY = "support_decision_under_uncertainty"
-    EXPLAIN_UNCERTAINTY = "explain_uncERTAINTY"
+    EXPLAIN_UNCERTAINTY = "explain_uncertainty"
     REQUEST_CLARIFICATION = "request_clarification"
     REPORT_LIMITATION_WITH_PARTIAL_RESULT = "report_limitation_with_partial_result"
 
