@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+import runpy
 
 from cognitia.adaptive_open_research import AdaptiveOpenResearch
 from cognitia.environment import EnvironmentObservation
@@ -140,10 +141,6 @@ def main() -> None:
     for record in records:
         by_class.setdefault(record["expected_structural_class"], []).append(record)
 
-    # The measured action category is the information-need kind produced by
-    # the controller, not SearchAction.purpose: planner purpose is often the
-    # generic label "direct evidence" and therefore cannot discriminate the
-    # adaptive transition.
     same_class_consistency = {
         key: len({item["second_action"]["information_need_kind"] for item in values}) == 1
         for key, values in by_class.items()
@@ -183,6 +180,15 @@ def main() -> None:
         "interpretation_boundary": "The experiment tests transfer of the existing evidence-conditioned mechanism, not learning. The controller still contains researcher-authored deterministic routing rules. If distinct structural states collapse to the same information-need kind, that is evidence about the current controller's resolution, not evidence that the states are cognitively equivalent.",
         "next_discriminator": "Use the observed structural signatures to design an experience-conditioned experiment in which an actual consequence changes a later held-out action, with an experience-absent control and no scenario-specific routing rule.",
     }
+
+    # Keep the new discriminator inside the established CI entrypoint so the
+    # pull-request workflow executes it before merge. The nested record is
+    # preserved in the existing research artifact for durable provenance.
+    namespace = runpy.run_path("tests/ci/abstraction_adversarial_stability.py")
+    namespace["main"]()
+    adversarial_path = Path(".ci/abstraction-adversarial-stability.json")
+    record["abstraction_adversarial_stability"] = json.loads(adversarial_path.read_text(encoding="utf-8"))
+
     output = Path(".ci/structural-transfer-research.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
