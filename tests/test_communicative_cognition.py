@@ -2,7 +2,8 @@ from cognitia.communicative_cognition import (
     CommunicativeAct, CommunicativeObjective, CognitiveCommunicationState,
     CommunicationRepresentation, EpistemicPreservationError, HypothesisState,
     InteractionContext, RecipientRole, assert_epistemic_preservation,
-    assert_projection_preservation, project_communication, select_communicative_act,
+    assert_observable_evidence_recovery, assert_projection_preservation,
+    project_communication, select_communicative_act,
 )
 
 
@@ -87,9 +88,10 @@ def test_recipient_context_is_recorded_without_changing_cognitive_state():
 def test_surface_representations_preserve_the_same_communication_contract():
     state = unresolved_failure_state()
     decision = select_communicative_act(state, InteractionContext("operator", CommunicativeObjective.INFORM, recipient_role=RecipientRole.OPERATOR))
-    projections = [project_communication(decision, representation) for representation in CommunicationRepresentation]
+    representations = (CommunicationRepresentation.STRUCTURED, CommunicationRepresentation.CONCISE, CommunicationRepresentation.EXPLANATORY)
+    projections = [project_communication(decision, representation) for representation in representations]
     assert {projection.selected_act for projection in projections} == {decision.selected_act}
-    assert {projection.representation for projection in projections} == set(CommunicationRepresentation)
+    assert {projection.representation for projection in projections} == set(representations)
     for projection in projections:
         assert_projection_preservation(decision, projection)
         assert projection.verification_requirement == "required"
@@ -105,3 +107,25 @@ def test_surface_projection_does_not_invent_or_remove_epistemic_status():
     assert projection.epistemic_status == decision.epistemic_status
     assert all(status != "established" for _, status in projection.epistemic_status)
     assert_projection_preservation(decision, projection)
+
+
+def test_boundary_experiment_accepts_losslessly_referenced_evidence():
+    state = unresolved_failure_state()
+    decision = select_communicative_act(state, InteractionContext("operator", CommunicativeObjective.INFORM, recipient_role=RecipientRole.OPERATOR))
+    projection = project_communication(decision, CommunicationRepresentation.COMPACT_REFERENCED)
+    assert "evidence:E1" not in projection.payload
+    assert "evidence_ref:E1" in projection.payload
+    assert_projection_preservation(decision, projection)
+    assert_observable_evidence_recovery(decision, projection)
+
+
+def test_boundary_experiment_rejects_silent_evidence_omission():
+    state = unresolved_failure_state()
+    decision = select_communicative_act(state, InteractionContext("operator", CommunicativeObjective.INFORM, recipient_role=RecipientRole.OPERATOR))
+    projection = project_communication(decision, CommunicationRepresentation.CONCISE)
+    assert "evidence:E1" not in projection.payload
+    try:
+        assert_observable_evidence_recovery(decision, projection)
+    except EpistemicPreservationError:
+        return
+    raise AssertionError("silent evidence omission was not rejected")
