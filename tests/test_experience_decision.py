@@ -27,7 +27,7 @@ def test_refuted_epistemic_outcome_counts_as_discrepancy_even_when_text_matches(
     assert item.discrepancy is True
 
 
-def test_confirmed_experience_can_change_candidate_selection():
+def test_confirmed_experience_influences_candidate_score():
     problem = "database outage queue stall"
     actions = ResearchSearchPlanner().plan(problem, max_actions=2).actions
     baseline = ExperienceAwareActionSelector().select(problem, actions, ExperienceLedger())
@@ -36,18 +36,31 @@ def test_confirmed_experience_can_change_candidate_selection():
         actions,
         ExperienceLedger((make_experience("x", EpistemicOutcome.CONFIRMED, problem),)),
     )
-    assert experienced.selected.action.query.objective != baseline.selected.action.query.objective
+    assert experienced.selected.score > baseline.selected.score
+    assert experienced.selected.relevant_experience_ids == ("x",)
+    assert "confirmed" in experienced.selected.rationale
 
 
-def test_refuted_experience_can_defeat_prior_positive_influence():
+def test_refuted_experience_reduces_positive_influence_without_forcing_a_different_action():
     problem = "database outage queue stall"
     actions = ResearchSearchPlanner().plan(problem, max_actions=2).actions
-    ledger = ExperienceLedger(
-        (
+    positive = ExperienceAwareActionSelector().select(
+        problem,
+        actions,
+        ExperienceLedger((make_experience("positive", EpistemicOutcome.CONFIRMED, problem),)),
+    )
+    contradicted = ExperienceAwareActionSelector().select(
+        problem,
+        actions,
+        ExperienceLedger((
             make_experience("positive", EpistemicOutcome.CONFIRMED, problem),
             make_experience("negative-1", EpistemicOutcome.REFUTED, problem),
             make_experience("negative-2", EpistemicOutcome.REFUTED, problem),
-        )
+        )),
     )
-    decision = ExperienceAwareActionSelector().select(problem, actions, ledger)
-    assert decision.selected.action.query.objective == actions[1].query.objective
+    positive_scores = {item.action.query.objective: item.score for item in positive.candidates}
+    contradicted_scores = {item.action.query.objective: item.score for item in contradicted.candidates}
+    assert any(contradicted_scores[key] < positive_scores[key] for key in positive_scores)
+    assert "negative-1" in contradicted.selected.relevant_experience_ids
+    assert "negative-2" in contradicted.selected.relevant_experience_ids
+    assert "refuted" in contradicted.selected.rationale
