@@ -2,9 +2,7 @@
 
 ## Status
 
-**Protocol implemented; structural-transfer CI observation pending.**
-
-This status is intentionally not a capability claim. The experiment must be executed and its artifact inspected before interpretation.
+**Structural-transfer experiment executed; result is partial transfer evidence, not learning evidence.**
 
 ## Purpose
 
@@ -32,33 +30,60 @@ The repository must distinguish implementation mechanisms from evidence that the
 
 ## Structural-transfer experiment
 
-`tests/ci/structural_transfer_research.py` runs the existing `AdaptiveOpenResearch` controller against held-out questions with structurally paired evidence states:
+`tests/ci/structural_transfer_research.py` runs the existing `AdaptiveOpenResearch` controller against held-out questions with paired evidence-state structures:
 
-- supported claim;
-- conflicting claims;
-- uncertain claim;
-- no usable claim.
+- one supported candidate claim;
+- two candidate claims with opposite polarity;
+- one uncertain claim;
+- no extracted claim.
 
-Surface questions differ within each structural pair. The controller, round budget, acquisition limits, and extraction limits remain fixed. No question-specific action mapping is encoded.
+Surface questions differ within each pair. The controller, round budget, acquisition limits, and extraction limits remain fixed. No question-specific action mapping is encoded.
 
-The experiment records the first evidence state and the actual second action, information need, provenance, and parent action. It compares the observed abstract action-purpose category across held-out questions rather than prescribing a concrete query.
+The experiment records the observed first-state structural signature and the actual second information need/action, including provenance and parent linkage.
+
+### 2026-09-16 observation
+
+The structural-transfer workflow executed successfully. Unit tests also passed on the experiment head, but those are engineering evidence only.
+
+Observed information-need kinds:
+
+- supported → `independent_evidence`;
+- opposite-polarity two-claim state → `independent_evidence`;
+- uncertain → `independent_evidence`;
+- no extracted claim → `evidence_acquisition`.
+
+Within every paired structural condition, the same abstract information-need kind appeared across the changed surface questions. This is evidence that the current controller's evidence-conditioned transition is reproducible across these held-out question pairs.
+
+However, several structurally different states collapsed to the same `independent_evidence` category. In particular, the two opposite-polarity claims were not recognized as a conflict by the current claim-clustering layer (`conflict=false` in the observed state). Therefore the experiment does **not** establish that the controller represents those distinctions at the level needed for differentiated action selection.
+
+The experiment also exposed an instrumentation lesson: `SearchAction.purpose` was `direct evidence` across all cases and therefore was not a useful discriminator. The research measurement was corrected to inspect the actual `ResearchInformationNeed.kind` and the preceding evidence-state signature.
 
 ### Interpretation boundary
 
-A consistent action category across changed questions would be evidence that the existing evidence-conditioned mechanism transfers across those held-out states. A failure to transfer would be evidence against that hypothesis. Neither result establishes learning because the current routing logic remains researcher-authored.
+The result supports a narrower statement:
 
-## Next discriminator
+> The existing researcher-authored evidence-conditioned research mechanism transferred the same information-need category across changed questions for each tested structural pair.
 
-The next experiment after structural transfer is experience-conditioned future behavior:
+It does not establish learned cognition. The routing rules are explicitly implemented, and distinct evidence states can still collapse to the same action category.
 
-1. run a problem and record action + expected consequence;
-2. expose the actual consequence;
-3. update the cognitive state through an explicit experience record;
-4. present a new held-out problem where that experience could matter;
-5. compare behavior against an experience-absent control;
-6. repeat with a changed surface problem.
+## Next discriminator: experience-conditioned future behavior
 
-The experiment must establish that the experience, rather than a scenario-specific rule, accounts for the behavioral change before calling the result learning.
+The next experiment should now use the new `Experience` substrate rather than adding another isolated capability:
+
+1. expose a pre-action cognitive state;
+2. select and record an action without a scenario-specific experience rule;
+3. record an expected consequence;
+4. expose an independently controlled actual consequence;
+5. record discrepancy and update state through `Experience`;
+6. present a new held-out problem where the prior consequence could be relevant;
+7. compare against an experience-absent control;
+8. repeat with changed surface details.
+
+The critical observation is whether prior experience changes later behavior in a way that cannot be explained by the existing static routing rules.
+
+Only that kind of result begins to address:
+
+`experience → changed future behavior`.
 
 ## Research standard
 
