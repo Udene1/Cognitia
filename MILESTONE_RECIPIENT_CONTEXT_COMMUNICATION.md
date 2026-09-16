@@ -2,7 +2,7 @@
 
 ## Status
 
-**Experiment 2 implementation prepared; CI validation pending.**
+**Experiment 2 implementation validated by CI.**
 
 ## Research question
 
@@ -24,9 +24,9 @@ and
 communication = action selection conditioned by cognitive + interaction state
 ```
 
-## Controlled result target
+## Controlled result
 
-For the unresolved controlled state and objective `INFORM`:
+For the unresolved controlled state and objective `INFORM`, CI observed:
 
 ```text
 OPERATOR
@@ -39,26 +39,66 @@ LEARNER
     → EXPLAIN_UNCERTAINTY
 ```
 
-The same unresolved uncertainty and verification requirement must remain present across all three decisions.
+The same unresolved uncertainty and verification requirement remained present across the decisions.
 
-## Implementation
+## CI evidence
 
-The communication state now records a small explicit `RecipientRole` and `InteractionContext`. The selector uses that controlled context to choose the communicative act. This is deliberately deterministic and inspectable.
+PR #9: `Experiment 2: recipient-context-conditioned communication`
 
-The implementation does not claim a learned recipient model.
+GitHub Actions run: **35058177100**
 
-## Evidence required before milestone completion
+The `test` job collected **195 tests** and completed with:
 
-CI must demonstrate:
+```text
+195 passed, 1 warning in 0.97s
+```
 
-- all existing tests still execute;
-- the new recipient-context tests observe the predicted act differences;
-- epistemic-preservation checks continue to pass;
-- the recipient context is retained in the structured decision;
-- the existing cognitive-transfer path remains operational.
+The communication test module contained **8 tests**, all passed. The warning was an existing `PytestCollectionWarning` for `TestResult` and did not fail the run.
 
-The exact observed CI behavior will be appended after the run rather than inferred from code inspection.
+The `cognitive-transfer` job also completed successfully. It restored prior cognitive state, continued through transfer, persistence, discovery, evidence reasoning, language, and answer-construction stages, and uploaded the answer-core diagnostics artifact successfully.
 
-## Next step if validated
+## What Cognitia did
 
-Hold the selected act fixed and introduce representation/surface projection. Test whether different representations preserve the same communicative act, claims, evidence, uncertainty, and verification requirement.
+The important observation is behavioral rather than merely CI status. With the cognitive state and `INFORM` objective held constant, changing only the explicit recipient role changed the selected communicative action.
+
+The decision record retained the recipient role, state identity, uncertainty, and verification requirement. Epistemic-preservation checks continued to reject unsupported upgrades.
+
+This supports the narrower proposition that the current communication layer can condition communicative action selection on an explicit interaction-context variable.
+
+## Interpretation
+
+This is not evidence of a learned recipient model. The recipient-role mapping is explicitly implemented and exists to expose the capability for controlled research.
+
+The result does not establish general audience adaptation, arbitrary context handling, natural-language adaptation, or consequence-based communication learning.
+
+## Evidence boundary
+
+Established by this milestone:
+
+- recipient context can be represented separately from cognitive state;
+- recipient context can influence communicative-act selection in the tested cases;
+- epistemic commitments can remain preserved while that selection changes;
+- the communication layer coexists with the existing cognitive-transfer path.
+
+Not established:
+
+- learned recipient modeling;
+- general audience adaptation;
+- open-ended context sensitivity;
+- natural-language surface adaptation;
+- communication consequence learning.
+
+## Next experiment
+
+Hold the selected communicative act fixed and vary the representation/surface used to express it.
+
+Test whether different representations preserve:
+
+- the communicative act;
+- claim identity;
+- evidence identity;
+- uncertainty;
+- epistemic status;
+- verification requirements.
+
+Only after representation preservation is experimentally exposed should communication consequences become the learning signal.
