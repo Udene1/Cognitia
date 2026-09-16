@@ -1,8 +1,9 @@
 """Inspectable communication consequence and adaptation primitives.
 
 This module deliberately implements a small deterministic policy learner so
-Experiment 4 can measure whether observed communication consequences can alter
-future act selection. It does not alter the underlying epistemic state.
+communication experiments can measure whether observed consequences alter
+future act selection and generalize across structurally related states.
+It does not alter the underlying epistemic state.
 """
 from __future__ import annotations
 
@@ -43,11 +44,22 @@ class CommunicationPolicyState:
     scores: tuple[tuple[str, float], ...] = ()
 
     def score(self, act: CommunicativeAct) -> float:
-        return dict(self.scores).get(act.value, 0.0)
+        """Return the legacy aggregate score for an act across contexts."""
+        prefix = f"act|{act.value}|"
+        return sum(value for key, value in self.scores if key.startswith(prefix))
+
+    def score_for(self, objective: str, recipient_role: str | None, act: CommunicativeAct) -> float:
+        return dict(self.scores).get(_policy_key(objective, recipient_role, act), 0.0)
 
 
 class CommunicationPolicy:
-    """A minimal stateful policy whose only input is recorded experience."""
+    """A minimal stateful policy whose input is recorded experience.
+
+    Learning is keyed by interaction structure (objective + recipient role),
+    not by exact cognitive-state identity. This makes held-out state transfer
+    observable while preventing one experience from globally changing every
+    communication context.
+    """
 
     def __init__(self, state: CommunicationPolicyState | None = None) -> None:
         self._scores = dict(state.scores if state else ())
@@ -72,9 +84,8 @@ class CommunicationPolicy:
         if consequence.selected_act is not decision.selected_act:
             raise ValueError("consequence is not attached to the selected act")
         before = dict(self._scores)
-        self._scores[consequence.selected_act.value] = (
-            self._scores.get(consequence.selected_act.value, 0.0) + consequence.signal
-        )
+        key = _policy_key(decision.objective.value, decision.recipient_role.value if decision.recipient_role else None, consequence.selected_act)
+        self._scores[key] = self._scores.get(key, 0.0) + consequence.signal
         revision = tuple(
             sorted(
                 (act, self._scores.get(act, 0.0) - before.get(act, 0.0))
@@ -101,9 +112,11 @@ class CommunicationPolicy:
         candidates = decision.candidate_acts
         if not candidates:
             return decision
+        objective = decision.objective.value
+        recipient_role = decision.recipient_role.value if decision.recipient_role else None
         selected = max(
             candidates,
-            key=lambda act: (self._scores.get(act.value, 0.0), -candidates.index(act)),
+            key=lambda act: (self._scores.get(_policy_key(objective, recipient_role, act), 0.0), -candidates.index(act)),
         )
         if selected is decision.selected_act:
             return decision
@@ -142,6 +155,10 @@ class CommunicationPolicy:
             raise EpistemicPreservationError("adaptation changed epistemic status")
         if adapted.verification_requirement != baseline.verification_requirement:
             raise EpistemicPreservationError("adaptation changed verification requirement")
+
+
+def _policy_key(objective: str, recipient_role: str | None, act: CommunicativeAct) -> str:
+    return f"act|{act.value}|objective:{objective}|recipient:{recipient_role or 'unspecified'}"
 
 
 def policy_state_delta(before: CommunicationPolicyState, after: CommunicationPolicyState) -> tuple[tuple[str, float], ...]:
