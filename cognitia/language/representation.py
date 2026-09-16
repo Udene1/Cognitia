@@ -137,21 +137,20 @@ def _entities(text: str) -> tuple[EntityMention, ...]:
 def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], negation: tuple[str, ...], attribution: tuple[str, ...]) -> tuple[RelationMention, ...]:
     result: list[RelationMention] = []
 
-    # Candidate causal constructions are normalized to the same relation family.
-    # They remain confidence="candidate" because linguistic extraction is not truth.
     causal_patterns: Sequence[tuple[str, str, str]] = (
         (r"Why did (?P<effect>.+?)\s+(?:stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s+(?:after|following)\s+(?P<cause>.+?)[?!.]?$", "caused", "why-after"),
         (r"What caused (?P<effect>.+?)\s+(?:to\s+)?(?P<verb>stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s*[?!.]?$", "caused", "what-caused"),
         (r"(?P<effect>.+?)\s+(?:stalled|stopped|failed|changed|declined|rose|fell|collapsed)\s+because\s+(?P<cause>.+?)[?!.]?$", "caused", "because"),
         (r"(?P<cause>.+?)\s+(?:caused|led to|resulted in|triggered)\s+(?P<effect>.+?)[?!.]?$", "caused", "explicit-causal"),
     )
-    for pattern, predicate, _construction in causal_patterns:
+    for pattern, predicate, construction in causal_patterns:
         for match in re.finditer(pattern, text, re.I):
             effect = match.group("effect").strip(" ,.")
-            cause = match.group("cause").strip(" ,.")
-            # For explicit-causal wording the first capture is the cause; normalize
-            # all forms to cause -> effect regardless of surface order.
-            if _construction == "explicit-causal":
+            cause = match.groupdict().get("cause")
+            if cause is None:
+                cause = "<unknown-cause>"
+            cause = cause.strip(" ,.")
+            if construction == "explicit-causal":
                 cause, effect = effect, cause
             result.append(RelationMention(
                 subject=cause,
