@@ -32,17 +32,29 @@ assert episodes[0].outcome.kind == "positive"
 assert len(events) == 1
 assert events[0].payload["knowledge_id"] == items[0].id
 
-assert len(candidates) == 1
-assert candidates[0]["candidate_id"] == "restart-proof-candidate"
-assert candidates[0]["state"] == "held"
-assert candidates[0]["candidate"]["code_artifact"] == "restart-proof-artifact"
-assert candidates[0]["candidate"]["executable_rehydration_required"] is True
-assert len(evaluations) == 1
-assert evaluations[0]["regression"] == 0.1
-assert evaluations[0]["reason"] == "hold before promotion"
-assert len(builds) == 1
-assert builds[0]["build_id"] == "restart-proof-build"
-assert builds[0]["capabilities"][0]["status"] == "held"
+# The durable journal is append-only and intentionally survives across CI
+# runs. Validate the restart-proof records specifically rather than assuming
+# the restored journal contains no older lifecycle records.
+restart_candidates = tuple(
+    item for item in candidates if item.get("candidate_id") == "restart-proof-candidate"
+)
+restart_evaluations = tuple(
+    item for item in evaluations if item.get("candidate_id") == "restart-proof-candidate"
+)
+restart_builds = tuple(
+    item for item in builds if item.get("build_id") == "restart-proof-build"
+)
+
+assert len(restart_candidates) == 1
+assert restart_candidates[0]["state"] == "held"
+assert restart_candidates[0]["candidate"]["code_artifact"] == "restart-proof-artifact"
+assert restart_candidates[0]["candidate"]["executable_rehydration_required"] is True
+assert len(restart_evaluations) == 1
+assert restart_evaluations[0]["regression"] == 0.1
+assert restart_evaluations[0]["reason"] == "hold before promotion"
+assert len(restart_builds) == 1
+assert restart_builds[0]["build_id"] == "restart-proof-build"
+assert restart_builds[0]["capabilities"][0]["status"] == "held"
 
 print("RECOVERED_KNOWLEDGE: group_by_reduce")
 print("RECOVERED_EXPERIENCE: persist_learning -> positive")
