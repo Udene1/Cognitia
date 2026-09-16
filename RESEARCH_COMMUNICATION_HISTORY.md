@@ -1,7 +1,5 @@
 # Communication Research History
 
-## Purpose
-
 This document preserves the evidence trail by which Cognitia's communication research direction was reached. It records observations, hypotheses, experiments, results, and the reasoning for subsequent changes. It is intentionally historical: later architecture must not be written backward as though it was known in advance.
 
 ---
@@ -122,17 +120,58 @@ A deterministic `assert_projection_preservation` check compares the projection a
 
 No LLM is involved in projection or preservation evaluation.
 
-### Current implementation evidence
+### CI result — 2026-09-16
 
-The tests now exercise all three representations from the same unresolved state and selected `REPORT_CURRENT_STATE` act. They require each projection to retain the same act, claim `H1`, evidence `E1`, uncertainty, and required verification. A separate explanatory projection test confirms that the projection cannot invent an `established` status.
+PR #10 (`Experiment 3: representation-preserving communication`) was exercised by workflow run **35058802223**. The ordinary `test` job collected **197 tests** and finished with **196 passed, 1 failed, 1 warning**.
 
-CI evidence for Experiment 3 is intentionally **pending**. The implementation result must not be recorded as a successful experiment until CI observes the behavior.
+The failure is a **communication-research failure**, not a syntax/build/infrastructure failure. The failing test was:
 
-### Research boundary
+```text
+test_surface_representations_preserve_the_same_communication_contract
+```
 
-This experiment does not yet establish arbitrary natural-language semantic equivalence. It establishes a testable separation between communicative action and representation, with an explicit invariant that can fail visibly.
+The test selected `REPORT_CURRENT_STATE` for an unresolved state and projected the same decision into `STRUCTURED`, `CONCISE`, and `EXPLANATORY` representations. The projection contract required each representation to preserve the same selected act, claims, evidence, uncertainty, and verification requirement.
 
-If CI validates the invariant, the next discriminating step is to introduce observable communication consequences. Only then should we test whether experience can modify communicative policy rather than merely executing developer-authored mappings.
+The observed concise projection payload was:
+
+```text
+act:report_current_state
+claims:H1
+uncertainty:no root cause is established;H1 and H2 remain discriminable candidates
+verification:required
+```
+
+It omitted:
+
+```text
+evidence:E1
+```
+
+The assertion therefore failed on the concrete observation:
+
+```text
+AssertionError: assert 'evidence:E1' in (...)
+```
+
+This is behaviorally meaningful because the representation surface changed the observable communication contract: the underlying decision contained evidence identity `E1`, but the concise representation did not expose it. The preservation checker did not silently repair the projection; CI exposed the loss.
+
+The cognitive-transfer job in the same workflow completed successfully across the existing durable-state, transfer, discovery, evidence, language, and answer-construction stages. Therefore this result does **not** show that Cognitia's broader cognitive-transfer system failed. It isolates the observed failure to Experiment 3's communication representation layer.
+
+### Research interpretation
+
+Experiment 3 currently **fails its preservation hypothesis** for the tested concise representation.
+
+The result does not establish that concise communication is impossible. It establishes that the current concise projection implementation cannot be considered representation-preserving under the contract we defined. In particular, shortening the payload currently removes evidence identity even though evidence is part of the contract that the experiment explicitly requires to survive representation changes.
+
+This failure must remain visible as research evidence until the hypothesis is revised and a subsequent experiment demonstrates what actually changes. The failing test should not be weakened merely to make CI green.
+
+### Evidence boundary
+
+The result is narrow. It demonstrates one concrete semantic-loss mode in one explicit representation pipeline. It does not establish general natural-language communication failure, learned communication failure, or failure of the broader cognitive architecture.
+
+### Next research question
+
+Before repairing the implementation blindly, determine whether the preservation contract is correctly defined for all three representation classes. If evidence identity is a required commitment across surfaces, the next implementation hypothesis is that every representation must retain a machine-observable evidence reference even when its human-facing organization is concise. A subsequent CI run must then test whether that revised hypothesis preserves the contract without silently dropping or inventing evidence.
 
 ---
 
