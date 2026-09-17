@@ -1,0 +1,30 @@
+name: communication-consequence-supported-domain
+
+on:
+  pull_request:
+    paths:
+      - "tests/ci/communication_consequence_supported_domain.py"
+      - "cognitia/**"
+      - ".github/workflows/communication-consequence-supported-domain.yml"
+      - "RESEARCH_COMMUNICATION_CONSEQUENCE_SUPPORTED_DOMAIN.md"
+  push:
+    branches:
+      - main
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e .
+      - name: Run supported-domain experiment
+        run: python tests/ci/communication_consequence_supported_domain.py
+      - name: Record research artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: communication-consequence-supported-domain
+          path: .ci/communication-consequence-supported-domain.json
