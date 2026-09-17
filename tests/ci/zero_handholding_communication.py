@@ -20,26 +20,8 @@ def _state() -> ResearchSynthesis:
         status="candidate_multi_factor_synthesis",
         thesis="The available evidence supports multiple candidate contributors, but does not establish one explanation.",
         factors=(
-            FactorExplanation(
-                factor="resource exhaustion",
-                contribution="resource exhaustion contributed to the failure",
-                claim_ids=("C1",),
-                source_count=1,
-                origin_count=1,
-                confidence="candidate",
-                domain="systemic",
-                origin_ids=("O1",),
-            ),
-            FactorExplanation(
-                factor="dependency failure",
-                contribution="dependency failure contributed to the failure",
-                claim_ids=("C2",),
-                source_count=1,
-                origin_count=1,
-                confidence="candidate_uncertain",
-                domain="systemic",
-                origin_ids=("O2",),
-            ),
+            FactorExplanation("resource exhaustion", "resource exhaustion contributed to the failure", ("C1",), 1, 1, "candidate", "systemic", ("O1",)),
+            FactorExplanation("dependency failure", "dependency failure contributed to the failure", ("C2",), 1, 1, "candidate_uncertain", "systemic", ("O2",)),
         ),
         complementary_domains=("systemic",),
         competing_explanations=(),
@@ -79,8 +61,11 @@ def main() -> None:
             }
         )
 
-    payloads = [json.dumps(item, sort_keys=True) for item in outputs]
-    distinct_outputs = len(set(payloads))
+    communication_payloads = [
+        json.dumps({key: value for key, value in item.items() if key != "context"}, sort_keys=True)
+        for item in outputs
+    ]
+    distinct_communication_outputs = len(set(communication_payloads))
     artifact = {
         "experiment": "zero_handholding_communication_exposure",
         "question": "Does the current communication-facing answering core change its output when the same cognitive state is exposed under different objectives and recipients?",
@@ -91,8 +76,8 @@ def main() -> None:
             "consequence_interpretation": None,
         },
         "contexts": [item["context"] for item in outputs],
-        "distinct_outputs": distinct_outputs,
-        "outputs_identical": distinct_outputs == 1,
+        "distinct_communication_outputs": distinct_communication_outputs,
+        "communication_outputs_identical": distinct_communication_outputs == 1,
         "observations": [
             "The same ResearchSynthesis was supplied for every interaction.",
             "Objective and recipient were recorded as interaction context but were not injected into AnsweringCore as instructions or expected behavior.",
@@ -100,10 +85,10 @@ def main() -> None:
         ],
         "results": outputs,
         "interpretation": (
-            "The current answering path produced identical communication content across the exposed contexts. "
+            "The current answering path produced identical communication content and epistemic fields across the exposed contexts. "
             "This is an observed capability boundary, not a failure patched by the experiment."
-            if distinct_outputs == 1
-            else "The current answering path produced different outputs across the exposed contexts; inspect the differences before adding communication machinery."
+            if distinct_communication_outputs == 1
+            else "The current answering path produced different communication content or epistemic fields across the exposed contexts; inspect the differences before adding communication machinery."
         ),
     }
 
