@@ -34,9 +34,9 @@ def apply_experience_to_state(
     """Let retrieved experience affect active state while retaining provenance.
 
     The transition never writes experience into knowledge, self-model, or
-    other/world-model collections. A non-refuted experience is represented in
-    the dedicated experience collection and remains epistemically unconfirmed.
-    A refuted experience is retained as experience plus an uncertainty marker.
+    other/world-model collections. Every transferred experience remains an
+    unresolved input to epistemic processing; a refuted one additionally
+    preserves its refutation explicitly.
     """
     experience_ids = list(state.experience_ids)
     uncertainty = list(state.uncertainty)
@@ -45,13 +45,15 @@ def apply_experience_to_state(
 
     if experience.observed.outcome is EpistemicOutcome.REFUTED:
         marker = f"refuted-experience:{experience.experience_id}"
-        if marker not in uncertainty:
-            uncertainty.append(marker)
         source = ClaimSource.UNCERTAINTY
-        reason = "Refuted experience remains identifiable as experience and contributes uncertainty rather than knowledge."
+        reason = "Refuted experience remains identifiable as experience and contributes explicit uncertainty rather than knowledge."
     else:
+        marker = f"unverified-experience:{experience.experience_id}"
         source = ClaimSource.EXPERIENCE
-        reason = "Experience changes active state through its own provenance channel and remains subject to epistemic testing."
+        reason = "Experience changes active state through its own provenance channel and remains unresolved until epistemically tested."
+
+    if marker not in uncertainty:
+        uncertainty.append(marker)
 
     resulting = CognitiveState(
         problem=state.problem,
