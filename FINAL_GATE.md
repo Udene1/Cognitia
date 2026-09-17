@@ -1,0 +1,1 @@
+Final gate: run CI, inspect research artifact, record interpretation, then merge or revise. Do not proceed to epistemic integration until this boundary is resolved.
