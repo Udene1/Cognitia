@@ -1,0 +1,1 @@
+Next: connect the provenance-preserving state transition to the existing epistemic operation-selection path. Do not merge experience into knowledge. Test a new structurally related problem and inspect whether the system distinguishes experience-derived hypotheses, knowledge, self-model, other/world-model information, and uncertainty while still performing epistemic investigation.
