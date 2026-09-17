@@ -10,7 +10,11 @@ from cognitia.experience_decision import ExperienceAwareActionSelector
 from cognitia.research_search import ResearchSearchPlanner
 
 
-def make_experience(experience_id: str, outcome: EpistemicOutcome, problem: str = "database outage queue stall") -> Experience:
+def make_experience(
+    experience_id: str,
+    outcome: EpistemicOutcome,
+    problem: str = "The database outage caused the queue to stall.",
+) -> Experience:
     return Experience(
         experience_id=experience_id,
         prior_state=CognitiveState(problem, hypothesis_ids=("h",)),
@@ -28,7 +32,7 @@ def test_refuted_epistemic_outcome_counts_as_discrepancy_even_when_text_matches(
 
 
 def test_confirmed_experience_influences_candidate_score():
-    problem = "database outage queue stall"
+    problem = "The database outage caused the queue to stall."
     actions = ResearchSearchPlanner().plan(problem, max_actions=2).actions
     baseline = ExperienceAwareActionSelector().select(problem, actions, ExperienceLedger())
     experienced = ExperienceAwareActionSelector().select(
@@ -42,7 +46,7 @@ def test_confirmed_experience_influences_candidate_score():
 
 
 def test_refuted_experience_reduces_positive_influence_without_forcing_a_different_action():
-    problem = "database outage queue stall"
+    problem = "The database outage caused the queue to stall."
     actions = ResearchSearchPlanner().plan(problem, max_actions=2).actions
     positive = ExperienceAwareActionSelector().select(
         problem,
