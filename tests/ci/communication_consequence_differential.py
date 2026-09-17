@@ -57,12 +57,14 @@ def _initial_synthesis() -> ResearchSynthesis:
 
 
 def _observation(recipient: str, payload: str) -> EnvironmentObservation:
-    return EnvironmentObservation.create(
-        environment="independent_recipient_environment",
-        kind="recipient_consequence",
-        subject=f"communication:{recipient}",
+    return EnvironmentObservation(
+        id=f"communication:{recipient}",
+        source="independent_recipient_environment",
         content=payload,
-        metadata={"recipient": recipient, "experiment": "communication_consequence_differential"},
+        metadata=(
+            ("recipient", recipient),
+            ("experiment", "communication_consequence_differential"),
+        ),
     )
 
 
