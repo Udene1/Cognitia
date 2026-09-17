@@ -9,6 +9,7 @@ from .candidate_pipeline import CandidateEvaluation, benchmark_candidate, evalua
 from .candidate_registry import CandidateRecord, CandidateRegistry, CandidateState
 from .capability_acquisition import AcquisitionMode, CapabilityCandidate, Operation, ReasoningTrace, compose_capability, construct_capability, learn_procedure
 from .cognitive_history import CognitiveHistory, EvaluationRecord, PromotionEvent, evaluation_from_comparison
+from .communication_provenance import CapabilityOrigin, CapabilityProvenance, CommunicationProvenanceRegistry
 from .engineering import EngineeringEvent, EngineeringExperienceRecorder, engineering_memory
 from .durable import DurableEvent, SQLiteCognitiveJournal
 from .durable_cognition import DurableCognitiveLedger
@@ -55,7 +56,7 @@ __all__ = [
     "AcquisitionProposal", "AcquisitionStage", "CapabilityRequirement", "propose_capability_acquisition", "AcquisitionDecision", "AcquisitionPlan", "CapabilityAcquisitionEngine", "CapabilityGapSignal",
     "BalancingEngine", "BalancingProposal", "BalancingStrategy", "RepairPolicy", "AcquisitionMode", "CapabilityCandidate", "Operation", "ReasoningTrace", "compose_capability", "construct_capability", "learn_procedure", "CandidateEvaluation", "benchmark_candidate", "evaluate_candidate", "CandidateRecord", "CandidateRegistry", "CandidateState",
     "BenchmarkCase", "BenchmarkOutcome", "BenchmarkResult", "BenchmarkSuite", "BuildComparison", "CaseResult", "compare_builds", "CapabilityRecord", "CognitiveBuild", "create_build", "CognitiveHistory", "EvaluationRecord", "PromotionEvent", "evaluation_from_comparison",
-    "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory", "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger", "DiscoveryWorkspace", "ExplanationAssessment", "ExplanationStatus", "ExplanatoryGap", "HypothesisCandidate", "Observation", "unresolved_observations",
+    "CapabilityOrigin", "CapabilityProvenance", "CommunicationProvenanceRegistry", "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory", "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger", "DiscoveryWorkspace", "ExplanationAssessment", "ExplanationStatus", "ExplanatoryGap", "HypothesisCandidate", "Observation", "unresolved_observations",
     "DiscoveryArtifact", "DurableDiscoveryArtifacts", "DiscoveryIR", "DiscoveryIRBuilder", "IRNode", "IRRelation", "ExplanatoryModel", "HypothesisAlternative", "HypothesisSpaceBuilder", "HypothesisTransform", "Prediction", "PredictionDeriver", "DiscriminatingExperimentSelector", "Experiment", "DiscoverySearchEngine", "SearchBudget", "SearchCandidate", "normalized_entropy",
     "ModelElement", "ModelRelation", "RelationKind", "StructuralAlternative", "StructuralHypothesisBuilder", "StructuralModel", "DiscoveryInvestigator", "InvestigationResult", "DiscoveryFailure", "DiscoveryFailureLearner", "DiscoveryKnowledgePromoter", "KnowledgePromotionDecision",
     "EnvironmentObservation", "EnvironmentSource", "NullEnvironmentSource", "InvestigationTask", "ParallelInvestigationResult", "ParallelInvestigator", "SearchQuery", "WebEnvironmentSource", "WebSearchProvider", "EvidenceAssessment", "WebEvidenceEvaluator",
