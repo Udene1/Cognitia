@@ -122,14 +122,11 @@ def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], 
     causal_question = bool(re.match(r"\s*(?:why did|what caused)\b", stripped, re.I))
 
     causal_patterns: Sequence[tuple[str, str, str]] = (
-        # Preserve the whole effect phrase. The representation should not
-        # require a domain-specific verb vocabulary to identify the causal form.
-        (r"Why did (?P<effect>.+?)\s+(?:after|following)\s+(?P<cause>.+?)[?!.]?$", "caused", "why-after"),
-        (r"What caused (?P<effect>.+?)[?!.]?$", "caused", "what-caused"),
-        # A causal question may explicitly name the cause/effect direction.
-        (r"Why did (?P<cause>.+?)\s+(?:cause|caused|lead to|result in|trigger)\s+(?P<effect>.+?)[?!.]?$", "caused", "why-explicit-causal"),
-        (r"(?P<effect>.+?)\s+(?:stalled|stopped|failed|changed|declined|rose|fell|collapsed)\s+because\s+(?P<cause>.+?)[?!.]?$", "caused", "because"),
-        (r"(?P<cause>.+?)\s+(?:caused|led to|resulted in|triggered)\s+(?P<effect>.+?)[?!.]?$", "caused", "explicit-causal"),
+        (r"Why did (?P<effect>[^.?!]+?)\s+(?:after|following)\s+(?P<cause>[^.?!]+)[?!.]?$", "caused", "why-after"),
+        (r"What caused (?P<effect>[^.?!]+?)[?!.]?$", "caused", "what-caused"),
+        (r"Why did (?P<cause>[^.?!]+?)\s+(?:cause|caused|lead to|result in|trigger)\s+(?P<effect>[^.?!]+?)[?!.]?$", "caused", "why-explicit-causal"),
+        (r"(?P<effect>[^.?!]+?)\s+(?:stalled|stopped|failed|changed|declined|rose|fell|collapsed)\s+because\s+(?P<cause>[^.?!]+)[?!.]?$", "caused", "because"),
+        (r"(?P<cause>[^.?!]+?)\s+(?:caused|led to|resulted in|triggered)\s+(?P<effect>[^.?!]+?)[?!.]?$", "caused", "explicit-causal"),
     )
     for pattern, predicate, construction in causal_patterns:
         if causal_question and construction == "explicit-causal":
@@ -144,9 +141,9 @@ def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], 
 
     if not causal_question:
         patterns: Sequence[tuple[str, str]] = (
-            (r"(?P<s>.+?)\s+(?P<p>is|was|were|are|became|changed|depends on)\s+(?P<o>.+)", "state"),
-            (r"(?P<s>.+?)\s+(?P<p>caused|causes|contributed to|led to|resulted in|weakened|undermined|destabilized|reduced|increased|affected|influenced|triggered|prevented|enabled|limited|strengthened)\s+(?P<o>.+)", "causal"),
-            (r"(?P<s>.+?)\s+(?P<p>defined|redefined|measured|replaced|preceded|followed|supports|contradicts|explains|distinguishes)\s+(?P<o>.+)", "relational"),
+            (r"(?P<s>[^.?!]+?)\s+(?P<p>is|was|were|are|became|changed|depends on)\s+(?P<o>[^.?!]+)", "state"),
+            (r"(?P<s>[^.?!]+?)\s+(?P<p>caused|causes|contributed to|led to|resulted in|weakened|undermined|destabilized|reduced|increased|affected|influenced|triggered|prevented|enabled|limited|strengthened)\s+(?P<o>[^.?!]+)", "causal"),
+            (r"(?P<s>[^.?!]+?)\s+(?P<p>defined|redefined|measured|replaced|preceded|followed|supports|contradicts|explains|distinguishes)\s+(?P<o>[^.?!]+)", "relational"),
         )
         for pattern, kind in patterns:
             for match in re.finditer(pattern, text, re.I):
