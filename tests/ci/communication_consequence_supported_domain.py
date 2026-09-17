@@ -76,17 +76,19 @@ def _case(baseline: OpenResearchResult, synthesis: ResearchSynthesis, case: str,
 
 
 def main() -> None:
+    # These literal terms are already present in the existing `systemic`
+    # taxonomy; the Cognitia implementation is not modified by this experiment.
     baseline_documents = (
         EnvironmentObservation(
             id="baseline:resource",
             source="baseline_source:resource",
-            content="Systemic resource exhaustion caused the service collapse.",
+            content="Internal resource exhaustion caused the service collapse.",
             reliability=0.7,
         ),
         EnvironmentObservation(
             id="baseline:dependency",
             source="baseline_source:dependency",
-            content="Systemic dependency failure caused the service collapse.",
+            content="Internal dependency failure caused the service collapse.",
             reliability=0.7,
         ),
     )
@@ -97,7 +99,7 @@ def main() -> None:
         baseline,
         synthesis,
         "discriminating-causal-consequence",
-        "The systemic dependency timeout caused the service collapse; CPU remained below its limit during the same interval.",
+        "The internal dependency timeout caused the service collapse; CPU remained below its limit during the same interval.",
     )
     unrelated = _case(
         baseline,
@@ -134,6 +136,7 @@ def main() -> None:
         },
         "observations": [
             "The existing domain taxonomy was not modified.",
+            "The fixture uses only literal terms already present in the existing systemic bucket.",
             "Recipient consequences entered as raw EnvironmentObservation objects.",
             "The existing claim extraction, genealogy, augmentation, synthesis, and answer revision paths were used.",
             "No relevance or desired state change was supplied to Cognitia.",
