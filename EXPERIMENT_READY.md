@@ -1,0 +1,1 @@
+The provenance-preserving experience-to-state boundary is implemented on this research branch. CI should evaluate the deterministic checks before any merge. If green, inspect the artifact and merge before building the next epistemic integration experiment.
