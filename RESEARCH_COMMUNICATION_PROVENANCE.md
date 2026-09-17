@@ -90,6 +90,26 @@ Cognitia itself extracts a reusable communication consequence from interaction,
 changes a future communication decision, and survives a held-out transfer test
 without the target adaptation being supplied by the experiment.
 
+## Verification record
+
+PR #49 merged the provenance implementation at commit
+`25058b0045d6d8f43968bd78fffe713fe83b6bd7`.
+
+The PR's dedicated structural-transfer workflow completed all four jobs
+successfully. This verified repository integration and the existing research
+workflow surface, but it did **not** directly execute the new provenance unit
+test file. That distinction is retained rather than treating unrelated green
+checks as proof of the new test coverage.
+
+A follow-up verification workflow was therefore added to run exactly:
+
+```text
+python -m pytest -q tests/test_communication_provenance.py
+```
+
+Its result must be recorded here before the provenance work is considered fully
+verified.
+
 ## Research history rule
 
 For every future communication capability, record:
