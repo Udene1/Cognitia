@@ -1,0 +1,26 @@
+name: experience-state-transition-boundary-research
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install --upgrade pip && pip install -e . pytest
+      - name: Run experience state-transition boundary audit
+        run: python tests/ci/experience-state-transition-boundary.py
+      - name: Upload research record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experience-state-transition-boundary
+          path: .ci/experience-state-transition-boundary.json
+          if-no-files-found: error
