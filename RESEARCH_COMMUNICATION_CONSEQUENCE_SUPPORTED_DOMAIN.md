@@ -10,28 +10,35 @@ If the existing synthesis domain taxonomy can already recognize the factor vocab
 
 ## Experiment
 
-The domain taxonomy is unchanged. A baseline research state uses existing `systemic` vocabulary. Two raw recipient consequences are then processed through the ordinary evidence path:
-
-1. a causal dependency-timeout consequence that also uses existing `systemic` vocabulary;
-2. an unrelated dashboard consequence.
-
-The same baseline state is used for both. No consequence is labeled as relevant, and no expected interpretation, state transition, answer, or communication-learning rule is supplied.
+The domain taxonomy was unchanged. The first run used the word `systemic` in the fixture vocabulary because the experiment was intended to exercise the existing systemic domain. Two raw recipient consequences were then processed through the ordinary evidence path.
 
 ## Zero-handholding boundary
 
-Cognitia receives raw environment observations. Relevance is not supplied. The experiment observes whatever claim extraction, synthesis, and answer revision actually occur.
+Cognitia received raw environment observations. Relevance was not supplied. The experiment observed whatever claim extraction, synthesis, and answer revision actually occurred.
 
-## Result
+## Result — first run
 
-To be completed from CI output. The artifact is `.ci/communication-consequence-supported-domain.json`.
+CI run `35251089061` completed successfully, but the intended supported-domain condition was **not actually established**. The baseline and both augmented cases produced zero synthesis factors and `insufficient_explanatory_structure`.
+
+The reason is visible in the existing implementation: the `systemic` domain bucket does not contain the literal term `systemic`; its configured terms include words such as `internal`, `external`, `institution`, and related phrases. Therefore the fixture's `systemic ...` wording still resolved to domain `other` and was discarded by factorization.
+
+This is an experiment-design failure discovered by the run, not a cognitive result. It is preserved here rather than silently corrected.
+
+The first run therefore establishes only that:
+
+- claim extraction succeeded for both consequence types;
+- the current domain taxonomy is lexical and narrower than its domain names suggest;
+- the intended evidence-integration experiment remained confounded by factorization.
 
 ## Interpretation boundary
 
-The experiment is only useful if the baseline actually produces non-`other` factors. If it does not, the experiment remains confounded by synthesis factorization and that failure must be recorded rather than repaired here.
+No conclusion about communication consequence evidence integration can be drawn from the first run. The next step is to rerun the same experiment using a literal term already present in the existing `systemic` bucket, without changing the Cognitia implementation. That isolates the synthesis boundary rather than repairing it.
 
 ## Provenance
 
-- consequence interpretation: `observed` until the actual result is inspected
+- consequence interpretation: `observed`
+- claim extraction: `observed`
+- supported-domain setup: `failed in first fixture because domain vocabulary was misread`
 - evidence integration: `unknown`
 - communication adaptation: `unknown`
 - autonomous communication learning: `unknown`
@@ -39,4 +46,4 @@ The experiment is only useful if the baseline actually produces non-`other` fact
 
 ## Next hypothesis
 
-Derive only from the actual result. Do not add a communication-specific interpreter merely to obtain an answer change.
+Using an existing lexical term such as `internal` should allow the factorization boundary to be exercised. The next run must determine whether that actually happens; no expected synthesis or answer change is supplied.
