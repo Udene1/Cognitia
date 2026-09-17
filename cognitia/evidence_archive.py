@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .environment import EnvironmentObservation
 from .observation import Observation
 from .memory.observation_sqlite import SQLiteObservationStore
 
@@ -29,6 +30,20 @@ class DurableEvidenceArchive:
 
     def retain(self, observation: Observation) -> Observation:
         return self._store.ingest(observation)
+
+    def retain_environment(self, observation: EnvironmentObservation) -> Observation:
+        """Archive an acquired environment observation without validating it."""
+        metadata = tuple(observation.metadata) + (("reliability", str(observation.reliability)),)
+        retained = Observation.create(
+            environment=observation.source,
+            kind="environment_observation",
+            subject=observation.id,
+            payload=observation.content,
+            source_uri=dict(observation.metadata).get("url"),
+            parent_ids=(),
+            metadata=metadata,
+        )
+        return self.retain(retained)
 
     def retain_many(self, observations: tuple[Observation, ...]) -> tuple[Observation, ...]:
         return tuple(self.retain(observation) for observation in observations)
