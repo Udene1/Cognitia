@@ -1,0 +1,1 @@
+Checkpoint: experience-to-state provenance boundary implemented. Pending CI and research inspection before merge.
