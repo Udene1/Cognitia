@@ -1,0 +1,31 @@
+name: Structural Experience Relevance
+
+on:
+  pull_request:
+    paths:
+      - 'cognitia/experience_decision.py'
+      - 'cognitia/structural_experience.py'
+      - 'cognitia/language/**'
+      - 'tests/test_experience_decision.py'
+      - 'tests/ci/structural_experience_relevance.py'
+      - '.github/workflows/structural-experience-relevance.yml'
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: python -m pip install --upgrade pip && pip install -e .
+      - name: Run structural experience relevance experiment
+        run: python tests/ci/structural_experience_relevance.py | tee /tmp/structural-experience-relevance.json
+      - name: Run focused experience decision tests
+        run: pytest tests/test_experience_decision.py
+      - name: Upload research record
+        uses: actions/upload-artifact@v4
+        with:
+          name: structural-experience-relevance
+          path: .ci/structural-experience-relevance.json
