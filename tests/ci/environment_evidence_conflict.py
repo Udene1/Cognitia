@@ -15,17 +15,25 @@ OBSERVATIONS = (
         id="environment:service-a",
         source="independent_monitor_a",
         content="The service was healthy after restart.",
-        observed_at="2026-09-17T17:00:00Z",
-        metadata={"source_kind": "monitor"},
+        metadata=(
+            ("source_kind", "monitor"),
+            ("observed_at", "2026-09-17T17:00:00Z"),
+        ),
     ),
     EnvironmentObservation(
         id="environment:service-b",
         source="independent_monitor_b",
         content="The service was not healthy after restart.",
-        observed_at="2026-09-17T17:00:05Z",
-        metadata={"source_kind": "monitor"},
+        metadata=(
+            ("source_kind", "monitor"),
+            ("observed_at", "2026-09-17T17:00:05Z"),
+        ),
     ),
 )
+
+
+def observed_at(observation: EnvironmentObservation) -> str:
+    return dict(observation.metadata)["observed_at"]
 
 
 def main() -> None:
@@ -51,6 +59,7 @@ def main() -> None:
             domain="systemic",
         )
         for item in matched:
+            observation = next(obs for obs in OBSERVATIONS if obs.id == item.observation_id)
             evidence.append(EvidenceRecord(
                 id=f"evidence:{item.observation_id}",
                 claim_id=claim.id,
@@ -64,7 +73,7 @@ def main() -> None:
                 supports=item.polarity != "negative",
                 lineage=SourceLineage(source_id=item.source),
                 observation_id=item.observation_id,
-                measured_at=next(obs.observed_at for obs in OBSERVATIONS if obs.id == item.observation_id),
+                measured_at=observed_at(observation),
                 method="document_claim_extraction",
             ))
 
