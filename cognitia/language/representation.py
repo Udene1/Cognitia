@@ -9,13 +9,11 @@ from dataclasses import dataclass
 import re
 from typing import Sequence
 
-
 @dataclass(frozen=True)
 class TextToken:
     text: str
     start: int
     end: int
-
 
 @dataclass(frozen=True)
 class EntityMention:
@@ -24,7 +22,6 @@ class EntityMention:
     end: int
     kind: str = "unknown"
 
-
 @dataclass(frozen=True)
 class EventMention:
     predicate: str
@@ -32,7 +29,6 @@ class EventMention:
     temporal_markers: tuple[str, ...] = ()
     modality: str = "asserted"
     confidence: str = "candidate"
-
 
 @dataclass(frozen=True)
 class RelationMention:
@@ -46,11 +42,9 @@ class RelationMention:
     temporal_markers: tuple[str, ...] = ()
     attribution: str | None = None
 
-
 @dataclass(frozen=True)
 class SemanticProposition:
     """A candidate proposition independent of its original wording."""
-
     text: str
     relation_indexes: tuple[int, ...]
     event_indexes: tuple[int, ...]
@@ -61,11 +55,9 @@ class SemanticProposition:
     attribution: str | None = None
     confidence: str = "candidate"
 
-
 @dataclass(frozen=True)
 class AnswerContract:
     """What a question appears to require from an answer."""
-
     answer_kind: str
     requested_length: str
     needs_explanation: bool
@@ -75,7 +67,6 @@ class AnswerContract:
     stopping_conditions: tuple[str, ...] = ()
     bare_answer_sufficient: bool = False
     answer_rationale: str = ""
-
 
 @dataclass(frozen=True)
 class LanguageFrame:
@@ -95,7 +86,6 @@ class LanguageFrame:
     attribution_markers: tuple[str, ...] = ()
     causal_relations: tuple[RelationMention, ...] = ()
 
-
 def build_language_frame(text: str, *, question: bool | None = None) -> LanguageFrame:
     normalized = " ".join(text.split())
     tokens = tuple(TextToken(m.group(0), m.start(), m.end()) for m in re.finditer(r"\S+", text))
@@ -109,17 +99,10 @@ def build_language_frame(text: str, *, question: bool | None = None) -> Language
     causal = tuple(r for r in relations if r.kind == "causal")
     semantic = _semantic_propositions(normalized, entities, relations, events, temporal, modality, negation, attribution)
     is_question = text.strip().endswith("?") if question is None else question
-    return LanguageFrame(
-        text=text, tokens=tokens, entities=entities, relations=relations, events=events,
-        propositions=(normalized,) if normalized else (), modality=modality, temporal_markers=temporal,
-        negated=bool(negation), question=is_question, semantic_propositions=semantic,
-        negation_markers=negation, attribution_markers=attribution, causal_relations=causal,
-    )
-
+    return LanguageFrame(text=text, tokens=tokens, entities=entities, relations=relations, events=events, propositions=(normalized,) if normalized else (), modality=modality, temporal_markers=temporal, negated=bool(negation), question=is_question, semantic_propositions=semantic, negation_markers=negation, attribution_markers=attribution, causal_relations=causal)
 
 def _markers(text: str, pattern: str) -> tuple[str, ...]:
     return tuple(dict.fromkeys(m.group(0).lower() if not m.group(0).isdigit() else m.group(0) for m in re.finditer(pattern, text, re.I)))
-
 
 def _entities(text: str) -> tuple[EntityMention, ...]:
     stop = {"The", "A", "An", "In", "On", "At", "By", "For", "From", "To", "And", "Or", "But", "What", "Why", "How", "Is", "Are", "Was", "Were", "Some"}
@@ -133,15 +116,18 @@ def _entities(text: str) -> tuple[EntityMention, ...]:
         mentions.append(EntityMention(match.group(0), match.start(), match.end(), kind))
     return tuple(mentions)
 
-
 def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], negation: tuple[str, ...], attribution: tuple[str, ...]) -> tuple[RelationMention, ...]:
     result: list[RelationMention] = []
     stripped = text.strip()
     causal_question = bool(re.match(r"\s*(?:why did|what caused)\b", stripped, re.I))
 
     causal_patterns: Sequence[tuple[str, str, str]] = (
-        (r"Why did (?P<effect>.+?)\s+(?:stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s+(?:after|following)\s+(?P<cause>.+?)[?!.]?$", "caused", "why-after"),
-        (r"What caused (?P<effect>.+?)\s+(?:to\s+)?(?P<verb>stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s*[?!.]?$", "caused", "what-caused"),
+        # Preserve the whole effect phrase. The representation should not
+        # require a domain-specific verb vocabulary to identify the causal form.
+        (r"Why did (?P<effect>.+?)\s+(?:after|following)\s+(?P<cause>.+?)[?!.]?$", "caused", "why-after"),
+        (r"What caused (?P<effect>.+?)[?!.]?$", "caused", "what-caused"),
+        # A causal question may explicitly name the cause/effect direction.
+        (r"Why did (?P<cause>.+?)\s+(?:cause|caused|lead to|result in|trigger)\s+(?P<effect>.+?)[?!.]?$", "caused", "why-explicit-causal"),
         (r"(?P<effect>.+?)\s+(?:stalled|stopped|failed|changed|declined|rose|fell|collapsed)\s+because\s+(?P<cause>.+?)[?!.]?$", "caused", "because"),
         (r"(?P<cause>.+?)\s+(?:caused|led to|resulted in|triggered)\s+(?P<effect>.+?)[?!.]?$", "caused", "explicit-causal"),
     )
@@ -154,17 +140,7 @@ def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], 
             if cause is None:
                 cause = "<unknown-cause>"
             cause = cause.strip(" ,.")
-            result.append(RelationMention(
-                subject=cause,
-                predicate=predicate,
-                object=effect,
-                kind="causal",
-                confidence="candidate",
-                polarity="negative" if negation else "positive",
-                modality="uncertain" if modality else "asserted",
-                temporal_markers=temporal,
-                attribution=attribution[-1] if attribution else None,
-            ))
+            result.append(RelationMention(subject=cause, predicate=predicate, object=effect, kind="causal", confidence="candidate", polarity="negative" if negation else "positive", modality="uncertain" if modality else "asserted", temporal_markers=temporal, attribution=attribution[-1] if attribution else None))
 
     if not causal_question:
         patterns: Sequence[tuple[str, str]] = (
@@ -174,12 +150,7 @@ def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], 
         )
         for pattern, kind in patterns:
             for match in re.finditer(pattern, text, re.I):
-                result.append(RelationMention(
-                    subject=match.group("s").strip(" ,."), predicate=match.group("p").lower(),
-                    object=match.group("o").strip(" ."), kind=kind, confidence="candidate",
-                    polarity="negative" if negation else "positive", modality="uncertain" if modality else "asserted",
-                    temporal_markers=temporal, attribution=attribution[-1] if attribution else None,
-                ))
+                result.append(RelationMention(subject=match.group("s").strip(" ,."), predicate=match.group("p").lower(), object=match.group("o").strip(" ."), kind=kind, confidence="candidate", polarity="negative" if negation else "positive", modality="uncertain" if modality else "asserted", temporal_markers=temporal, attribution=attribution[-1] if attribution else None))
 
     unique: list[RelationMention] = []
     seen: set[tuple[str, str, str | None, str]] = set()
@@ -190,14 +161,7 @@ def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], 
             unique.append(relation)
     return tuple(unique)
 
-
 def _semantic_propositions(text, entities, relations, events, temporal, modality, negation, attribution):
     if not text:
         return ()
-    return (SemanticProposition(
-        text=text, relation_indexes=tuple(range(len(relations))), event_indexes=tuple(range(len(events))),
-        entity_mentions=tuple(entity.text for entity in entities), polarity="negative" if negation else "positive",
-        modality="uncertain" if modality else "asserted", temporal_markers=temporal,
-        attribution=attribution[-1] if attribution else None,
-        confidence="candidate_uncertain" if modality else "candidate",
-    ),)
+    return (SemanticProposition(text=text, relation_indexes=tuple(range(len(relations))), event_indexes=tuple(range(len(events))), entity_mentions=tuple(entity.text for entity in entities), polarity="negative" if negation else "positive", modality="uncertain" if modality else "asserted", temporal_markers=temporal, attribution=attribution[-1] if attribution else None, confidence="candidate_uncertain" if modality else "candidate"),)
