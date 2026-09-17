@@ -28,16 +28,24 @@ The experiment supplies no:
 
 The purpose is to expose the current system to a communication demand and observe what it already does.
 
+## Actual result
+
+CI run `35248225402` completed successfully. The research artifact reported `distinct_communication_outputs: 1` across all four contexts.
+
+The answer content, reasoning, evidence, uncertainty, limitations, verification actions, and recorded epistemic fields were identical. Only the externally recorded context labels differed.
+
+Therefore the current `AnsweringCore` did not consume objective or recipient context in this exposure. This is a measured capability boundary, not evidence that context-conditioned communication exists.
+
 ## Evidence
 
 The CI-generated `.ci/zero-handholding-communication-exposure.json` artifact is the research evidence. CI success only establishes that the experiment executed.
 
-## Interpretation rule
+## Interpretation
 
-If outputs remain identical, that is an observed capability boundary: the current answering path is not consuming the exposed interaction context. We should not patch that result into adaptation.
+The result does not justify adding a hard-coded objective-to-act or recipient-to-style mapping. We have established that the current answering path can preserve epistemic structure, but its communication behavior is presently invariant to the interaction context exposed here.
 
-If outputs differ, inspect the actual differences before introducing any new communication abstraction.
+The next experiment should therefore introduce an actual interaction consequence only after Cognitia has selected its communication behavior. The consequence should be observed rather than encoded as a desired outcome. The experiment should then test whether Cognitia can connect that consequence back to the communication decision.
 
 ## Next boundary
 
-Only after this exposure result is inspected should we decide whether the next experiment should introduce an actual interaction consequence. If a consequence is introduced, the system must choose its communication behavior before the consequence is supplied, and the consequence must be observed rather than encoded as the expected outcome.
+Do not patch this experiment into context adaptation. Build the smallest real consequence boundary and let the existing system fail if it cannot select, execute, or learn from communication.
