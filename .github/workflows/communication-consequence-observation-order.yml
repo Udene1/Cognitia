@@ -1,0 +1,28 @@
+name: communication-consequence-observation-order
+
+on:
+  pull_request:
+    paths:
+      - "tests/ci/communication_consequence_observation_order.py"
+      - ".github/workflows/communication-consequence-observation-order.yml"
+      - "cognitia/**"
+      - "pyproject.toml"
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e .
+      - name: Run observation ordering experiment
+        run: python tests/ci/communication_consequence_observation_order.py
+      - name: Record research artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: communication-consequence-observation-order
+          path: .ci/communication-consequence-observation-order.json
+          if-no-files-found: error
