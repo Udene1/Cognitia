@@ -53,28 +53,48 @@ The experiment therefore asks two observable questions:
 1. Does experience alter the upstream candidate/action evaluation on these states?
 2. Does the operation selector receive a different epistemic state/need or choose a different operation as a consequence?
 
-## Blindspot discriminator
+## Result — CI run 35235149707
 
-The strongest observation available from this experiment is:
+The experiment completed successfully and produced the research artifact. CI success is only the engineering gate; the observations below come from the emitted trajectory artifact/log.
 
-> experience can be active upstream while the current operation-selection mechanism remains governed by the current epistemic state rather than the stored experience.
+### Observed trajectory
 
-A changed operation would identify a new interaction boundary requiring further investigation. An unchanged operation would establish that the tested experience path does not currently close the new problem's epistemic state at operation choice.
+| Current state | Experience condition | Information need | Selected operation | Experience changed selected action? |
+|---|---|---|---|---|
+| Explicit freshness/current-status request | absent / confirmed / refuted | `external_evidence` | `external-search` | no |
+| Unresolved local uncertainty | absent / confirmed / refuted | `unresolved` | `inspect` | no |
+| Explicit computation | absent / confirmed / refuted | `computation` | `compute` | no |
 
-Neither result establishes general cognition or proves the absence of blindspots elsewhere.
+The operation trajectory was identical across the three experience conditions for every case. In the unresolved-local case, experience **did** reach the upstream action evaluator: the confirmed experience raised the direct-evidence candidate from `1.00` to `1.25`, while the refuted experience lowered it to `0.75`; the second candidate moved from `0.90` to `1.10` and `0.70` respectively. The selected action nevertheless remained the same.
 
-## Anti-handholding constraints
+For the explicit-freshness and computation cases, the stored experience was not structurally relevant to the generated candidates, so their candidate scores remained unchanged.
 
-- no expected operation is encoded;
-- no expected action is encoded;
-- no scenario-specific routing rule is added;
-- the existing information-need detector is used unchanged;
-- the existing operation selector is used unchanged;
-- the existing experience-aware action selector is used unchanged;
-- the artifact records the actual trajectory rather than converting the research hypothesis into a test assertion.
+Most importantly, the operation selector continued to derive its information need from the current state. The freshness case retained `external_evidence` with the explicit-freshness reason and selected `external-search`; the unresolved case retained `unresolved` and selected `inspect`; the computation case retained `computation` and selected `compute`.
 
-## Result status
+## Interpretation
 
-**Pending execution.**
+The result is evidence for a sharper boundary than the previous action experiment:
 
-The CI artifact, not workflow success, is the research result. After execution the artifact must be inspected, the actual result recorded here, and only then should the branch be merged and the next boundary selected.
+> In the current implemented path, experience can affect upstream candidate evaluation without closing or rewriting the new problem's information need, and the operation selector still acts on the current epistemic state.
+
+Therefore the tested experience path did **not** produce the hypothesized blindspot of preventing inspection/search/compute at the operation-selection layer.
+
+This strengthens the provisional blindspot result, but does not establish general resolution. The experiment did not test every possible route by which experience could enter cognition. In particular, it does not establish what would happen if experience were allowed to alter the information-need state itself, candidate generation, operation-option availability, or accumulated multi-experience evidence.
+
+## Blindspot status after this experiment
+
+**Provisionally resolved across the tested structural-transfer → action-evaluation → operation-selection boundary.**
+
+More precise statement:
+
+> A structurally related prior experience was able to influence upstream candidate evaluation in the tested unresolved case, but did not cause the new problem's information need to be treated as already settled and did not prevent the operation selector from choosing the operation indicated by the current state.
+
+The general blindspot question remains open outside this tested path.
+
+## Next boundary
+
+Do not immediately add an experience-to-operation mechanism. The evidence says the current architecture already preserves the epistemic boundary at operation selection.
+
+The next discriminating experiment should instead attack a different route: **candidate generation**. The question should be whether experience can prevent a necessary investigation candidate from being generated at all, because that would create a blindspot before scoring/selection and is not covered by the present result.
+
+That experiment should again be held-out, compare experience-absent/confirmed/refuted conditions, record the complete generated candidate set before scoring, and avoid encoding an expected candidate.
