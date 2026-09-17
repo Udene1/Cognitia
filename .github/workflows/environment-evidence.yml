@@ -1,0 +1,52 @@
+name: environment-evidence
+
+on:
+  pull_request:
+    paths:
+      - "cognitia/evidence_archive.py"
+      - "cognitia/repository_observation.py"
+      - "cognitia/observation.py"
+      - "cognitia/environment.py"
+      - "cognitia/memory/observation_sqlite.py"
+      - "tests/test_environment_evidence.py"
+      - ".github/workflows/environment-evidence.yml"
+  workflow_dispatch:
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e . pytest
+      - name: Run environment evidence boundary tests
+        run: python -m pytest tests/test_environment_evidence.py -q
+      - name: Record repository evidence
+        run: |
+          python - <<'PY'
+          import json
+          from cognitia.repository_observation import GitRepositoryObserver
+
+          observer = GitRepositoryObserver(".")
+          state = observer.observe_commit()
+          sources = observer.python_sources()
+          artifact = {
+              "experiment": "durable-environment-evidence-v1",
+              "commit": state.subject,
+              "tracked_file_count": dict(state.metadata)["tracked_file_count"],
+              "python_source_observations": len(sources),
+              "source_examples": [
+                  {
+                      "path": item.path,
+                      "language": item.language,
+                      "source_uri": item.observation.source_uri,
+                      "sha256": dict(item.observation.metadata)["sha256"],
+                  }
+                  for item in sources[:5]
+              ],
+              "interpretation": "Repository and source are retained as evidence with commit identity; no semantic conclusion is assigned by the observer.",
+          }
+          print(json.dumps(artifact, indent=2))
+          PY
