@@ -140,13 +140,18 @@ def _relations(text: str, temporal: tuple[str, ...], modality: tuple[str, ...], 
     causal_question = bool(re.match(r"\s*(?:why did|what caused)\b", stripped, re.I))
 
     causal_patterns: Sequence[tuple[str, str, str]] = (
-        (r"Why did (?P<effect>.+?)\s+(?:stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s+(?:after|following)\s+(?P<cause>.+?)[?!.]?$", "caused", "why-after"),
-        (r"What caused (?P<effect>.+?)\s+(?:to\s+)?(?P<verb>stall|stop|fail|change|decline|rise|fall|collapse|occur|happen|begin|end)\s*[?!.]?$", "caused", "what-caused"),
+        # The effect verb is intentionally broad here. The language layer
+        # records the relational form rather than requiring a growing list of
+        # domain-specific verbs (e.g. degrade, stall, fail).
+        (r"Why did (?P<effect>.+?)\s+(?:\S+(?:\s+\S+){0,3})\s+(?:after|following)\s+(?P<cause>.+?)[?!.]?$", "caused", "why-after"),
+        (r"What caused (?P<effect>.+?)\s+(?:to\s+)?(?P<verb>\S+)\s*[?!.]?$", "caused", "what-caused"),
         (r"(?P<effect>.+?)\s+(?:stalled|stopped|failed|changed|declined|rose|fell|collapsed)\s+because\s+(?P<cause>.+?)[?!.]?$", "caused", "because"),
         (r"(?P<cause>.+?)\s+(?:caused|led to|resulted in|triggered)\s+(?P<effect>.+?)[?!.]?$", "caused", "explicit-causal"),
     )
     for pattern, predicate, construction in causal_patterns:
-        if causal_question and construction == "explicit-causal":
+        # Explicit causal questions are still causal questions: preserve the
+        # directed relation when the question itself contains cause/caused.
+        if causal_question and construction == "explicit-causal" and not re.search(r"\b(?:cause|caused)\b", stripped, re.I):
             continue
         for match in re.finditer(pattern, text, re.I):
             effect = match.group("effect").strip(" ,.")
