@@ -33,6 +33,15 @@ class SQLiteObservationStore:
         self.close()
 
     def ingest(self, observation: Observation) -> Observation:
+        existing = self._connection.execute(
+            "SELECT * FROM observations WHERE id = ?", (observation.id,)
+        ).fetchone()
+        if existing is not None:
+            recovered = self._from_row(existing)
+            if recovered != observation:
+                raise ValueError(f"observation id collision: {observation.id}")
+            return observation
+
         with self._connection:
             self._connection.execute(
                 """
@@ -40,15 +49,6 @@ class SQLiteObservationStore:
                     id, environment, kind, subject, payload, source_uri,
                     observed_at, parent_ids_json, metadata_json
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    environment = excluded.environment,
-                    kind = excluded.kind,
-                    subject = excluded.subject,
-                    payload = excluded.payload,
-                    source_uri = excluded.source_uri,
-                    observed_at = excluded.observed_at,
-                    parent_ids_json = excluded.parent_ids_json,
-                    metadata_json = excluded.metadata_json
                 """,
                 (
                     observation.id,
