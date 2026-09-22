@@ -16,6 +16,8 @@ from urllib.request import Request, urlopen
 
 from cognitia.document_claims import DocumentClaimExtractor
 from cognitia.environment import EnvironmentObservation
+from cognitia.memory.observation_sqlite import SQLiteObservationStore
+from cognitia.observation import Observation
 
 
 DEFAULT_URL = "https://cashflow-os-silk.vercel.app/api/environment/observations"
@@ -39,8 +41,32 @@ def fetch_environment(url: str) -> dict:
 
 def main() -> None:
     url = os.environ.get("CASHFLOW_OBSERVATION_URL", DEFAULT_URL)
+    persistence_root = Path(os.environ.get("COGNITIA_PERSISTENCE_ROOT", ".ci/persistence"))
     payload = fetch_environment(url)
     observations = payload["observations"]
+
+    raw_observations = tuple(
+        Observation.create(
+            environment=str(item.get("source", "cashflow-os")),
+            kind=str(item.get("kind", "environment.observation")),
+            subject=str(item["id"]),
+            payload=json.dumps(item, ensure_ascii=False, sort_keys=True),
+            source_uri=url,
+            observed_at=str(item.get("observedAt")) if item.get("observedAt") is not None else None,
+            metadata=tuple(
+                (str(key), str(value))
+                for key, value in sorted((item.get("metadata") or {}).items())
+            ),
+        )
+        for item in observations
+    )
+
+    persistence_root.mkdir(parents=True, exist_ok=True)
+    observation_store_path = persistence_root / "observations.sqlite"
+    with SQLiteObservationStore(observation_store_path) as store:
+        for observation in raw_observations:
+            store.ingest(observation)
+        retained_count = len(store.all())
 
     cognitive_observations = tuple(
         EnvironmentObservation(
@@ -79,6 +105,8 @@ def main() -> None:
     print("CASHFLOW_ENVIRONMENT_OBSERVED")
     print(f"observation_count={len(observations)}")
     print(f"claim_count={len(extracted)}")
+    print(f"raw_observations_retained={len(raw_observations)}")
+    print(f"durable_observation_count={retained_count}")
     print(f"next_since={payload.get('nextSince')}")
     print(f"artifact={output}")
 
