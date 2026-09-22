@@ -247,7 +247,105 @@ Check protected capabilities
 
 **Regression is a promotion blocker, not a capability deletion command.** A useful new capability must be retained even when its first integration is harmful. Cognitia should attempt to balance capabilities, alter their interaction, or selectively integrate them before giving up on the candidate.
 
-## 12. New implementation roadmap
+## 12. Embodied sensory representation
+
+If Cognitia is placed in an environment through a body, sensory experience should be treated as another possible structural representation rather than as a special cognition subsystem.
+
+A camera image, audio stream, tactile measurement, proprioceptive signal, repository state, program execution result, or mathematical object may differ radically at the input level while still becoming an environmental representation that cognition can inspect, relate, remember, test, and act upon.
+
+The research question is:
+
+> **If Cognitia is placed in an environment through a body, can sensory experience become another structural representation that Cognitia can learn from, relate to existing knowledge, and use to improve its future behavior?**
+
+The architectural target is not merely object recognition. The stronger test is whether an unfamiliar sensory representation can enter the existing cognitive loop:
+
+```text
+environment
+    ↓
+sensory representation
+    ↓
+observation
+    ↓
+internal structure
+    ↓
+evidence / experience
+    ↓
+world + knowledge + self models
+    ↓
+hypothesis / information need
+    ↓
+action
+    ↓
+environmental consequence
+    ↓
+new observation
+```
+
+Vision, sound, touch, and other sensors should therefore be evaluated as observation channels. Cognitia should not require a hand-written semantic interpreter for each channel if its general cognitive machinery can discover useful structure from the resulting observations.
+
+The important boundary is whether sensory experience can become **usable cognition**, not whether Cognitia can be made to classify a preselected set of sensory inputs.
+
+## 13. Self-improvement levels
+
+Cognitia's long-term objective includes the ability to improve its own cognitive machinery while preserving epistemic discipline.
+
+### Level 1 — Knowledge improvement
+
+Cognitia acquires or revises knowledge from experience and evidence.
+
+### Level 2 — Procedure / usage improvement
+
+Cognitia improves how it selects, composes, or applies existing capabilities.
+
+### Level 3 — Capability acquisition
+
+Cognitia acquires a new reusable capability through composition, procedure learning, construction, or another justified mechanism.
+
+### Level 4 — Cognitive machinery improvement
+
+Cognitia changes parts of its own cognitive machinery.
+
+A Level 4 change is not merely changing stored knowledge or selecting a different existing procedure. The mechanism responsible for cognition itself is modified: for example, a reasoning component, representation mechanism, routing mechanism, memory mechanism, learning mechanism, or other cognitive subsystem.
+
+The change must remain a candidate until it is evaluated. Cognitia should preserve the prior cognitive build, construct the candidate change, test it against the triggering problem and protected capabilities, and record whether the modification actually improved behavior.
+
+### Level 5 — Repeated self-improvement with evaluation
+
+Cognitia can repeatedly improve that machinery while evaluating whether the changes actually improve its ability to achieve goals.
+
+The critical property is the loop, not a single self-modification:
+
+```text
+goal
+  ↓
+current cognitive build
+  ↓
+observe performance / failure
+  ↓
+identify cognitive limitation
+  ↓
+propose machinery change
+  ↓
+construct candidate cognitive build
+  ↓
+evaluate against goals + protected capabilities
+  ↓
+promote, reject, or revise
+  ↓
+new cognitive build
+  ↓
+repeat
+```
+
+Level 5 requires evidence that improvements are cumulative or at least adaptively selected over repeated cycles. A system that modifies itself repeatedly without measuring consequences has demonstrated self-modification, not self-improvement.
+
+The governing principle is:
+
+> **Cognitia must be able to change itself without losing the ability to determine whether the change actually made it better at achieving its goals.**
+
+This makes evaluation part of the self-improvement machinery itself.
+
+## 14. New implementation roadmap
 
 The following work is now a priority in the architecture:
 
@@ -279,6 +377,16 @@ The following work is now a priority in the architecture:
 - [ ] Persistent candidate registry
 - [ ] Automated capability synthesis/repair loop
 - [ ] Formal verification and sandbox execution for constructed code
+
+### Embodiment and self-improvement
+
+- [ ] Represent sensory channels through the existing observation/evidence boundary
+- [ ] Test whether unfamiliar sensory representations can yield reusable internal structure
+- [ ] Test sensory experience → consequence → experience → changed future behavior without hand-written expected outcomes
+- [ ] Establish measurable Level 1–3 improvement benchmarks
+- [ ] Construct a candidate Level 4 cognitive-machinery modification without mutating the active build
+- [ ] Evaluate candidate cognitive-machinery changes against triggering goals and protected capabilities
+- [ ] Establish repeated Level 5 self-improvement cycles with reproducible build history
 
 ### Long-term
 
