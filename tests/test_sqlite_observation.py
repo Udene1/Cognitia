@@ -30,3 +30,30 @@ def test_observation_can_be_retained_without_becoming_knowledge(tmp_path):
     with SQLiteObservationStore(path) as store:
         store.ingest(observation)
         assert store.all() == (observation,)
+
+
+
+def test_sqlite_observation_is_idempotent_and_rejects_identity_collisions(tmp_path):
+    path = tmp_path / "cognitia.sqlite3"
+    observation = Observation.create(
+        environment="cashflow-os", kind="lead.state", subject="lead-1", payload="raw record"
+    )
+
+    with SQLiteObservationStore(path) as store:
+        store.ingest(observation)
+        store.ingest(observation)
+        assert store.all() == (observation,)
+
+        collision = Observation(
+            id=observation.id,
+            environment=observation.environment,
+            kind=observation.kind,
+            subject=observation.subject,
+            payload="different raw record",
+        )
+        try:
+            store.ingest(collision)
+        except ValueError as error:
+            assert str(observation.id) in str(error)
+        else:
+            raise AssertionError("expected observation identity collision to fail")
