@@ -25,6 +25,7 @@ from .discovery_investigation import DiscoveryInvestigator, InvestigationResult
 from .discovery_failures import DiscoveryFailure, DiscoveryFailureLearner
 from .discovery_knowledge import DiscoveryKnowledgePromoter, KnowledgePromotionDecision
 from .environment import EnvironmentObservation, EnvironmentSource, NullEnvironmentSource
+from .environment_http import EnvironmentFeed, EnvironmentFeedProvider, HttpEnvironmentFeedProvider, HttpEnvironmentSource
 from .parallel_investigation import InvestigationTask, InvestigationResult as ParallelInvestigationResult, ParallelInvestigator
 from .web_evidence import EvidenceAssessment, WebEvidenceEvaluator
 from .web_search import SearchQuery, WebEnvironmentSource, WebSearchProvider
@@ -59,7 +60,7 @@ __all__ = [
     "CapabilityOrigin", "CapabilityProvenance", "CommunicationProvenanceRegistry", "EngineeringEvent", "EngineeringExperienceRecorder", "engineering_memory", "DurableEvent", "SQLiteCognitiveJournal", "DurableCognitiveLedger", "DiscoveryWorkspace", "ExplanationAssessment", "ExplanationStatus", "ExplanatoryGap", "HypothesisCandidate", "Observation", "unresolved_observations",
     "DiscoveryArtifact", "DurableDiscoveryArtifacts", "DiscoveryIR", "DiscoveryIRBuilder", "IRNode", "IRRelation", "ExplanatoryModel", "HypothesisAlternative", "HypothesisSpaceBuilder", "HypothesisTransform", "Prediction", "PredictionDeriver", "DiscriminatingExperimentSelector", "Experiment", "DiscoverySearchEngine", "SearchBudget", "SearchCandidate", "normalized_entropy",
     "ModelElement", "ModelRelation", "RelationKind", "StructuralAlternative", "StructuralHypothesisBuilder", "StructuralModel", "DiscoveryInvestigator", "InvestigationResult", "DiscoveryFailure", "DiscoveryFailureLearner", "DiscoveryKnowledgePromoter", "KnowledgePromotionDecision",
-    "EnvironmentObservation", "EnvironmentSource", "NullEnvironmentSource", "InvestigationTask", "ParallelInvestigationResult", "ParallelInvestigator", "SearchQuery", "WebEnvironmentSource", "WebSearchProvider", "EvidenceAssessment", "WebEvidenceEvaluator",
+    "EnvironmentObservation", "EnvironmentSource", "NullEnvironmentSource", "EnvironmentFeed", "EnvironmentFeedProvider", "HttpEnvironmentFeedProvider", "HttpEnvironmentSource", "InvestigationTask", "ParallelInvestigationResult", "ParallelInvestigator", "SearchQuery", "WebEnvironmentSource", "WebSearchProvider", "EvidenceAssessment", "WebEvidenceEvaluator",
     "Claim", "EvidenceRecord", "EvidenceSource", "SourceLineage", "EvidenceGraph", "EvidenceRelation", "EvidenceConvergenceEngine", "ConvergenceAssessment", "ModelConstraint", "ModelConsistencyChecker", "ModelCheckResult",
     "CognitiveStateReplayer", "RecoveredCognitiveState", "GitCommitObservation", "GitHistoryIngestor", "GitRepositoryObserver", "GitKnowledgeIngestor", "PersistentPatternLearner", "HypothesisSearchLearner", "SearchStrategy", "KnowledgeItem", "KnowledgeSource", "KnowledgeTest", "ValidatedKnowledgeStore",
     "TextToken", "EntityMention", "EventMention", "RelationMention", "LanguageFrame", "SemanticProposition", "QuestionAnalysis", "AnswerContract", "build_language_frame", "analyze_question", "AnswerAssessment", "AnswerContractPlanner", "AnswerPlan", "plan_answer",
