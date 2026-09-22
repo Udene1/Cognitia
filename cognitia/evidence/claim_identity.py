@@ -1,4 +1,4 @@
-""""Conservative identity matching for candidate claims.
+"""Conservative identity matching for candidate claims.
 
 Similarity alone is not truth. This layer asks whether two extracted
 statements plausibly describe the same proposition so evidence can be grouped
