@@ -1,0 +1,23 @@
+name: experience-operation-choice
+on:
+  push:
+    branches: [research/experience-operation-choice]
+  pull_request:
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install
+        run: python -m pip install --upgrade pip && pip install -e . pytest
+      - name: Run experiment
+        run: python tests/ci/experience_operation_choice.py
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experience-operation-choice
+          path: .ci/experience-operation-choice.json
+          if-no-files-found: error
