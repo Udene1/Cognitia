@@ -1,12 +1,6 @@
 name: environment-evidence-conflict
 
 on:
-  push:
-    paths:
-      - "tests/ci/environment_evidence_conflict.py"
-      - ".github/workflows/environment-evidence-conflict.yml"
-      - "cognitia/**"
-      - "pyproject.toml"
   pull_request:
     paths:
       - "tests/ci/environment_evidence_conflict.py"
