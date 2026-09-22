@@ -20,6 +20,8 @@ jobs:
 
   cognitive-transfer:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -157,6 +159,18 @@ jobs:
           path: .ci/cognitive-state.tar.gz
           if-no-files-found: error
           retention-days: 90
+      - name: Publish cognitive state to persistent state branch
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          cp .ci/cognitive-state.tar.gz /tmp/cognitive-state.tar.gz
+          git fetch --no-tags origin cognitia-state
+          git checkout cognitia-state
+          cp /tmp/cognitive-state.tar.gz cognitive-state.tar.gz
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cognitive-state.tar.gz
+          git diff --cached --quiet || git commit -m "chore: persist cognitive state from CI run"
+          git push origin HEAD:cognitia-state
       - name: Upload answer-core diagnostics
         if: always()
         uses: actions/upload-artifact@v4
