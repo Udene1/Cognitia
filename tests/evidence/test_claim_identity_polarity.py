@@ -1,4 +1,4 @@
-"from cognitia.document_claims import DocumentClaimExtractor
+from cognitia.document_claims import DocumentClaimExtractor
 from cognitia.environment import EnvironmentObservation
 from cognitia.evidence.claim_identity import ClaimIdentityMatcher
 
