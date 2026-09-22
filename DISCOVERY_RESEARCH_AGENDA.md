@@ -191,6 +191,54 @@ The existing knowledge, memory, hypothesis, verification, capability, failure-an
 
 In particular, durable cognitive state must be replayable into active cognition. A remembered hypothesis or capability outcome is useful only when a fresh process can reconstruct the state and use it in a subsequent decision.
 
+## Embodiment and self-improvement frontier
+
+The discovery program also needs to test whether cognition can operate across representations that do not originate as text, code, or explicitly structured symbolic inputs.
+
+A body introduces sensory experience into the same fundamental loop:
+
+```text
+environment
+→ sensor
+→ representation
+→ observation
+→ evidence / experience
+→ cognitive state
+→ action
+→ consequence
+→ observation
+```
+
+The question is not whether a perception module can be trained to recognize predefined objects. It is whether Cognitia can construct useful structure from an unfamiliar sensory representation, relate that structure to existing knowledge and experience, and use the consequences of action to change later behavior.
+
+A longer-term frontier follows from the existing capability-acquisition work: **self-improvement of the machinery that performs cognition**.
+
+The progression is:
+
+```text
+knowledge improvement
+→ procedure / usage improvement
+→ capability acquisition
+→ cognitive machinery improvement
+→ repeated self-improvement with evaluation
+```
+
+At Level 4, Cognitia changes part of its own cognitive machinery while preserving the prior build as a reproducible baseline.
+
+At Level 5, Cognitia repeatedly:
+
+```text
+observe performance
+→ detect cognitive limitation
+→ propose machinery change
+→ construct candidate build
+→ evaluate against goals and protected capabilities
+→ promote / reject / revise
+→ repeat
+```
+
+The key research constraint is that **self-modification must not be confused with self-improvement**. The system must retain an independent-enough evaluation process capable of determining whether a modification actually improves goal achievement.
+
 ## Next research attack
 
 The next difficult step is to remove more hand-written transformation mappings and make the canonical representation itself richer enough that useful transformations can operate on assumptions, variables, dependencies, constraints, predictions, and outcomes generically. Search should learn which transformations are useful from consequences, while behavioral verification and independent reproduction protect against seductive but wrong abstractions.
