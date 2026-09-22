@@ -15,15 +15,6 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: python -m pip install --upgrade pip && pip install -e . pytest
-      - name: Observe live Cashflow OS environment
-        run: python tests/ci/observe_cashflow_environment.py
-      - name: Upload Cashflow environment observation
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cashflow-environment-observation
-          path: .ci/cashflow-observation.json
-          if-no-files-found: error
       - name: Unit tests
         run: pytest
 
@@ -49,6 +40,15 @@ jobs:
           COGNITIA_STATE_ARCHIVE=.ci/cognitive-state.tar.gz COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/restore_ci_state.py
       - name: Verify runner-boundary cognitive state recovery
         run: COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/check_cross_run_state.py
+      - name: Observe live Cashflow OS environment
+        run: COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/observe_cashflow_environment.py
+      - name: Upload Cashflow environment observation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cashflow-environment-observation
+          path: .ci/cashflow-observation.json
+          if-no-files-found: error
       - name: Learn from executable source
         run: |
           mkdir -p .ci
