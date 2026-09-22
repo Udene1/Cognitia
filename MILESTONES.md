@@ -94,7 +94,39 @@ The fixture deliberately includes three correlated web reports, one independent 
 
 **Implementation complete; CI verification pending for the latest commit.** The last completed run (#305) predates this integrated-loop commit, so it is not being used as proof for this new capability.
 
-## Next research bar
+## 2026-09-22 — Embodied cognition and self-improvement frontier
+
+The next long-range research direction is now explicitly defined.
+
+### Embodied sensory representation
+
+> If Cognitia is placed in an environment through a body, can sensory experience become another structural representation that Cognitia can learn from, relate to existing knowledge, and use to improve its future behavior?
+
+The intended boundary is broader than perception. Sensory inputs should enter through the environment/observation boundary and be tested for whether they can become useful structure inside the existing cognitive loop.
+
+The progression to test is:
+
+```text
+environment → sensor → representation → observation
+→ evidence / experience → cognitive state
+→ action → consequence → new observation
+```
+
+### Self-improvement progression
+
+The long-term target is now recorded as five levels:
+
+1. **Knowledge improvement** — update knowledge through evidence and experience.
+2. **Procedure / usage improvement** — improve selection, composition, or application of existing capabilities.
+3. **Capability acquisition** — acquire a reusable new capability.
+4. **Cognitive machinery improvement** — Cognitia changes parts of its own cognitive machinery.
+5. **Repeated self-improvement with evaluation** — Cognitia can repeatedly improve that machinery while evaluating whether the changes actually improve its ability to achieve goals.
+
+Level 4 must use candidate cognitive builds and preserve a reproducible baseline. Level 5 must repeatedly observe performance, identify a cognitive limitation, propose and construct a candidate machinery change, evaluate the change against goals and protected capabilities, and then promote, reject, or revise it.
+
+A system that repeatedly modifies itself without evaluating consequences has demonstrated self-modification, not self-improvement.
+
+
 
 Replace deterministic environment fixtures with real adapters while preserving the same interfaces and epistemic boundaries:
 
