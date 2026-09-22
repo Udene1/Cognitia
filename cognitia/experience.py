@@ -29,6 +29,9 @@ class CognitiveState:
     hypothesis_ids: tuple[str, ...] = ()
     uncertainty: tuple[str, ...] = ()
     goal: str | None = None
+    experience_ids: tuple[str, ...] = ()
+    self_model_ids: tuple[str, ...] = ()
+    other_model_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.problem.strip():
@@ -113,7 +116,7 @@ class ExperienceLedger:
         )
 
 
-def state_fingerprint(state: CognitiveState) -> tuple[str, tuple[str, ...], tuple[str, ...], tuple[str, ...], tuple[str, ...], str | None]:
+def state_fingerprint(state: CognitiveState) -> tuple:
     """Stable structural representation used by experiments, not semantic magic."""
     return (
         state.problem.strip().lower(),
@@ -122,6 +125,9 @@ def state_fingerprint(state: CognitiveState) -> tuple[str, tuple[str, ...], tupl
         tuple(sorted(state.hypothesis_ids)),
         tuple(sorted(state.uncertainty)),
         state.goal.strip().lower() if state.goal else None,
+        tuple(sorted(state.experience_ids)),
+        tuple(sorted(state.self_model_ids)),
+        tuple(sorted(state.other_model_ids)),
     )
 
 
