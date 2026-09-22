@@ -34,4 +34,4 @@ def test_http_environment_source_preserves_observations_and_advances_cursor():
         ("understand recent work", 5, None),
         ("understand recent work", 5, "2026-09-22T13:00:00+00:00"),
     ]
-    assert second[0].content == '{"kind":"activity.note"}"
+    assert second[0].content == '{"kind":"activity.note"}'
