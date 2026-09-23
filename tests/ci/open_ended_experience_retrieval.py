@@ -26,8 +26,7 @@ ENVIRONMENT = "cashflow-os"
 BATCH_LIMIT = 200
 CURRENT_LIMIT = 20
 QUESTION = (
-    "What should we investigate next about the relationship between "
-    "outreach activity and lead state changes?"
+    "Which prior prospect-touch events correspond to later stage transitions?"
 )
 
 
@@ -149,11 +148,8 @@ def main() -> None:
             unresolved=("relationship between historical and current evidence needs checking",),
         )
 
-        retrieved_ids = {item.id for item in retrieved}
-        nonretrieved_historical = tuple(
-            item for item in all_historical if item.id not in retrieved_ids
-        )
-        ablated_claims = current_claims + cognitive_claims(nonretrieved_historical)
+        # True history ablation: remove all historical claims.
+        ablated_claims = current_claims
         ablated = controller.choose(
             QUESTION,
             claims=ablated_claims,
@@ -182,6 +178,7 @@ def main() -> None:
             ],
         },
         "retrieved_claim_count": len(historical_claims),
+        "all_historical_claim_count": len(all_historical_claims),
         "current_claim_count": len(current_claims),
         "decisions": {
             "blind": _decision(blind),
