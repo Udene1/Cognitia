@@ -25,8 +25,9 @@ DEFAULT_URL = "https://cashflow-os-silk.vercel.app/api/environment/observations"
 ENVIRONMENT = "cashflow-os"
 BATCH_LIMIT = 200
 CURRENT_LIMIT = 20
-QUESTION = (
-    "Which prior prospect-touch events correspond to later stage transitions?"
+QUESTIONS = (
+    "Which prior prospect-touch events correspond to later stage transitions?",
+    "What evidence explains why a prospect's stage changed after an earlier interaction?",
 )
 
 
