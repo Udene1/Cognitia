@@ -85,7 +85,7 @@ def main() -> None:
     path = root / "observations.sqlite"
 
     with SQLiteObservationStore(path) as store:
-        # The current question is open-ended. No historical observation IDs are
+        # These questions are open-ended. No historical observation IDs are
         # supplied here. Retrieval must discover relevant experience itself.
         before = store.latest_observed_at(environment=ENVIRONMENT)
 
@@ -123,42 +123,70 @@ def main() -> None:
         current_ids = {item.id for item in current}
 
         retriever = ObservationExperienceRetriever()
-        matches = retriever.retrieve(
-            store,
-            QUESTION,
-            environment=ENVIRONMENT,
-            exclude_ids=current_ids,
-            limit=12,
-        )
-        retrieved = tuple(store.get(match.observation_id) for match in matches)
-
-        historical_claims = cognitive_claims(retrieved)
         current_claims = cognitive_claims(current)
         all_historical = tuple(item for item in timestamped if item.id not in current_ids)
         all_historical_claims = cognitive_claims(all_historical)
+        question_results = []
 
-        controller = ResearchActionController()
-        blind = controller.choose(
-            QUESTION,
-            claims=current_claims,
-            unresolved=("historical context not retrieved",),
-        )
-        informed = controller.choose(
-            QUESTION,
-            claims=current_claims + historical_claims,
-            unresolved=("relationship between historical and current evidence needs checking",),
-        )
+        for question in QUESTIONS:
+            matches = retriever.retrieve(
+                store,
+                question,
+                environment=ENVIRONMENT,
+                exclude_ids=current_ids,
+                limit=12,
+            )
+            retrieved = tuple(store.get(match.observation_id) for match in matches)
+            historical_claims = cognitive_claims(retrieved)
 
-        # True history ablation: remove all historical claims.
-        ablated_claims = current_claims
-        ablated = controller.choose(
-            QUESTION,
-            claims=ablated_claims,
-            unresolved=("selected historical experience withheld",),
-        )
+            controller = ResearchActionController()
+            blind = controller.choose(
+                question,
+                claims=current_claims,
+                unresolved=("historical context not retrieved",),
+            )
+            informed = controller.choose(
+                question,
+                claims=current_claims + historical_claims,
+                unresolved=("relationship between historical and current evidence needs checking",),
+            )
+            ablated = controller.choose(
+                question,
+                claims=current_claims,
+                unresolved=("selected historical experience withheld",),
+            )
+
+            question_results.append({
+                "question": question,
+                "retrieval": {
+                    "candidate_count": len(matches),
+                    "matches": [
+                        {
+                            "observation_id": match.observation_id,
+                            "score": match.score,
+                            "matched_terms": list(match.matched_terms),
+                        }
+                        for match in matches
+                    ],
+                },
+                "retrieved_claim_count": len(historical_claims),
+                "all_historical_claim_count": len(all_historical_claims),
+                "current_claim_count": len(current_claims),
+                "decisions": {
+                    "blind": _decision(blind),
+                    "experience_informed": _decision(informed),
+                    "history_ablated": _decision(ablated),
+                },
+                "retrieval_changed_action": bool(
+                    blind and informed and blind.action.query.objective != informed.action.query.objective
+                ),
+                "retrieval_changed_rationale": bool(
+                    blind and informed and blind.rationale != informed.rationale
+                ),
+            })
 
     artifact = {
-        "question": QUESTION,
+        "questions": list(QUESTIONS),
         "open_ended": True,
         "history_supplied_to_experiment": False,
         "acquisition": {
@@ -167,50 +195,34 @@ def main() -> None:
             "new_observations_acquired": len(acquired_ids),
         },
         "current_observation_count": len(current),
-        "retrieval": {
-            "candidate_count": len(matches),
-            "matches": [
-                {
-                    "observation_id": match.observation_id,
-                    "score": match.score,
-                    "matched_terms": list(match.matched_terms),
-                }
-                for match in matches
-            ],
-        },
-        "retrieved_claim_count": len(historical_claims),
-        "all_historical_claim_count": len(all_historical_claims),
-        "current_claim_count": len(current_claims),
-        "decisions": {
-            "blind": _decision(blind),
-            "experience_informed": _decision(informed),
-            "history_ablated": _decision(ablated),
-        },
-        "retrieval_changed_action": bool(
-            blind and informed and blind.action.query.objective != informed.action.query.objective
-        ),
-        "retrieval_changed_rationale": bool(
-            blind and informed and blind.rationale != informed.rationale
-        ),
+        "question_results": question_results,
     }
 
     output = Path(".ci/open-ended-experience-retrieval.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(artifact, indent=2, sort_keys=True), encoding="utf-8")
 
-    assert matches, "open-ended retrieval found no relevant retained experience"
-    assert historical_claims, "retrieved experience produced no claims"
-    assert informed is not None, "experience-informed controller produced no decision"
+    assert len(question_results) == len(QUESTIONS)
+    for result in question_results:
+        assert result["retrieval"]["candidate_count"] > 0, (
+            f"open-ended retrieval found no relevant retained experience for: {result['question']}"
+        )
+        assert result["retrieved_claim_count"] > 0, (
+            f"retrieved experience produced no claims for: {result['question']}"
+        )
+        assert result["decisions"]["experience_informed"] is not None, (
+            f"experience-informed controller produced no decision for: {result['question']}"
+        )
 
     print("OPEN_ENDED_EXPERIENCE_RETRIEVAL_SUCCESS")
-    print(f"retrieved_observations={len(matches)}")
-    print(f"retrieved_claims={len(historical_claims)}")
-    print(f"blind_action={blind.action.query.objective if blind else None}")
-    print(f"informed_action={informed.action.query.objective}")
-    print(f"history_ablated_action={ablated.action.query.objective if ablated else None}")
+    for result in question_results:
+        print(f"question={result['question']}")
+        print(f"retrieved_observations={result['retrieval']['candidate_count']}")
+        print(f"retrieved_claims={result['retrieved_claim_count']}")
+        print(f"blind_action={result['decisions']['blind']['objective'] if result['decisions']['blind'] else None}")
+        print(f"informed_action={result['decisions']['experience_informed']['objective']}")
+        print(f"history_ablated_action={result['decisions']['history_ablated']['objective'] if result['decisions']['history_ablated'] else None}")
     print(f"artifact={output}")
-
-
 def _decision(decision):
     if decision is None:
         return None
