@@ -115,7 +115,11 @@ def main() -> None:
             since = next_since
 
         retained = store.by_environment(ENVIRONMENT)
-        current = tuple(retained[-CURRENT_LIMIT:])
+        timestamped = sorted(
+            retained,
+            key=lambda item: (item.observed_at or "", item.id),
+        )
+        current = tuple(timestamped[-CURRENT_LIMIT:])
         current_ids = {item.id for item in current}
 
         retriever = ObservationExperienceRetriever()
@@ -130,6 +134,8 @@ def main() -> None:
 
         historical_claims = cognitive_claims(retrieved)
         current_claims = cognitive_claims(current)
+        all_historical = tuple(item for item in timestamped if item.id not in current_ids)
+        all_historical_claims = cognitive_claims(all_historical)
 
         controller = ResearchActionController()
         blind = controller.choose(
@@ -144,16 +150,14 @@ def main() -> None:
         )
 
         retrieved_ids = {item.id for item in retrieved}
-        ablated_claims = tuple(
-            claim
-            for item in retained
-            if item.id not in retrieved_ids and item.id in current_ids
-            for claim in cognitive_claims((item,))
+        nonretrieved_historical = tuple(
+            item for item in all_historical if item.id not in retrieved_ids
         )
+        ablated_claims = current_claims + cognitive_claims(nonretrieved_historical)
         ablated = controller.choose(
             QUESTION,
             claims=ablated_claims,
-            unresolved=("historical context withheld",),
+            unresolved=("selected historical experience withheld",),
         )
 
     artifact = {
