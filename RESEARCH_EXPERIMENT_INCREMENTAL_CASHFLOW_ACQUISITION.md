@@ -60,3 +60,30 @@ limit. This experiment therefore establishes Cognitia's incremental acquisition
 boundary, but it does not yet prove that the Cashflow endpoint itself provides a
 complete cursor under every high-volume or equal-timestamp condition. That is a
 separate source-pagination experiment.
+
+
+## Result
+
+The first CI execution of the incremental observer recovered the previously
+persisted boundary:
+
+- initial since: 2026-09-22T12:33:28.022Z
+- first batch: 200 observations
+- second batch: 62 observations
+- final since: 2026-09-23T00:54:48.509Z
+- newly acquired observations: 261
+- durable Cashflow observations after acquisition: 461
+- cumulative extracted claims: 689
+
+The observer therefore advanced from the existing durable timestamp, fetched
+additional records, retained the previous ledger, and derived cognition from
+the retained ledger rather than from only the latest 200-record response.
+
+The previous live artifact had 200 observations and 352 claims. The new artifact
+contains 461 durable observations and 689 cumulative claims. The claim count is
+therefore no longer coupled to the current source window.
+
+This establishes the Cognitia-side acquisition/memory separation for the tested
+run. The remaining unresolved boundary is source pagination completeness under
+high-volume/equal-timestamp conditions; Cashflow's endpoint itself still needs a
+separate cursor-completeness experiment.
