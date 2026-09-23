@@ -85,6 +85,19 @@ class SQLiteObservationStore:
         ).fetchall()
         return tuple(self._from_row(row) for row in rows)
 
+    def latest_observed_at(self, *, environment: str | None = None) -> str | None:
+        """Return the newest observed timestamp retained for an acquisition source."""
+        if environment is None:
+            row = self._connection.execute(
+                "SELECT MAX(observed_at) AS latest FROM observations"
+            ).fetchone()
+        else:
+            row = self._connection.execute(
+                "SELECT MAX(observed_at) AS latest FROM observations WHERE environment = ?",
+                (environment,),
+            ).fetchone()
+        return row["latest"] if row and row["latest"] is not None else None
+
     def _initialize(self) -> None:
         with self._connection:
             self._connection.execute(
@@ -102,6 +115,7 @@ class SQLiteObservationStore:
                 )
                 """
             )
+
 
     @staticmethod
     def _from_row(row: sqlite3.Row) -> Observation:
