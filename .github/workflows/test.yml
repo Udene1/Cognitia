@@ -51,6 +51,15 @@ jobs:
           name: cashflow-environment-observation
           path: .ci/cashflow-observation.json
           if-no-files-found: error
+      - name: Exercise open-ended experience retrieval
+        run: COGNITIA_PERSISTENCE_ROOT=.ci/persistence python tests/ci/open_ended_experience_retrieval.py
+      - name: Upload open-ended experience retrieval artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-ended-experience-retrieval
+          path: .ci/open-ended-experience-retrieval.json
+          if-no-files-found: error
       - name: Learn from executable source
         run: |
           mkdir -p .ci

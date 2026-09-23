@@ -32,8 +32,12 @@ research-action selection.
 
 ## Question presented to Cognitia
 
-> What should we investigate next about the relationship between outreach activity
-> and lead state changes?
+> Which prior prospect-touch events correspond to later stage transitions?
+
+This deliberately changes the vocabulary used to describe the same research target.
+The stored Cashflow observations are expected to use terms such as outreach, lead,
+and state changes. The experiment therefore does not give the lexical retriever the
+original wording as an addressability shortcut.
 
 ## Controls
 
@@ -42,8 +46,7 @@ Three trajectories are recorded:
 1. **Blind:** current evidence only.
 2. **Experience-informed:** current evidence plus observations Cognitia selected
    from durable history.
-3. **History-ablated:** current evidence with the retrieved historical observations
-   withheld.
+3. **History-ablated:** current evidence only; all historical claims are withheld.
 
 The experiment compares actions and rationales rather than treating a changed
 string alone as proof of cognition.
@@ -78,7 +81,8 @@ result identifies an addressability boundary rather than hiding that limitation.
 
 ## Next boundary
 
-If retrieval works, the next experiment should test whether Cognitia can retrieve
-experience when the wording of the question differs from the wording of the stored
-observations. That would require a stronger representation than lexical overlap,
-while preserving auditable provenance.
+The immediate test is the wording-mismatch run above. A failure is an intended
+research result: it would show that the current lexical retriever cannot bridge the
+representation gap. If it succeeds, the artifact must be inspected to determine
+whether the match came from genuine vocabulary-independent structure or accidental
+lexical overlap before strengthening the retriever.
