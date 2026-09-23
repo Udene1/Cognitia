@@ -32,7 +32,6 @@ def test_observation_can_be_retained_without_becoming_knowledge(tmp_path):
         assert store.all() == (observation,)
 
 
-
 def test_sqlite_observation_is_idempotent_and_rejects_identity_collisions(tmp_path):
     path = tmp_path / "cognitia.sqlite3"
     observation = Observation.create(
@@ -57,3 +56,27 @@ def test_sqlite_observation_is_idempotent_and_rejects_identity_collisions(tmp_pa
             assert str(observation.id) in str(error)
         else:
             raise AssertionError("expected observation identity collision to fail")
+
+
+def test_latest_observed_at_is_recovered_from_durable_ledger(tmp_path):
+    path = tmp_path / "cognitia.sqlite3"
+    older = Observation.create(
+        environment="cashflow-os",
+        kind="activity.note",
+        subject="older",
+        payload="older",
+        observed_at="2026-09-22T12:00:00.000Z",
+    )
+    newer = Observation.create(
+        environment="cashflow-os",
+        kind="activity.note",
+        subject="newer",
+        payload="newer",
+        observed_at="2026-09-22T12:05:00.000Z",
+    )
+
+    with SQLiteObservationStore(path) as store:
+        store.ingest(newer)
+        store.ingest(older)
+        assert store.latest_observed_at(environment="cashflow-os") == "2026-09-22T12:05:00.000Z"
+        assert store.latest_observed_at(environment="missing") is None
